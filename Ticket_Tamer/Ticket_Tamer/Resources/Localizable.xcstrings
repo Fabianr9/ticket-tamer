@@ -1,0 +1,30 @@
+{
+  "sourceLanguage" : "de",
+  "strings" : {
+    "app.modulePlaceholder" : {
+      "comment" : "Minimaler Platzhalter fuer Modul 001 im zentralen Volume.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grundgeruest fuer das zentrale Ticket-Tamer-Volume"
+          }
+        }
+      }
+    },
+    "app.title" : {
+      "comment" : "Projekttitel in der minimalen Startoberflaeche.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ticket Tamer"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

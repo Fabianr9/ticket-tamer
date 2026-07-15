@@ -51,7 +51,8 @@ enum DebugManager {
     ) {
         guard isEnabled, enabled.contains(category) else { return }
         let logger = Logger(subsystem: subsystem, category: category.rawValue)
-        logger.debug("[\(category.rawValue, privacy: .public)] \(function, privacy: .public): \(message(), privacy: .public)")
+        let resolvedMessage = message()
+        logger.debug("[\(category.rawValue, privacy: .public)] \(function, privacy: .public): \(resolvedMessage, privacy: .public)")
     }
 
     // MARK: - Convenience

@@ -10,9 +10,20 @@
 		1E158E663007C50E002D4ED1 /* RealityKitContent in Frameworks */ = {isa = PBXBuildFile; productRef = 1E158E653007C50E002D4ED1 /* RealityKitContent */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		1E1D1D183007E7C600E5EEBD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1E158E583007C50E002D4ED1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1E158E5F3007C50E002D4ED1;
+			remoteInfo = Ticket_Tamer;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		1E158E603007C50E002D4ED1 /* Ticket_Tamer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Ticket_Tamer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1E158E643007C50E002D4ED1 /* RealityKitContent */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = RealityKitContent; sourceTree = "<group>"; };
+		1E1D1D143007E7C600E5EEBD /* Ticket_TamerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Ticket_TamerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -34,6 +45,11 @@
 			path = Ticket_Tamer;
 			sourceTree = "<group>";
 		};
+		1E1D1D153007E7C600E5EEBD /* Ticket_TamerTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Ticket_TamerTests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -45,6 +61,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		1E1D1D113007E7C600E5EEBD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -53,6 +76,7 @@
 			children = (
 				1E158E623007C50E002D4ED1 /* Ticket_Tamer */,
 				1E158E633007C50E002D4ED1 /* Packages */,
+				1E1D1D153007E7C600E5EEBD /* Ticket_TamerTests */,
 				1E158E613007C50E002D4ED1 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -61,6 +85,7 @@
 			isa = PBXGroup;
 			children = (
 				1E158E603007C50E002D4ED1 /* Ticket_Tamer.app */,
+				1E1D1D143007E7C600E5EEBD /* Ticket_TamerTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -99,6 +124,29 @@
 			productReference = 1E158E603007C50E002D4ED1 /* Ticket_Tamer.app */;
 			productType = "com.apple.product-type.application";
 		};
+		1E1D1D133007E7C600E5EEBD /* Ticket_TamerTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1E1D1D1A3007E7C600E5EEBD /* Build configuration list for PBXNativeTarget "Ticket_TamerTests" */;
+			buildPhases = (
+				1E1D1D103007E7C600E5EEBD /* Sources */,
+				1E1D1D113007E7C600E5EEBD /* Frameworks */,
+				1E1D1D123007E7C600E5EEBD /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				1E1D1D193007E7C600E5EEBD /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				1E1D1D153007E7C600E5EEBD /* Ticket_TamerTests */,
+			);
+			name = Ticket_TamerTests;
+			packageProductDependencies = (
+			);
+			productName = Ticket_TamerTests;
+			productReference = 1E1D1D143007E7C600E5EEBD /* Ticket_TamerTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -111,6 +159,10 @@
 				TargetAttributes = {
 					1E158E5F3007C50E002D4ED1 = {
 						CreatedOnToolsVersion = 26.5;
+					};
+					1E1D1D133007E7C600E5EEBD = {
+						CreatedOnToolsVersion = 26.5;
+						TestTargetID = 1E158E5F3007C50E002D4ED1;
 					};
 				};
 			};
@@ -129,12 +181,20 @@
 			projectRoot = "";
 			targets = (
 				1E158E5F3007C50E002D4ED1 /* Ticket_Tamer */,
+				1E1D1D133007E7C600E5EEBD /* Ticket_TamerTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		1E158E5E3007C50E002D4ED1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1E1D1D123007E7C600E5EEBD /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -151,7 +211,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		1E1D1D103007E7C600E5EEBD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		1E1D1D193007E7C600E5EEBD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1E158E5F3007C50E002D4ED1 /* Ticket_Tamer */;
+			targetProxy = 1E1D1D183007E7C600E5EEBD /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		1E158E703007C50F002D4ED1 /* Debug */ = {
@@ -329,6 +404,48 @@
 			};
 			name = Release;
 		};
+		1E1D1D1B3007E7C600E5EEBD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "de.th-owl.fb2.Ticket-TamerTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "xros xrsimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 7;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Ticket_Tamer.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Ticket_Tamer";
+			};
+			name = Debug;
+		};
+		1E1D1D1C3007E7C600E5EEBD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "de.th-owl.fb2.Ticket-TamerTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "xros xrsimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 7;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Ticket_Tamer.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Ticket_Tamer";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -346,6 +463,15 @@
 			buildConfigurations = (
 				1E158E703007C50F002D4ED1 /* Debug */,
 				1E158E713007C50F002D4ED1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1E1D1D1A3007E7C600E5EEBD /* Build configuration list for PBXNativeTarget "Ticket_TamerTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1E1D1D1B3007E7C600E5EEBD /* Debug */,
+				1E1D1D1C3007E7C600E5EEBD /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

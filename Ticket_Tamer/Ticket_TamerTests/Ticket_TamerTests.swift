@@ -1,18 +1,13 @@
-//
-//  Ticket_TamerTests.swift
-//  Ticket_TamerTests
-//
-//  Created by Fabian Raczkowski on 15.07.26.
-//
-
 import Testing
+@testable import Ticket_Tamer
 
-struct Ticket_TamerTests {
+/// Smoke-Tests für die technische Grundlage aus Modul 001.
+struct TicketTamerTests {
 
-    @Test func example() async throws {
-        // Write your test here and use APIs like `#expect(...)` to check expected conditions.
-        // Swift Testing Documentation
-        // https://developer.apple.com/documentation/testing
+    @Test("Die Maße des zentralen Volumes sind positiv")
+    func centralVolumeDimensionsArePositive() {
+        #expect(LayoutConstants.centralVolumeWidth > 0)
+        #expect(LayoutConstants.centralVolumeHeight > 0)
+        #expect(LayoutConstants.centralVolumeDepth > 0)
     }
-
 }

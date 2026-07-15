@@ -1,98 +1,222 @@
 # Projekt-Stand — Ticket Tamer
 
-> Aktuelle Landkarte des bestätigten Codes und der bekannten Projektbestandteile. Nach jedem Modul wird dieses Dokument vollständig neu erzeugt und im Projektraum ersetzt. Historie liegt in Git, nicht in zusätzlichen Standdateien.
+> Aktuelle Landkarte des bestätigten Codes und der bekannten Projektbestandteile. Nach jedem Modul wird dieses Dokument vollständig neu erzeugt und unter `Dokumentation/05_Aktueller-Stand/Projekt-Stand.md` ersetzt. Die Code-Historie liegt ausschließlich in Git.
 
-**Stand:** vor Modul `001` — Initialzustand  
-**Git-Commit:** nicht dokumentiert  
-**Datum:** 2026-07-15
+**Stand:** nach Modul `001` — Projektgrundgerüst und zentrales Volume  
+**Datum:** 2026-07-15  
+**Branch:** `feature/001-project-foundation`  
+**Git-Commit:** `[COMMIT-HASH EINTRAGEN]` — noch nicht eingetragen  
+**Merge in `main`:** `[JA / NOCH NICHT]` — noch nicht angegeben  
+**Build:** erfolgreich  
+**Simulatorstart:** erfolgreich  
+**Tests:** 1 von 1 bestanden
 
-## Verlässlichkeit dieses Stands
+## Bestätigter Abschlusszustand
 
-Dieser Initialstand basiert ausschließlich auf dem beschriebenen Ausgangszustand im Projektlogbuch-Start-Prompt und auf den bereitgestellten Dateien. Das Xcode-Projekt selbst wurde in diesem Projektlogbuch nicht geöffnet. Exakte Projektdateinamen, Gruppen, physische Ordner, Build Settings und Target-Mitgliedschaften sind deshalb in Modul 001 zu prüfen.
+- genau ein zentrales volumetrisches Fenster,
+- kein zweites Fenster,
+- kein zweites Volume,
+- kein Immersive Space,
+- deutsche Basistexte werden korrekt angezeigt,
+- vorhandene RealityKit-Standardszene wird angezeigt,
+- Swift-Testing-Suite `TicketTamerTests` erfolgreich,
+- Testplattform `arm64-apple-xros1.0-simulator`,
+- keine wesentlichen Abweichungen vom Modulauftrag,
+- keine offenen technischen Probleme aus Modul 001.
 
-## Dateibaum — bestätigter beziehungsweise beschriebener Ist-Zustand
+AK-05 ist nur strukturell teilweise erfüllt. Die vollständige lineare Sitzungsfolge wird erst durch spätere Module implementiert und in Modul 013 vollständig abgenommen.
+
+## Repository- und Dokumentationsstruktur
 
 ```text
-009 Projektumsetzung/
-└─ Code/
-   └─ Ticket Tamer/                      # vorhandenes visionOS-Default-Projekt
-      ├─ Ticket_TamerApp.swift           # laut Start-Prompt vorhandene App-Datei
-      ├─ [ContentView-Typ]               # von Ticket_TamerApp.swift referenziert; Dateipfad nicht bestätigt
-      ├─ RealityKitContent/               # vorhandenes Reality-Composer-Pro-Package
-      └─ [Swift-Testing-Target]           # vorhanden; Name und Dateien nicht bestätigt
-
-Bereitgestellte Vorlage außerhalb des bestätigten App-Codes:
-└─ DebugManager.swift                    # noch nicht in das Xcode-Projekt integriert
+Ticket-Tamer/
+├─ Ticket_Tamer/
+│  ├─ Ticket_Tamer.xcodeproj/
+│  │  └─ project.pbxproj
+│  ├─ Ticket_Tamer/
+│  │  ├─ App/
+│  │  │  └─ Ticket_TamerApp.swift
+│  │  ├─ Debug/
+│  │  │  └─ DebugManager.swift
+│  │  ├─ Resources/
+│  │  │  └─ Localizable.xcstrings
+│  │  ├─ Support/
+│  │  │  └─ AppConstants.swift
+│  │  ├─ Views/
+│  │  │  └─ RootVolumeView.swift
+│  │  ├─ Assets.xcassets
+│  │  └─ Info.plist
+│  ├─ Ticket_TamerTests/
+│  │  └─ Ticket_TamerTests.swift
+│  ├─ Packages/
+│  │  └─ RealityKitContent/
+│  │     ├─ README.md
+│  │     ├─ Package.swift
+│  │     ├─ Package.realitycomposerpro
+│  │     └─ Sources/
+│  │        └─ RealityKitContent/
+│  │           ├─ RealityKitContent.swift
+│  │           └─ RealityKitContent.rkassets/
+│  │              ├─ Scene.usda
+│  │              └─ Materials/
+│  │                 └─ GridMaterial.usda
+│  └─ Products/                         # Xcode-Buildproduktgruppe, nicht als Quellcode behandeln
+│     ├─ Ticket_Tamer.app
+│     └─ Ticket_TamerTests.xctest
+│
+└─ Dokumentation/
+   ├─ 00_Projektsteuerung/
+   │  ├─ Start-Prompt-Projektlogbuch.md
+   │  └─ Code-im-Projektraum.md
+   ├─ 01_Kontext/
+   │  ├─ Projektbeschreibung.md
+   │  ├─ SPEC.md
+   │  └─ Akzeptanzkriterien.md
+   ├─ 02_Vorlagen/
+   │  ├─ Projektlogbuch-Vorlage.md
+   │  ├─ Projekt-Stand-Vorlage.md
+   │  ├─ Modul-Eingangsprompt-Vorlage.md
+   │  ├─ Modul-Report-Vorlage.md
+   │  └─ DebugManager.swift             # nur falls die ursprüngliche Vorlage weiterhin dokumentarisch aufbewahrt wird
+   ├─ 03_Modul-Eingangsprompts/
+   │  ├─ 001-Eingangsprompt.md
+   │  └─ 002-Eingangsprompt.md
+   ├─ 04_Modul-Reports/
+   │  └─ 001-Report.md
+   └─ 05_Aktueller-Stand/
+      ├─ Logbuch-Stand.md
+      └─ Projekt-Stand.md
 ```
 
-## Dateien und Bestandteile
+## Hinweise zum Dateibaum
 
-| Datei oder Bestandteil | Zweck | Status | Seit Modul |
+- Der Codebaum entspricht dem im `001-Report.md` bestätigten Stand.
+- `Products/` ist eine Xcode-Buildproduktgruppe und kein fachlicher Quellcodeordner.
+- Die frühere Default-`ContentView` ist im aktuellen Projektbaum nicht mehr vorhanden beziehungsweise nicht mehr Teil des aktiven App-Einstiegs.
+- Im aktiven Code existiert genau eine `DebugManager.swift` unter `Ticket_Tamer/Debug/`.
+- Eine frühere separate DebugManager-Vorlage existiert laut Modulreport nicht mehr im Repository-Stamm. Falls sie zu Dokumentationszwecken unter `Dokumentation/02_Vorlagen/` aufbewahrt wird, darf sie nicht dem App-Target zugeordnet sein und nicht als zweite aktive Codekopie gelten.
+- Es gibt keine parallelen `New`-, `Old`-, `Copy`- oder `Backup`-Dateien.
+
+## Dateien und Zweck
+
+| Datei | Zweck | Status | Seit Modul |
 |---|---|---|---|
-| `Ticket_TamerApp.swift` | App-Einstieg; laut Ausgangsbeschreibung aktuell mit `WindowGroup { ContentView() }` | vorhanden laut Start-Prompt, in Modul 001 zu prüfen | Ausgangsprojekt |
-| `ContentView` | aktuell vom App-Einstieg referenzierter SwiftUI-Typ | Typreferenz bestätigt, genauer Dateipfad nicht bestätigt | Ausgangsprojekt |
-| `RealityKitContent/` | vorhandenes Package für Reality Composer Pro beziehungsweise RealityKit-Inhalte | vorhanden laut Start-Prompt, Struktur in Modul 001 zu prüfen | Ausgangsprojekt |
-| Swift-Testing-Target | Ziel für Tests der Kernlogik | vorhanden laut Start-Prompt, Name und Inhalt in Modul 001 zu prüfen | Ausgangsprojekt |
-| bereitgestelltes `DebugManager.swift` | zentrale, kategorisierte Debug-Steuerung und optionales Debug-Panel | Vorlage vorhanden, noch kein bestätigter Bestandteil des App-Targets | vor 001 |
+| `Ticket_Tamer/Ticket_Tamer.xcodeproj/project.pbxproj` | Xcode-Projektstruktur und Dateieinbindung über synchronisierte Projektgruppen | geändert, buildfähig | 001 |
+| `Ticket_Tamer/Ticket_Tamer/App/Ticket_TamerApp.swift` | App- und Scene-Einstieg mit genau einer volumetrischen `WindowGroup` | aktiv | 001 |
+| `Ticket_Tamer/Ticket_Tamer/Views/RootVolumeView.swift` | minimale deutsche Root-Oberfläche im zentralen Volume; zeigt RealityKit-Standardszene | aktiv | 001 |
+| `Ticket_Tamer/Ticket_Tamer/Debug/DebugManager.swift` | zentrale kategorisierte Debug-Steuerung und optionales Debug-Panel | aktiv | 001 |
+| `Ticket_Tamer/Ticket_Tamer/Support/AppConstants.swift` | zentrale Layout-, Ticketanzahl- und Asset-Konstanten | aktiv | 001 |
+| `Ticket_Tamer/Ticket_Tamer/Resources/Localizable.xcstrings` | deutsche Lokalisierungsgrundlage für sichtbare Basistexte | aktiv | 001 |
+| `Ticket_Tamer/Ticket_Tamer/Info.plist` | Scene-Konfiguration mit volumetrischer Anwendungsrolle | aktiv | 001 |
+| `Ticket_Tamer/Ticket_Tamer/Assets.xcassets` | Asset-Katalog des App-Targets | vorhanden | Ausgangsprojekt |
+| `Ticket_Tamer/Ticket_TamerTests/Ticket_TamerTests.swift` | Swift-Testing-Smoke-Test für positive Maße des zentralen Volumes | aktiv; 1 Test bestanden | 001 |
+| `Ticket_Tamer/Packages/RealityKitContent/Package.swift` | Package-Definition für RealityKitContent | vorhanden | Ausgangsprojekt |
+| `Ticket_Tamer/Packages/RealityKitContent/Package.realitycomposerpro` | Reality-Composer-Pro-Projekt | vorhanden | Ausgangsprojekt |
+| `Ticket_Tamer/Packages/RealityKitContent/Sources/RealityKitContent/RealityKitContent.swift` | Package-Schnittstelle für RealityKit-Inhalte | vorhanden | Ausgangsprojekt |
+| `Ticket_Tamer/Packages/RealityKitContent/Sources/RealityKitContent/RealityKitContent.rkassets/Scene.usda` | vorhandene RealityKit-Standardszene | vorhanden und sichtbar | Ausgangsprojekt |
+| `Ticket_Tamer/Packages/RealityKitContent/Sources/RealityKitContent/RealityKitContent.rkassets/Materials/GridMaterial.usda` | Material der Standardszene | vorhanden | Ausgangsprojekt |
 
 ## Öffentliche Schnittstellen für Folgemodule
 
-Noch keine öffentlichen Projektschnittstellen aus einem abgeschlossenen Modul bestätigt.
-
-| Typ oder Methode | Datei | Zweck | Status |
-|---|---|---|---|
-| – | – | – | Vor Modul 001 leer |
-
-## Bekannte Schnittstelle der externen Debug-Vorlage
-
-Die folgenden Namen stammen aus der bereitgestellten Vorlage, gelten aber erst nach kontrollierter Integration und erfolgreichem Build als Projektschnittstellen:
-
-| Typ oder Methode | Vorgesehener Ort | Zweck |
+| Typ oder Methode | Datei | Zweck |
 |---|---|---|
-| `DebugManager` | `Debug/DebugManager.swift` | zentrale Debug-Steuerung |
-| `DebugManager.Category` | `Debug/DebugManager.swift` | Kategorien für Lifecycle, Eingabe, Physik, Spawning, Zustand und Audio |
-| `DebugManager.log(_:_:)` | `Debug/DebugManager.swift` | kategorisierte Log-Ausgabe |
-| `DebugManager.toggle(_:)` | `Debug/DebugManager.swift` | Laufzeit-Umschaltung einer Kategorie |
-| `DebugPanel` | `Debug/DebugManager.swift` oder nach Prüfung getrennte Debug-Datei | optionales SwiftUI-Bedienfeld; nicht Teil des Nutzer-Kernablaufs |
+| `Ticket_TamerApp` | `Ticket_Tamer/Ticket_Tamer/App/Ticket_TamerApp.swift` | App-Einstieg mit genau einer volumetrischen Scene |
+| `RootVolumeView` | `Ticket_Tamer/Ticket_Tamer/Views/RootVolumeView.swift` | Root-Oberfläche innerhalb des zentralen Volumes |
+| `DebugManager` | `Ticket_Tamer/Ticket_Tamer/Debug/DebugManager.swift` | zentrale Debug-Steuerung |
+| `DebugManager.Category` | `Ticket_Tamer/Ticket_Tamer/Debug/DebugManager.swift` | Kategorien `lifecycle`, `input`, `physics`, `spawning`, `state`, `audio` |
+| `DebugManager.log(_:_:function:)` | `Ticket_Tamer/Ticket_Tamer/Debug/DebugManager.swift` | kategorisierte Log-Ausgabe |
+| `DebugManager.toggle(_:)` | `Ticket_Tamer/Ticket_Tamer/Debug/DebugManager.swift` | Laufzeit-Umschaltung einer Kategorie |
+| `DebugPanel` | `Ticket_Tamer/Ticket_Tamer/Debug/DebugManager.swift` | optionales Debug-Panel; nicht Teil des regulären Nutzerablaufs |
+| `LayoutConstants` | `Ticket_Tamer/Ticket_Tamer/Support/AppConstants.swift` | Layout- und Volume-Maße |
+| `GameplayConstants` | `Ticket_Tamer/Ticket_Tamer/Support/AppConstants.swift` | Ticketanzahl-Grenzen und Standardwert |
+| `AssetKeys` | `Ticket_Tamer/Ticket_Tamer/Support/AppConstants.swift` | Schlüssel für vorhandene lokale Ressourcen |
 
 ## Zentrale Konstanten-Enums
 
-Noch keine Konstanten-Dateien im Xcode-Projekt bestätigt.
+| Enum | Datei | Inhalt |
+|---|---|---|
+| `LayoutConstants` | `Ticket_Tamer/Ticket_Tamer/Support/AppConstants.swift` | Volume-Maße und Layoutabstände |
+| `GameplayConstants` | `Ticket_Tamer/Ticket_Tamer/Support/AppConstants.swift` | Minimum 1, Maximum 12, Standardwert 6 |
+| `AssetKeys` | `Ticket_Tamer/Ticket_Tamer/Support/AppConstants.swift` | Schlüssel `"Scene"` für die vorhandene RealityKit-Standardszene |
 
-| Enum | Datei | Inhalt | Status |
-|---|---|---|---|
-| `LayoutConstants` | in Modul 001 festzulegen | Maße und Layoutwerte, die Modul 001 tatsächlich benötigt | noch nicht vorhanden bestätigt |
-| `GameplayConstants` | in Modul 001 festzulegen | zentrale Spielwerte; nur bereits verbindlich bekannte Werte verwenden | noch nicht vorhanden bestätigt |
-| `BalancingConstants` | in Modul 001 festzulegen | zeitliche und bewertungsbezogene Werte; keine vorgezogene Implementierung späterer Module | noch nicht vorhanden bestätigt |
-| `AssetKeys` | in Modul 001 festzulegen | zentrale Schlüssel für Ressourcen, soweit in Modul 001 benötigt | noch nicht vorhanden bestätigt |
+### Bestätigte Werte
 
-## In Modul 001 zu prüfen und einzurichten
+- `LayoutConstants.centralVolumeWidth = 0.8`
+- `LayoutConstants.centralVolumeHeight = 0.6`
+- `LayoutConstants.centralVolumeDepth = 0.4`
+- `LayoutConstants.rootPadding = 32.0`
+- `LayoutConstants.rootSpacing = 24.0`
+- `LayoutConstants.textSpacing = 8.0`
+- `LayoutConstants.modelBottomPadding = 24.0`
+- `GameplayConstants.minimumTicketCount = 1`
+- `GameplayConstants.maximumTicketCount = 12`
+- `GameplayConstants.defaultTicketCount = 6`
+- `AssetKeys.defaultRealityKitScene = "Scene"`
 
-- tatsächliche Lage und Inhalte aller vorhandenen Swift-Dateien,
-- physische Ordner im Dateisystem und Xcode-Gruppen,
-- App-Target und Swift-Testing-Target einschließlich Target-Mitgliedschaften,
-- aktuelle Scene-Konfiguration,
-- Umstellung auf genau ein zentrales Volume ohne zweiten Volume und ohne Immersive Space,
-- einfache Trennung von SwiftUI-, RealityKit- und visionOS-spezifischen Verantwortungsbereichen,
-- kontrollierte Verschiebung bestehender Dateien ohne doppelte Referenzen,
-- Integration der DebugManager-Vorlage in einen passenden Debug-Bereich,
-- minimale Constants-Foundation ohne unnötige Vorwegnahme späterer Module,
-- String-Catalog-/Lokalisierungsgrundlage mit sichtbaren deutschen Texten,
-- Build des App-Targets und des bestehenden Swift-Testing-Targets,
-- Struktur, die drei Entwickler verstehen und mit möglichst wenigen Konflikten bearbeiten können.
+`BalancingConstants` ist bewusst noch nicht vorhanden.
 
-## Nicht als vorhanden bestätigt
+## DebugManager-Stand
 
-- ein eingerichtetes zentrales Volume,
-- eine endgültige App-/Views-/Models-/Services-/Entities-Ordnerstruktur,
-- ein SessionModel oder GameState,
-- Ticketdaten oder lokaler Ticketkatalog,
-- Monster-Assets im App-Bundle,
-- Interaktions-, Punkte- oder Audioimplementierung,
-- Ergebnisansicht und Reset-UI,
-- integrierte Constants-Dateien,
-- integrierter DebugManager.
+- genau eine aktive Datei unter `Ticket_Tamer/Ticket_Tamer/Debug/DebugManager.swift`,
+- Kategorien: `lifecycle`, `input`, `physics`, `spawning`, `state`, `audio`,
+- Logging beim App-Einstieg und beim Anzeigen des zentralen Volumes,
+- keine neue Kategorie in Modul 001,
+- `DebugPanel` nicht im regulären Nutzerablauf,
+- Autoclosure wird vor der Logger-Interpolation einmalig aufgelöst; öffentliche Signatur unverändert.
 
-## Nicht mehr vorhanden oder bewusst entfernt
+## Build- und Teststand
 
-Noch keine Dateien entfernt oder umbenannt. Änderungen dürfen erst nach der Bestandsanalyse in Modul 001 dokumentiert werden.
+| Bereich | Stand |
+|---|---|
+| App-Build | erfolgreich |
+| visionOS-Simulatorstart | erfolgreich |
+| Test-Suite | `TicketTamerTests` |
+| Testdatei | `Ticket_Tamer/Ticket_TamerTests/Ticket_TamerTests.swift` |
+| Tests | 1 von 1 bestanden |
+| Bestandener Test | positive Maße des zentralen Volumes |
+| Plattform | `arm64-apple-xros1.0-simulator` |
+| Apple Vision Pro | vollständiger Gerätetest bleibt Modul 013 vorbehalten |
+
+## Konfliktanfällige Dateien
+
+Folgende Dateien sollen bei paralleler Arbeit jeweils klar einer Person zugeordnet werden:
+
+- `Ticket_Tamer/Ticket_Tamer.xcodeproj/project.pbxproj`
+- `Ticket_Tamer/Ticket_Tamer/App/Ticket_TamerApp.swift`
+- `Ticket_Tamer/Ticket_Tamer/Support/AppConstants.swift`
+
+Modul 002 soll diese Dateien nur ändern, wenn dies für die reine Ticketdatenstruktur zwingend erforderlich ist. App-Einstieg und Root-View sollen unverändert bleiben.
+
+## Für Modul 002 vorgesehene neue Verantwortungsbereiche
+
+Noch nicht vorhanden und erst durch Modul 002 auf Basis des tatsächlichen Xcode-Projekts einzurichten:
+
+- ein einfacher Bereich für fachliche Modelle, beispielsweise `Models/`,
+- ein einfacher Bereich für den lokalen Ticketkatalog, beispielsweise `Data/` oder `Catalog/`,
+- zusätzliche Swift-Testing-Tests innerhalb des vorhandenen Test-Targets.
+
+Die endgültigen Pfade müssen im `002-Report.md` als tatsächlich eingerichtet dokumentiert werden. Es sollen keine leeren Ordner und keine unnötig komplexe Datenzugriffsarchitektur entstehen.
+
+## Nicht vorhanden und nicht vorwegzunehmen
+
+- Sitzungsmodell oder SessionState,
+- Zufallsauswahl,
+- aktuelle Sitzungstickets,
+- Ticketindex,
+- Score,
+- Eingabesperre,
+- Reset-Logik,
+- fertige Startansicht,
+- Monster-Asset-Pipeline,
+- räumliche Drag-and-Drop-Interaktion,
+- Priorisierungs- und Teamzuordnungsphase,
+- Audiofeedback,
+- Ergebnisansicht,
+- optionale Monsterreaktion.
+
+## Nicht mehr vorhanden oder bewusst ersetzt
+
+- frühere Default-`ContentView` nicht mehr im aktuellen Baum beziehungsweise nicht mehr im aktiven App-Einstieg,
+- frühere Position von `Ticket_TamerApp.swift` im Projektstamm ersetzt durch `Ticket_Tamer/Ticket_Tamer/App/Ticket_TamerApp.swift`,
+- keine separate aktive `DebugManager.swift` im Repository-Stamm,
+- keine parallelen Alt-, Kopie- oder Backup-Dateien.

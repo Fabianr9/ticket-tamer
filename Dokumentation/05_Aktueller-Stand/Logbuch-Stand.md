@@ -2,22 +2,26 @@
 
 > Laufendes Gedächtnis und Steuerungsdokument des Projekts. Nach jedem eingearbeiteten Modul-Report wird diese Datei vollständig aktualisiert und als einziger aktueller `Logbuch-Stand.md` ersetzt.
 
-**Stand:** Initialisierung vor Modul `001`  
+**Stand:** nach Modul `001` — Projektgrundgerüst und zentrales Volume  
 **Datum:** 2026-07-15  
-**Git-Commit:** noch keiner für Modul 001 dokumentiert
+**Branch:** `feature/001-project-foundation`  
+**Git-Commit:** `[COMMIT-HASH EINTRAGEN]` — noch nicht eingetragen  
+**Merge in `main`:** `[JA / NOCH NICHT]` — noch nicht angegeben
 
 ## Verbindlicher Projektumfang
 
-Ticket Tamer ist ein visionOS-Trainingsspiel für Apple Vision Pro. Nutzende bearbeiten eine kurze Sitzung aus 1 bis 12 lokal gespeicherten Support-Tickets. Jedes Ticket wird als Monster dargestellt, zunächst anhand einer deutschen Ticketkarte untersucht, anschließend per Blickfokus, Pinch und Drag einer Priorität und danach einem Support-Team zugeordnet. Die Anwendung läuft als linearer Ablauf in genau einem zentralen Volume, berechnet je richtiger Teilentscheidung 100 Punkte, gibt nur akustisches Richtig-/Falsch-Feedback und zeigt am Ende ausschließlich die Gesamtpunktzahl sowie „Erneut spielen“.
+Ticket Tamer ist ein visionOS-Trainingsspiel für Apple Vision Pro. Nutzende bearbeiten eine kurze Sitzung aus 1 bis 12 lokal gespeicherten Support-Tickets. Jedes Ticket wird als Monster dargestellt, zunächst anhand einer deutschen Ticketkarte untersucht, anschließend per Blickfokus, Pinch und Drag einer Priorität und danach einem Support-Team zugeordnet.
 
-Zum Muss-Umfang gehören genau zwölf lokale Tickets, vier eigene Blender-Monster, zwei lokale Sounds, ein vollständiger Reset und ein stabiler Ablauf ohne Backend, Konten, Datenbank, Cloud, persistente Spielhistorie, Immersive Space, zweites Volume, Tutorial, Detailstatistiken oder alternative 2D-Auswahl für die beiden Kernentscheidungen. Die Monsterreaktion nach einer Entscheidung ist ausschließlich eine Kann-Funktion.
+Die Anwendung läuft als linearer Ablauf in genau einem zentralen volumetrischen Fenster. Für eine richtige Priorität und eine richtige Teamzuordnung werden jeweils 100 Punkte vergeben. Falsche Entscheidungen geben 0 Punkte und verursachen keinen Punktabzug. Nach einer gültigen Entscheidung erfolgt ausschließlich akustisches Richtig-/Falsch-Feedback; die richtige Lösung wird nicht angezeigt. Am Ende erscheinen nur die Gesamtpunktzahl und „Erneut spielen“.
+
+Zum Muss-Umfang gehören genau zwölf lokale Tickets, vier eigene Blender-Monster, zwei lokale Feedback-Sounds, ein vollständiger Sitzungsreset und ein stabiler Ablauf ohne Backend, Benutzerkonten, Datenbank, Cloud, persistente Spielhistorie, zweites Fenster beziehungsweise Volume, Immersive Space, Tutorial, Detailstatistiken oder alternative 2D-Auswahl für die beiden Kernentscheidungen. Die Monsterreaktion nach einer Entscheidung ist ausschließlich eine Kann-Funktion.
 
 ## Modul-Status
 
 | Modul | Titel | Status | Git-Commit | Erfüllt laut SPEC |
 |---|---|---|---|---|
-| 001 | Projektgrundgerüst und zentrales Volume | offen | – | F-05, struktureller Anteil von AK-05 |
-| 002 | Ticketdatenmodell und lokaler Katalog | offen | – | F-02, F-03 |
+| 001 | Projektgrundgerüst und zentrales Volume | fertig auf Branch; Merge-Status offen | `[COMMIT-HASH EINTRAGEN]` | F-05 strukturell teilweise; AK-05 teilweise |
+| 002 | Ticketdatenmodell und lokaler Katalog | als Nächstes | – | F-02, F-03 |
 | 003 | Sitzungsmodell und Zufallsauswahl | offen | – | F-04, F-16 |
 | 004 | Startansicht und Einstellungen | offen | – | F-01 |
 | 005 | Monster-Asset-Pipeline | offen | – | F-14 |
@@ -31,93 +35,139 @@ Zum Muss-Umfang gehören genau zwölf lokale Tickets, vier eigene Blender-Monste
 | 013 | Integration und Gerätetest | offen | – | F-01 bis F-16 als Integrationstest |
 | 014 | Abschlussmodul: Doku & Cleanup | offen | – | Dokumentenkonsistenz und Abgabeprüfung |
 
-## Prüfung der Modul-Landkarte
+## Abschlussstand Modul 001
 
-### Gesamtbewertung
+### Ergebnis
 
-Die Landkarte ist für den Muss-Umfang grundsätzlich sinnvoll. Datenmodell und Sitzungslogik liegen vor den Views, die 3D-Assets liegen vor den monsterabhängigen Phasen, die allgemeine räumliche Interaktion liegt vor Priorisierung und Teamzuordnung, und Bewertung, Ergebnis sowie Integration schließen den Kernablauf nachvollziehbar ab.
+Modul 001 ist technisch erfolgreich abgeschlossen. Das vorhandene visionOS-Projekt wurde in ein kleines, buildfähiges Grundgerüst mit genau einem zentralen volumetrischen Fenster überführt. Der App-Einstieg verwendet `RootVolumeView` in einer volumetrischen `WindowGroup`. Ein zweites Fenster, ein zweites Volume und ein Immersive Space sind nicht vorhanden.
 
-Der Umfang ist bis zur Abgabe realistisch, aber nur bei strenger Begrenzung auf F-01 bis F-16. Die größten Termin- und Integrationsrisiken liegen in Modul 005, 007, 010 und 013: Blender-/USDZ-Pipeline, visionOS-Gesten und Zielerkennung, verzögerte Zustandsübergänge mit Audio sowie Tests auf echter Apple Vision Pro.
+### Bestätigte Prüfungen
 
-### Technische Abhängigkeiten
+| Prüfung | Ergebnis |
+|---|---|
+| Build | erfolgreich |
+| visionOS-Simulatorstart | erfolgreich |
+| Swift-Testing-Suite | `TicketTamerTests` |
+| Tests | 1 von 1 bestanden |
+| Testplattform | `arm64-apple-xros1.0-simulator` |
+| Zentrales volumetrisches Fenster | genau eines bestätigt |
+| Zweites Fenster beziehungsweise Volume | keines |
+| Immersive Space | keiner |
+| Deutsche Basistexte | korrekt |
+| RealityKit-Standardszene | wird angezeigt |
+| Wesentliche Abweichungen vom Auftrag | keine |
+| Offene technische Probleme aus Modul 001 | keine |
 
-- `001` ist die gemeinsame Basis und muss vor paralleler Implementierung abgeschlossen werden.
-- `002 → 003 → 004` ist eine klare Kette für Daten, Sitzung und Startansicht.
-- `005` kann in der Asset-Erstellung früh vorbereitet werden; die endgültige Ticketzuordnung benötigt jedoch die Schnittstellen aus `002`.
-- `006` benötigt Ticketdaten, Sitzung und verwendbare Monster-Assets.
-- `007` benötigt mindestens eine funktionierende, interaktive Monster-Entity und das zentrale Volume.
-- `008` baut auf dem Sitzungszustand, der Untersuchungsphase und der allgemeinen Drop-Logik auf.
-- `009` sollte die in `008` bewährten Interaktions- und Zustandsübergänge wiederverwenden und deshalb erst danach integriert werden.
-- `010` benötigt beide gespeicherten Entscheidungen und muss Doppelbewertung, Eingabesperre, Audio und den automatischen Übergang gemeinsam absichern.
-- `011` nutzt die Reset-Logik aus `003`, vervollständigt sie aber erst aus Sicht der Ergebnisansicht.
-- `013` bleibt die vollständige Abnahme aller Muss-Kriterien; Modulabnahmen davor ersetzen den Gesamttest nicht.
+### Abnahmegrenze AK-05
 
-### Mögliche Parallelisierung für drei Entwickler
+AK-05 ist nach Modul 001 noch nicht vollständig erfüllt.
 
-| Phase | Entwickler A | Entwickler B | Entwickler C | Integrationspunkt |
-|---|---|---|---|---|
-| Nach 001 | 002 Ticketmodell/Katalog | Vorbereitung 005 Blender-Assets | Testkonzept, Sound-/Lizenzvorbereitung und technischer Interaktions-Spike für 007 | Schnittstellen aus 002 bestätigen |
-| Nach 002 | 003 Sitzungsmodell | 005 Export und Einbindung abschließen | Tests für 002/003 und Vorbereitung 007 | Build und Projekt-Stand gemeinsam prüfen |
-| Nach 003 und 005 | 004 Startansicht oder 006 Ticketkarte | 007 Interaktionsgrundlagen | 006 Monster-/Ticketdarstellung oder Gerätetest-Unterstützung | Gemeinsames Entity-/State-Verhalten festlegen |
-| Danach | 008 Priorisierung | Vorbereitung 009 Teamstationen | Tests für Drop-Logik und Eingabesperre | 008 vollständig integrieren |
-| Kernabschluss | 009 Teamzuordnung | 010 Audio/Bewertung vorbereiten | Tests und Fehleranalyse | 009, dann 010 integrieren |
-| Abschluss | 011 Ergebnis/Reset | 013 Gerätetest | Dokumentation und Abgabevorbereitung | Muss-Kriterien vor Kann-Modul sichern |
+Erfüllt beziehungsweise bestätigt sind:
 
-Parallelisierung bedeutet hier vor allem getrennte Dateien, Assets und Tests. Gemeinsame zentrale Dateien wie App-Einstieg, Sitzungsmodell und Projektdatei sollen möglichst nur von einer Person gleichzeitig geändert werden.
+- genau ein zentrales volumetrisches Fenster,
+- kein zweites Fenster oder Volume,
+- kein Immersive Space,
+- eine stabile strukturelle Grundlage für den späteren linearen Ablauf.
 
-## Änderungsvorschläge — ausdrücklich nicht stillschweigend übernommen
+Noch offen ist die vollständige Zustandsfolge:
 
-| ID | Vorschlag | Begründung | Status |
-|---|---|---|---|
-| V-01 | Für widersprüchliche Aussagen gilt: Projektbeschreibung, SPEC und Akzeptanzkriterien bestimmen den Funktionsumfang; der Start-Prompt bestimmt Arbeitsweise und den beschriebenen Ausgangsstand. | Der Start-Prompt nennt eine englische UI, Window plus Volume, Monster-Austausch in Modul 011 und Branding in Modul 012. Dies widerspricht der aktuellen SPEC mit deutscher UI, genau einem zentralen Volume, Monster-Modul 005 und optionaler Monsterreaktion in Modul 012. | Für die initialen Dokumente angewendet; keine SPEC-Anforderung geändert. |
-| V-02 | AK-05 in Modul 001 nur als strukturellen Teilnachweis behandeln; vollständige Abnahme erst in Modul 013. | Modul 001 kann ein einziges Volume und die Navigationsgrundlage schaffen, aber noch nicht den vollständigen Ablauf mit allen späteren Phasen durchspielen. | Dokumentationspräzisierung; Modul-Zuordnung der SPEC bleibt formal unverändert. |
-| V-03 | Optionales Modul 012 erst nach erfolgreichem Muss-Integrationstest 013 durchführen oder nur bei gesichertem Zeitpuffer beginnen. | F-17 ist nicht abgabekritisch. Eine Animation darf die Stabilisierung von F-01 bis F-16 nicht verzögern. | Empfehlung, noch keine Änderung der verbindlichen Reihenfolge. |
-| V-04 | Asset-Erstellung aus Modul 005 parallel zu 002 und 003 vorbereiten, die endgültige Integration aber erst nach Erfüllung der Abhängigkeiten abschließen. | Blender-Arbeit blockiert keine Swift-Datenmodelle; frühe Asset-Prototypen reduzieren das Risiko für 006 und 007. | Parallelisierungsvorschlag, keine Moduländerung. |
+`Start → Untersuchen → Priorisieren → Team zuordnen → nächstes Ticket → Ergebnis`
+
+Diese Phasen werden in den Folgemodulen implementiert und in Modul 013 vollständig als Integration geprüft.
 
 ## Schnittstellen-Register
 
-Noch keine Schnittstellen aus abgeschlossenen Modulen vorhanden.
+| Bereitgestellt von | Typ / Methode | Datei | Zweck |
+|---|---|---|---|
+| 001 | `Ticket_TamerApp` | `Ticket_Tamer/App/Ticket_TamerApp.swift` | App- und Scene-Einstieg mit genau einer volumetrischen Scene |
+| 001 | `RootVolumeView` | `Ticket_Tamer/Views/RootVolumeView.swift` | minimale SwiftUI-Root-Oberfläche im zentralen Volume |
+| 001 | `DebugManager` | `Ticket_Tamer/Debug/DebugManager.swift` | zentrale kategorisierte Debug-Steuerung |
+| 001 | `DebugManager.Category` | `Ticket_Tamer/Debug/DebugManager.swift` | Kategorien `lifecycle`, `input`, `physics`, `spawning`, `state`, `audio` |
+| 001 | `DebugManager.log(_:_:function:)` | `Ticket_Tamer/Debug/DebugManager.swift` | kategorisierte Debug-Ausgabe |
+| 001 | `DebugManager.toggle(_:)` | `Ticket_Tamer/Debug/DebugManager.swift` | Laufzeit-Umschaltung einer Debug-Kategorie |
+| 001 | `DebugPanel` | `Ticket_Tamer/Debug/DebugManager.swift` | optionales Debug-Panel; nicht Teil des regulären Nutzerablaufs |
+| 001 | `LayoutConstants` | `Ticket_Tamer/Support/AppConstants.swift` | zentrale Layout- und Volume-Maße |
+| 001 | `GameplayConstants` | `Ticket_Tamer/Support/AppConstants.swift` | Ticketanzahl-Grenzen und Standardwert |
+| 001 | `AssetKeys` | `Ticket_Tamer/Support/AppConstants.swift` | Schlüssel für vorhandene lokale Ressourcen |
 
-| Bereitgestellt von | Typ / Methode | Zweck |
-|---|---|---|
-| – | – | Vor Modul 001 ist keine implementierte Projektschnittstelle bestätigt. |
+## Zentrale Konstanten
 
-### Bereitgestellte, noch nicht integrierte Vorlage
+### `LayoutConstants`
 
-- `DebugManager.swift` ist als externe Vorlage vorhanden. Die Vorlage bietet kategorisiertes Logging mit den Kategorien `lifecycle`, `input`, `physics`, `spawning`, `state` und `audio`. Erst Modul 001 darf sie kontrolliert in das Xcode-Projekt integrieren.
+- `centralVolumeWidth = 0.8`
+- `centralVolumeHeight = 0.6`
+- `centralVolumeDepth = 0.4`
+- `rootPadding = 32.0`
+- `rootSpacing = 24.0`
+- `textSpacing = 8.0`
+- `modelBottomPadding = 24.0`
+
+### `GameplayConstants`
+
+- `minimumTicketCount = 1`
+- `maximumTicketCount = 12`
+- `defaultTicketCount = 6`
+
+### `AssetKeys`
+
+- `defaultRealityKitScene = "Scene"`
+
+`BalancingConstants` wurde bewusst noch nicht angelegt, weil Modul 001 keine Bewertungs-, Audio- oder automatische Übergangslogik enthält.
+
+## DebugManager
+
+- Aktive Datei: `Ticket_Tamer/Debug/DebugManager.swift`
+- Aktive Kategorien: `lifecycle`, `input`, `physics`, `spawning`, `state`, `audio`
+- Neue Kategorie in Modul 001: keine
+- Logging in Modul 001:
+  - App-Einstieg in `Ticket_TamerApp.init()`
+  - Anzeigen des zentralen Volumes in `RootVolumeView.onAppear`
+- Das optionale `DebugPanel` ist nicht Teil des regulären Nutzerablaufs.
+- Gegenüber der Vorlage wurde die Nachricht innerhalb von `DebugManager.log` einmalig aufgelöst, bevor sie an `logger.debug` übergeben wird. Dadurch wurde der Buildfehler zur nicht-escaping Autoclosure behoben, ohne die öffentliche Signatur zu ändern.
+- Im Projekt existiert genau eine aktive `DebugManager.swift`.
 
 ## Entscheidungs-Log
 
 | Datum | Entscheidung | Begründung |
 |---|---|---|
-| 2026-07-15 | Die Dokumentationsstruktur unter `Dokumentation/` wird verbindlich festgelegt. | Eingangsprompts, Reports, aktueller Stand und Abgabeunterlagen müssen dauerhaft eindeutig auffindbar sein. |
-| 2026-07-15 | Die interne Swift-/Xcode-Ordnerstruktur wird vor Modul 001 nicht als Ist-Zustand festgeschrieben. | Das vorhandene Projekt muss zuerst analysiert werden; bestehende Dateien und Target-Zugehörigkeiten dürfen nicht erfunden werden. |
-| 2026-07-15 | Code-Wahrheitsstand ist ausschließlich das aktuelle Xcode-Projekt plus Git. | Der Projektraum soll keine alten oder doppelten Codekopien enthalten. |
-| 2026-07-15 | `Logbuch-Stand.md` und `Projekt-Stand.md` existieren jeweils nur einmal als aktueller Stand und werden ersetzt. | Dadurch bleiben Übergaben für neue Chats eindeutig und frei von Altständen. |
-| 2026-07-15 | Bei Scope-Widersprüchen haben Projektbeschreibung, SPEC und Akzeptanzkriterien Vorrang vor abweichenden technischen Stichpunkten im Start-Prompt. | Die drei Kontextdokumente sind konsistent und definieren den aktuellen Scope; der Start-Prompt verweist selbst auf die SPEC als verbindliche Modul-Landkarte. |
-| 2026-07-15 | Sichtbare App-Texte sind Deutsch. Eine mögliche String-Catalog-Grundlage darf dies nicht in eine englische UI ändern. | F-01, nicht-funktionale Sprachvorgabe und Projektbeschreibung verlangen Deutsch. |
-| 2026-07-15 | Modul 001 darf keine Ticketlogik, Monster-Pipeline, Interaktionsmechanik oder Bewertung aus späteren Modulen vorwegnehmen. | Die Architektur soll einfach bleiben und Merge-Konflikte durch klar abgegrenzte Module reduzieren. |
+| 2026-07-15 | Die Dokumentationsstruktur unter `Dokumentation/00_Projektsteuerung/` bis `Dokumentation/05_Aktueller-Stand/` ist der aktuelle verbindliche Ablageort. | Die Unterlagen wurden in diese Struktur verschoben und sollen dort eindeutig fortgeführt werden. |
+| 2026-07-15 | `Logbuch-Stand.md` und `Projekt-Stand.md` existieren jeweils genau einmal unter `Dokumentation/05_Aktueller-Stand/` und werden nach jedem Modul ersetzt. | Der Projektraum soll nur einen aktuellen Wahrheitsstand enthalten; Historie liegt in Git. |
+| 2026-07-15 | Das Projekt verwendet genau eine volumetrische `WindowGroup` als zentrale App-Szene. | Dies erfüllt die technische Grundvoraussetzung für F-05 und vermeidet ein zweites Fenster, zweites Volume oder einen Immersive Space. |
+| 2026-07-15 | Die frühere Default-`ContentView` ist nicht mehr Bestandteil des aktiven Projektbaums beziehungsweise App-Einstiegs. | `RootVolumeView` übernimmt die minimale Root-Oberfläche des zentralen Volumes. |
+| 2026-07-15 | Die Scene-Rolle in `Info.plist` ist `UIWindowSceneSessionRoleVolumetricApplication`. | Diese Konfiguration ist für den bestätigten volumetrischen Simulatorstart erforderlich. |
+| 2026-07-15 | `BalancingConstants` wird erst in einem fachlich passenden Folgemodul angelegt. | Leere oder künstliche Strukturen ohne aktuell benötigte Werte werden vermieden. |
+| 2026-07-15 | Modul 002 bearbeitet ausschließlich Ticketdatentypen und den lokalen Katalog. | Sitzungszustand, Zufallsauswahl, Index und Reset gehören verbindlich zu Modul 003. |
+| 2026-07-15 | Der Test-Target und die bestehende Suite bleiben Grundlage für weitere Swift-Testing-Tests. | Modul 001 hat einen erfolgreichen Smoke-Test auf `arm64-apple-xros1.0-simulator` bestätigt. |
 
 ## Offene Punkte / Risiken
 
-- [ ] Modul 001 muss den tatsächlichen Dateibaum, die Xcode-Gruppen, physischen Ordner, Target-Namen und Target-Mitgliedschaften prüfen.
-- [ ] Der aktuelle App-Einstieg mit `WindowGroup { ContentView() }` muss kontrolliert an die verbindliche Ein-Volume-Anforderung angepasst werden.
-- [ ] Die zwölf konkreten Ticketinhalte müssen in Modul 002 erstellt und fachlich auf eindeutige Priorität und Teamzuordnung geprüft werden.
-- [ ] Namen, Stil, Polygonbudget und Exportparameter der vier Monster sind offen.
-- [ ] Erfolgssound, Fehlersound, Rechte und Lautstärke müssen festgelegt und auf dem Gerät geprüft werden.
-- [ ] Zugriff und Zeitfenster für Apple-Vision-Pro-Tests müssen frühzeitig gesichert werden.
-- [ ] Die Entscheidung über F-17 bleibt offen; das Kann-Modul darf Muss-Funktionen nicht gefährden.
-- [ ] Die endgültige Aufteilung auf drei Entwickler und Regeln für gemeinsame Dateien müssen vor parallelen Branches festgelegt werden.
-- [ ] Xcode-Projektdateien können bei parallelen Gruppen-/Target-Änderungen Merge-Konflikte erzeugen; Strukturänderungen deshalb zentral in Modul 001 durchführen.
+### Unmittelbar zu ergänzen
+
+- [ ] Tatsächlichen Commit-Hash für Modul 001 eintragen.
+- [ ] Merge-Status des Branches `feature/001-project-foundation` in `main` eintragen.
+
+### Projektweite offene Punkte
+
+- [ ] Die zwölf konkreten Ticketinhalte in Modul 002 erstellen und fachlich auf eindeutige Priorität und Teamzuordnung prüfen.
+- [ ] Namen, Stil, Polygonbudget und Exportparameter der vier Monster festlegen.
+- [ ] Erfolgssound, Fehlersound, Rechte und Lautstärke festlegen und später auf Apple Vision Pro prüfen.
+- [ ] Zugriff und Zeitfenster für echte Apple-Vision-Pro-Tests sichern.
+- [ ] Entscheidung über F-17 erst nach Absicherung aller Muss-Funktionen treffen.
+- [ ] Konfliktanfällige Dateien koordiniert bearbeiten: `Ticket_Tamer.xcodeproj/project.pbxproj`, `Ticket_Tamer/App/Ticket_TamerApp.swift` und `Ticket_Tamer/Support/AppConstants.swift`.
+- [ ] Vollständige AK-05-Abnahme erst in Modul 013 durchführen.
+
+### Technischer Stand aus Modul 001
+
+Es bestehen keine offenen technischen Probleme aus Modul 001. Die Prüfung auf echter Apple Vision Pro ist weiterhin eine spätere Integrations- und Abnahmeaufgabe, aber kein Fehler des abgeschlossenen Moduls.
 
 ## Chronik
 
-Noch kein Modul abgeschlossen.
+### Modul 001 — Projektgrundgerüst und zentrales Volume
 
-### Initialisierung — 2026-07-15
+Das visionOS-Default-Projekt wurde in ein kleines, buildfähiges Grundgerüst mit genau einem zentralen volumetrischen Fenster überführt. `Ticket_TamerApp` startet `RootVolumeView`; die deutsche Grundansicht zeigt die vorhandene RealityKit-Standardszene. DebugManager, zentrale Layout-/Gameplay-/Asset-Konstanten, String Catalog und ein Swift-Testing-Smoke-Test wurden eingerichtet.
 
-Die Projektunterlagen, Vorlagen, der beschriebene Xcode-Ausgangsstand und die DebugManager-Vorlage wurden geprüft. Die Dokumentationsstruktur wurde festgelegt, die Modul-Landkarte bewertet und widersprüchliche ältere Angaben im Start-Prompt wurden als dokumentierte Abweichungen erfasst. Als nächster Schritt wird Modul 001 mit Analyse des realen Xcode-Projekts, Einrichtung einer einfachen Struktur, Integration des DebugManagers und Absicherung eines einzigen zentralen Volumes beauftragt.
+Build und Simulatorstart waren erfolgreich. Die Suite `TicketTamerTests` bestand auf `arm64-apple-xros1.0-simulator` mit 1 von 1 Tests. AK-05 ist strukturell teilweise erfüllt; die vollständige lineare Sitzung bleibt bis zu den Folgemodulen und Modul 013 offen.
 
 ## Nächster Schritt
 
-`001-Eingangsprompt.md` in einen neuen Modul-Chat geben. Nach Abschluss ausschließlich den vollständigen `001-Report.md`, den Git-Commit beziehungsweise Hash sowie den tatsächlich aktualisierten Dateibaum an dieses Projektlogbuch zurückgeben.
+`002-Eingangsprompt.md` in einen neuen Modul-Chat geben. Modul 002 darf ausschließlich das Ticketdatenmodell, die benötigten Enumerationen und genau zwölf lokale Ticketdatensätze umsetzen. Sitzungszustand, Zufallsauswahl, Ticketindex, Punkte, Reset und Views bleiben ausgeschlossen.

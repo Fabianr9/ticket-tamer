@@ -1,0 +1,173 @@
+import Foundation
+import Observation
+
+// MARK: - Session Model
+
+/// Zentraler, ausschließlich im Arbeitsspeicher gehaltener Sitzungszustand.
+///
+/// Dies ist die **einzige** Quelle der Wahrheit für den aktuellen Spielzustand (SPEC F-04, F-16).
+/// Keine zweite, parallele Datenstruktur darf denselben Zustand abbilden.
+///
+/// Alle Felder sind `private(set)` – Folgemodule mutieren den Zustand ausschließlich
+/// über die bereitgestellten Methoden.
+@Observable
+@MainActor
+final class SessionModel {
+
+    // MARK: - Sitzungsfelder
+
+    /// Gewählte Ticketanzahl für die nächste Sitzung.
+    ///
+    /// Liegt immer im Bereich `GameplayConstants.minimumTicketCount...GameplayConstants.maximumTicketCount`.
+    /// Setzen über `setTicketCount(_:)` – nicht direkt, um den Gültigkeitsbereich zu erzwingen.
+    private(set) var selectedTicketCount: Int = GameplayConstants.defaultTicketCount
+
+    /// Die zufällig ausgewählten Tickets der laufenden Sitzung.
+    ///
+    /// Leer vor dem ersten `startSession()`-Aufruf und nach jedem `reset()`.
+    private(set) var sessionTickets: [Ticket] = []
+
+    /// Index des aktuell betrachteten Tickets innerhalb von `sessionTickets`.
+    ///
+    /// Startet beim Sitzungsbeginn bei 0. Am Ende der Liste bleibt der Index beim
+    /// letzten gültigen Index (Klemm-Semantik, kein Wrap-around, kein Überlauf).
+    private(set) var currentTicketIndex: Int = 0
+
+    /// Aktuelle Spielphase laut SPEC-Phasendefinition.
+    ///
+    /// Startet bei `.start`, wechselt beim Sitzungsbeginn auf `.untersuchen` und
+    /// kehrt nach einem Reset zu `.start` zurück.
+    private(set) var currentPhase: GamePhase = .start
+
+    /// Punktestand der laufenden Sitzung.
+    ///
+    /// Wird in diesem Modul noch nicht vergeben; Bewertungslogik folgt ab Modul 006.
+    /// Vorhanden, weil der vollständige Reset auf 0 einen klaren Startwert benötigt.
+    private(set) var score: Int = 0
+
+    /// Vom Spieler gewählte Priorität für das aktuelle Ticket.
+    ///
+    /// `nil`, solange keine Prioritätswahl getroffen wurde oder nach einem Reset.
+    private(set) var selectedPriority: TicketPriority? = nil
+
+    /// Vom Spieler gewähltes Support-Team für das aktuelle Ticket.
+    ///
+    /// `nil`, solange keine Teamwahl getroffen wurde oder nach einem Reset.
+    private(set) var selectedTeam: SupportTeam? = nil
+
+    /// Gibt an, ob Eingaben momentan gesperrt sind (z. B. während eines Übergangsanimation).
+    ///
+    /// Vorhanden, weil AK-16 einen vollständigen Reset der Eingabesperre verlangt.
+    /// Das tatsächliche Sperren und Entsperren folgt in späteren Modulen.
+    private(set) var isInputLocked: Bool = false
+
+    // MARK: - Init
+
+    init() {}
+
+    // MARK: - Ticketanzahl
+
+    /// Setzt die gewünschte Ticketanzahl für die nächste Sitzung.
+    ///
+    /// Technisch ungültige Werte (< 1 oder > 12) werden defensiv auf den erlaubten Bereich begrenzt,
+    /// damit keine Sitzung mit zu wenigen oder zu vielen Tickets entstehen kann (SPEC F-04).
+    /// Die sichtbare Reglerbindung gehört erst zu Modul 004.
+    ///
+    /// - Parameter count: Gewünschte Anzahl. Werte außerhalb von 1–12 werden begrenzt.
+    func setTicketCount(_ count: Int) {
+        // Explizites Klemmen statt Magic Numbers: Grenzen kommen aus GameplayConstants.
+        let clamped = max(
+            GameplayConstants.minimumTicketCount,
+            min(count, GameplayConstants.maximumTicketCount)
+        )
+        selectedTicketCount = clamped
+        DebugManager.log(.state, "Ticketanzahl gesetzt: \(clamped)")
+    }
+
+    // MARK: - Sitzungsstart
+
+    /// Startet eine neue Sitzung mit der aktuell gewählten Ticketanzahl (SPEC F-04, AK-04).
+    ///
+    /// Ablauf:
+    /// 1. `LocalTicketCatalog.allTickets` wird über `shuffle` gemischt.
+    /// 2. Die ersten `selectedTicketCount` Einträge des Ergebnisses werden übernommen.
+    /// 3. Index, Phase, Punkte, Entscheidungen und Eingabesperre werden zurückgesetzt.
+    ///
+    /// Da `shuffle` als Parameter übergeben wird, können Tests eine deterministische
+    /// Funktion injizieren, ohne komplexe Abhängigkeiten einzuführen.
+    /// Diese minimale Testnaht ist die einzige Abweichung vom sonst direkten Methodenstil.
+    ///
+    /// - Parameter shuffle: Funktion, die `[Ticket]` mischt und zurückgibt.
+    ///   Standard ist echter Zufall via `Array.shuffled()`.
+    func startSession(using shuffle: ([Ticket]) -> [Ticket] = { $0.shuffled() }) {
+        let shuffled = shuffle(LocalTicketCatalog.allTickets)
+        // Defensiv begrenzen: sollte der Katalog je kleiner als selectedTicketCount sein,
+        // entstehen keine ungültigen Array-Zugriffe.
+        let count = min(selectedTicketCount, shuffled.count)
+        sessionTickets = Array(shuffled.prefix(count))
+        currentTicketIndex = 0
+        currentPhase = .untersuchen
+        score = 0
+        selectedPriority = nil
+        selectedTeam = nil
+        isInputLocked = false
+        DebugManager.log(.state, "Sitzung gestartet: \(count) Ticket(s), Phase: untersuchen")
+    }
+
+    // MARK: - Ticketzugriff
+
+    /// Das aktuell betrachtete Ticket oder `nil`, wenn keine Sitzung aktiv ist
+    /// oder der Index außerhalb der Grenzen liegt.
+    ///
+    /// Greift nie mit einem ungültigen Index auf `sessionTickets` zu.
+    var currentTicket: Ticket? {
+        guard !sessionTickets.isEmpty,
+              sessionTickets.indices.contains(currentTicketIndex) else {
+            return nil
+        }
+        return sessionTickets[currentTicketIndex]
+    }
+
+    // MARK: - Indexfortschaltung
+
+    /// Schaltet auf das nächste Ticket weiter.
+    ///
+    /// **Endsemantik (Klemm-Semantik):** Ist `currentTicketIndex` bereits beim letzten Ticket,
+    /// bleibt er dort stehen – kein Wrap-around, kein Überlauf, kein Absturz.
+    /// Die aufrufende Schicht (ab Modul 006) entscheidet, ob ein Phasenwechsel folgt.
+    /// Eine Indexfortschaltung bei leerer Sitzung ist ein No-Op.
+    func advanceToNextTicket() {
+        guard !sessionTickets.isEmpty else { return }
+        let lastIndex = sessionTickets.count - 1
+        if currentTicketIndex < lastIndex {
+            currentTicketIndex += 1
+            DebugManager.log(.state, "Ticketindex vorgerückt: \(currentTicketIndex)")
+        } else {
+            // An letzter Position: kein Wrap-around. Dokumentierte Klemm-Semantik.
+            DebugManager.log(.state, "Ticketindex an letzter Position (\(currentTicketIndex)), kein Vorruecken")
+        }
+    }
+
+    // MARK: - Reset
+
+    /// Setzt den gesamten Modellzustand auf die definierten Startwerte zurück (SPEC F-16, AK-16 Modellanteil).
+    ///
+    /// Funktioniert unabhängig davon, in welchem Zustand sich die Sitzung befindet,
+    /// und hinterlässt nach beliebig vielen aufeinanderfolgenden Aufrufen keinen Zustand
+    /// aus früheren Sitzungen.
+    ///
+    /// Noch nicht Teil von Modul 003: der sichtbare Wechsel zur Startansicht,
+    /// die Schaltfläche „Erneut spielen" und der sichtbare Reglerwert.
+    /// Diese UI-Anteile werden in Modul 004 und Modul 011 umgesetzt.
+    func reset() {
+        selectedTicketCount = GameplayConstants.defaultTicketCount  // auf 6 zurücksetzen
+        sessionTickets = []
+        currentTicketIndex = 0
+        currentPhase = .start
+        score = 0
+        selectedPriority = nil
+        selectedTeam = nil
+        isInputLocked = false
+        DebugManager.log(.state, "Sitzungsmodell zurueckgesetzt auf Startwerte")
+    }
+}

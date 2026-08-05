@@ -1,43 +1,48 @@
 # Projekt-Stand — Ticket Tamer
 
-> Aktuelle Landkarte des bestätigten Codes und der bekannten Projektbestandteile. Nach jedem Modul wird dieses Dokument vollständig neu erzeugt und unter `Dokumentation/05_Aktueller-Stand/Projekt-Stand.md` ersetzt. Die Code-Historie liegt ausschließlich in Git.
+> Aktuelle Landkarte des bestätigten beziehungsweise durch Modul-Reports gemeldeten Codes. Nach jedem Modul wird dieses Dokument vollständig neu erzeugt und unter `Dokumentation/05_Aktueller-Stand/Projekt-Stand.md` ersetzt. Die Code-Historie liegt ausschließlich in Git.
 
-**Stand:** nach Modul `001` — Projektgrundgerüst und zentrales Volume  
-**Datum:** 2026-07-15  
-**Branch:** `feature/001-project-foundation`  
-**Git-Commit:** `[COMMIT-HASH EINTRAGEN]` — noch nicht eingetragen  
-**Merge in `main`:** `[JA / NOCH NICHT]` — noch nicht angegeben  
-**Build:** erfolgreich  
-**Simulatorstart:** erfolgreich  
-**Tests:** 1 von 1 bestanden
+**Stand:** nach Modul `002` — Ticketdatenmodell und lokaler Katalog  
+**Eingearbeitet am:** 2026-08-05  
+**Modul-002-Commit:** nicht bekannt  
+**Modul-002-Branch:** nicht angegeben  
+**Merge in `main`:** nicht angegeben
 
-## Bestätigter Abschlusszustand
+## Verifikationsstatus
 
-- genau ein zentrales volumetrisches Fenster,
-- kein zweites Fenster,
-- kein zweites Volume,
-- kein Immersive Space,
-- deutsche Basistexte werden korrekt angezeigt,
-- vorhandene RealityKit-Standardszene wird angezeigt,
-- Swift-Testing-Suite `TicketTamerTests` erfolgreich,
-- Testplattform `arm64-apple-xros1.0-simulator`,
-- keine wesentlichen Abweichungen vom Modulauftrag,
-- keine offenen technischen Probleme aus Modul 001.
+### Zuletzt vollständig bestätigter Lauf
 
-AK-05 ist nur strukturell teilweise erfüllt. Die vollständige lineare Sitzungsfolge wird erst durch spätere Module implementiert und in Modul 013 vollständig abgenommen.
+Für Modul 001 waren App-Build, visionOS-Simulatorstart und 1 von 1 Tests auf `arm64-apple-xros1.0-simulator` erfolgreich bestätigt.
 
-## Repository- und Dokumentationsstruktur
+### Stand nach Modul 002
+
+Der Modul-Report beschreibt zwei neue Swift-Dateien und sechs zusätzliche Testfälle. Ein tatsächlich ausgeführter App-Build und Testlauf nach diesen Änderungen ist nicht dokumentiert. Deshalb gilt:
+
+- Datenmodell und Katalog: implementiert gemeldet,
+- Testcode: implementiert gemeldet,
+- Kompilierung des aktuellen Stands: offen,
+- Ausführung der gesamten Test-Suite: offen,
+- endgültige Erfüllung von AK-02 und AK-03: bis zur erfolgreichen Verifikation offen.
+
+## Aktueller Repository- und Dokumentationsbaum
 
 ```text
 Ticket-Tamer/
+├─ .DS_Store                                  # unerwünschte macOS-Metadatei; laut Report geändert
 ├─ Ticket_Tamer/
+│  ├─ .DS_Store                               # unerwünschte macOS-Metadatei; laut Report neu
 │  ├─ Ticket_Tamer.xcodeproj/
 │  │  └─ project.pbxproj
 │  ├─ Ticket_Tamer/
+│  │  ├─ .DS_Store                            # unerwünschte macOS-Metadatei; laut Report neu
 │  │  ├─ App/
 │  │  │  └─ Ticket_TamerApp.swift
+│  │  ├─ Data/
+│  │  │  └─ LocalTicketCatalog.swift          # neu in 002
 │  │  ├─ Debug/
 │  │  │  └─ DebugManager.swift
+│  │  ├─ Models/
+│  │  │  └─ Ticket.swift                      # neu in 002
 │  │  ├─ Resources/
 │  │  │  └─ Localizable.xcstrings
 │  │  ├─ Support/
@@ -47,7 +52,7 @@ Ticket-Tamer/
 │  │  ├─ Assets.xcassets
 │  │  └─ Info.plist
 │  ├─ Ticket_TamerTests/
-│  │  └─ Ticket_TamerTests.swift
+│  │  └─ Ticket_TamerTests.swift              # in 002 um sechs Tests ergänzt
 │  ├─ Packages/
 │  │  └─ RealityKitContent/
 │  │     ├─ README.md
@@ -60,7 +65,7 @@ Ticket-Tamer/
 │  │              ├─ Scene.usda
 │  │              └─ Materials/
 │  │                 └─ GridMaterial.usda
-│  └─ Products/                         # Xcode-Buildproduktgruppe, nicht als Quellcode behandeln
+│  └─ Products/                               # Xcode-Buildproduktgruppe
 │     ├─ Ticket_Tamer.app
 │     └─ Ticket_TamerTests.xctest
 │
@@ -77,59 +82,84 @@ Ticket-Tamer/
    │  ├─ Projekt-Stand-Vorlage.md
    │  ├─ Modul-Eingangsprompt-Vorlage.md
    │  ├─ Modul-Report-Vorlage.md
-   │  └─ DebugManager.swift             # nur falls die ursprüngliche Vorlage weiterhin dokumentarisch aufbewahrt wird
+   │  └─ DebugManager.swift                   # nur Dokumentationsvorlage, falls dort bewusst aufbewahrt
    ├─ 03_Modul-Eingangsprompts/
    │  ├─ 001-Eingangsprompt.md
-   │  └─ 002-Eingangsprompt.md
+   │  ├─ 002-Eingangsprompt.md
+   │  └─ 003-Eingangsprompt.md
    ├─ 04_Modul-Reports/
-   │  └─ 001-Report.md
+   │  ├─ 001-Report.md
+   │  └─ 002-Report.md
    └─ 05_Aktueller-Stand/
       ├─ Logbuch-Stand.md
       └─ Projekt-Stand.md
 ```
 
-## Hinweise zum Dateibaum
-
-- Der Codebaum entspricht dem im `001-Report.md` bestätigten Stand.
-- `Products/` ist eine Xcode-Buildproduktgruppe und kein fachlicher Quellcodeordner.
-- Die frühere Default-`ContentView` ist im aktuellen Projektbaum nicht mehr vorhanden beziehungsweise nicht mehr Teil des aktiven App-Einstiegs.
-- Im aktiven Code existiert genau eine `DebugManager.swift` unter `Ticket_Tamer/Debug/`.
-- Eine frühere separate DebugManager-Vorlage existiert laut Modulreport nicht mehr im Repository-Stamm. Falls sie zu Dokumentationszwecken unter `Dokumentation/02_Vorlagen/` aufbewahrt wird, darf sie nicht dem App-Target zugeordnet sein und nicht als zweite aktive Codekopie gelten.
-- Es gibt keine parallelen `New`-, `Old`-, `Copy`- oder `Backup`-Dateien.
-
 ## Dateien und Zweck
 
 | Datei | Zweck | Status | Seit Modul |
 |---|---|---|---|
-| `Ticket_Tamer/Ticket_Tamer.xcodeproj/project.pbxproj` | Xcode-Projektstruktur und Dateieinbindung über synchronisierte Projektgruppen | geändert, buildfähig | 001 |
-| `Ticket_Tamer/Ticket_Tamer/App/Ticket_TamerApp.swift` | App- und Scene-Einstieg mit genau einer volumetrischen `WindowGroup` | aktiv | 001 |
-| `Ticket_Tamer/Ticket_Tamer/Views/RootVolumeView.swift` | minimale deutsche Root-Oberfläche im zentralen Volume; zeigt RealityKit-Standardszene | aktiv | 001 |
-| `Ticket_Tamer/Ticket_Tamer/Debug/DebugManager.swift` | zentrale kategorisierte Debug-Steuerung und optionales Debug-Panel | aktiv | 001 |
-| `Ticket_Tamer/Ticket_Tamer/Support/AppConstants.swift` | zentrale Layout-, Ticketanzahl- und Asset-Konstanten | aktiv | 001 |
-| `Ticket_Tamer/Ticket_Tamer/Resources/Localizable.xcstrings` | deutsche Lokalisierungsgrundlage für sichtbare Basistexte | aktiv | 001 |
-| `Ticket_Tamer/Ticket_Tamer/Info.plist` | Scene-Konfiguration mit volumetrischer Anwendungsrolle | aktiv | 001 |
-| `Ticket_Tamer/Ticket_Tamer/Assets.xcassets` | Asset-Katalog des App-Targets | vorhanden | Ausgangsprojekt |
-| `Ticket_Tamer/Ticket_TamerTests/Ticket_TamerTests.swift` | Swift-Testing-Smoke-Test für positive Maße des zentralen Volumes | aktiv; 1 Test bestanden | 001 |
-| `Ticket_Tamer/Packages/RealityKitContent/Package.swift` | Package-Definition für RealityKitContent | vorhanden | Ausgangsprojekt |
+| `Ticket_Tamer/Ticket_Tamer.xcodeproj/project.pbxproj` | Xcode-Projektstruktur und Dateieinbindung | zuletzt in 001 geändert; Änderung in 002 nicht gemeldet | 001 |
+| `Ticket_Tamer/Ticket_Tamer/App/Ticket_TamerApp.swift` | App-Einstieg mit genau einer volumetrischen `WindowGroup` | aktiv | 001 |
+| `Ticket_Tamer/Ticket_Tamer/Views/RootVolumeView.swift` | minimale deutsche Root-Oberfläche mit RealityKit-Standardszene | aktiv | 001 |
+| `Ticket_Tamer/Ticket_Tamer/Models/Ticket.swift` | `TicketPriority`, `SupportTeam` und fachliches `Ticket`-Modell | neu gemeldet | 002 |
+| `Ticket_Tamer/Ticket_Tamer/Data/LocalTicketCatalog.swift` | statischer lokaler Katalog mit genau zwölf Tickets | neu gemeldet | 002 |
+| `Ticket_Tamer/Ticket_Tamer/Debug/DebugManager.swift` | zentrale kategorisierte Debug-Steuerung | aktiv | 001 |
+| `Ticket_Tamer/Ticket_Tamer/Support/AppConstants.swift` | Layout-, Ticketanzahl- und Asset-Konstanten | aktiv | 001 |
+| `Ticket_Tamer/Ticket_Tamer/Resources/Localizable.xcstrings` | deutsche Lokalisierungsgrundlage | aktiv | 001 |
+| `Ticket_Tamer/Ticket_Tamer/Info.plist` | volumetrische Scene-Rolle | aktiv | 001 |
+| `Ticket_Tamer/Ticket_Tamer/Assets.xcassets` | Asset-Katalog | vorhanden | Ausgangsprojekt |
+| `Ticket_Tamer/Ticket_TamerTests/Ticket_TamerTests.swift` | Smoke-Test aus 001 und laut Report sechs zusätzliche Modell-/Katalogtests | ergänzt; Ausführung nach 002 offen | 001/002 |
+| `Ticket_Tamer/Packages/RealityKitContent/Package.swift` | Package-Definition | vorhanden | Ausgangsprojekt |
 | `Ticket_Tamer/Packages/RealityKitContent/Package.realitycomposerpro` | Reality-Composer-Pro-Projekt | vorhanden | Ausgangsprojekt |
-| `Ticket_Tamer/Packages/RealityKitContent/Sources/RealityKitContent/RealityKitContent.swift` | Package-Schnittstelle für RealityKit-Inhalte | vorhanden | Ausgangsprojekt |
-| `Ticket_Tamer/Packages/RealityKitContent/Sources/RealityKitContent/RealityKitContent.rkassets/Scene.usda` | vorhandene RealityKit-Standardszene | vorhanden und sichtbar | Ausgangsprojekt |
+| `Ticket_Tamer/Packages/RealityKitContent/Sources/RealityKitContent/RealityKitContent.swift` | Package-Schnittstelle | vorhanden | Ausgangsprojekt |
+| `Ticket_Tamer/Packages/RealityKitContent/Sources/RealityKitContent/RealityKitContent.rkassets/Scene.usda` | RealityKit-Standardszene | vorhanden | Ausgangsprojekt |
 | `Ticket_Tamer/Packages/RealityKitContent/Sources/RealityKitContent/RealityKitContent.rkassets/Materials/GridMaterial.usda` | Material der Standardszene | vorhanden | Ausgangsprojekt |
 
-## Öffentliche Schnittstellen für Folgemodule
+## Öffentliche beziehungsweise modulinterne Schnittstellen für Folgemodule
+
+Die Typen aus Modul 002 besitzen laut Report keinen expliziten `public`-Zugriffsmodifikator. Sie sind innerhalb desselben App-Moduls verwendbar und über `@testable import` testbar.
 
 | Typ oder Methode | Datei | Zweck |
 |---|---|---|
-| `Ticket_TamerApp` | `Ticket_Tamer/Ticket_Tamer/App/Ticket_TamerApp.swift` | App-Einstieg mit genau einer volumetrischen Scene |
-| `RootVolumeView` | `Ticket_Tamer/Ticket_Tamer/Views/RootVolumeView.swift` | Root-Oberfläche innerhalb des zentralen Volumes |
+| `Ticket_TamerApp` | `Ticket_Tamer/Ticket_Tamer/App/Ticket_TamerApp.swift` | App- und Scene-Einstieg |
+| `RootVolumeView` | `Ticket_Tamer/Ticket_Tamer/Views/RootVolumeView.swift` | Root-Oberfläche im zentralen Volume |
 | `DebugManager` | `Ticket_Tamer/Ticket_Tamer/Debug/DebugManager.swift` | zentrale Debug-Steuerung |
-| `DebugManager.Category` | `Ticket_Tamer/Ticket_Tamer/Debug/DebugManager.swift` | Kategorien `lifecycle`, `input`, `physics`, `spawning`, `state`, `audio` |
+| `DebugManager.Category` | `Ticket_Tamer/Ticket_Tamer/Debug/DebugManager.swift` | `lifecycle`, `input`, `physics`, `spawning`, `state`, `audio` |
 | `DebugManager.log(_:_:function:)` | `Ticket_Tamer/Ticket_Tamer/Debug/DebugManager.swift` | kategorisierte Log-Ausgabe |
-| `DebugManager.toggle(_:)` | `Ticket_Tamer/Ticket_Tamer/Debug/DebugManager.swift` | Laufzeit-Umschaltung einer Kategorie |
-| `DebugPanel` | `Ticket_Tamer/Ticket_Tamer/Debug/DebugManager.swift` | optionales Debug-Panel; nicht Teil des regulären Nutzerablaufs |
 | `LayoutConstants` | `Ticket_Tamer/Ticket_Tamer/Support/AppConstants.swift` | Layout- und Volume-Maße |
-| `GameplayConstants` | `Ticket_Tamer/Ticket_Tamer/Support/AppConstants.swift` | Ticketanzahl-Grenzen und Standardwert |
-| `AssetKeys` | `Ticket_Tamer/Ticket_Tamer/Support/AppConstants.swift` | Schlüssel für vorhandene lokale Ressourcen |
+| `GameplayConstants` | `Ticket_Tamer/Ticket_Tamer/Support/AppConstants.swift` | Ticketanzahl-Grenzen 1 bis 12, Standardwert 6 |
+| `AssetKeys` | `Ticket_Tamer/Ticket_Tamer/Support/AppConstants.swift` | vorhandene Asset-Schlüssel |
+| `TicketPriority` | `Ticket_Tamer/Ticket_Tamer/Models/Ticket.swift` | Prioritäten `.normal`, `.wichtig`, `.kritisch` |
+| `TicketPriority.displayName: String` | `Ticket_Tamer/Ticket_Tamer/Models/Ticket.swift` | Anzeigenamen `Normal`, `Wichtig`, `Kritisch` |
+| `SupportTeam` | `Ticket_Tamer/Ticket_Tamer/Models/Ticket.swift` | Teams `.netzwerk`, `.konto`, `.software`, `.hardware` |
+| `SupportTeam.displayName: String` | `Ticket_Tamer/Ticket_Tamer/Models/Ticket.swift` | Anzeigenamen `Netzwerk`, `Konto`, `Software`, `Hardware` |
+| `Ticket` | `Ticket_Tamer/Ticket_Tamer/Models/Ticket.swift` | `Identifiable`- und `Equatable`-Ticket mit Pflichtdaten und Referenzwerten |
+| `LocalTicketCatalog.allTickets: [Ticket]` | `Ticket_Tamer/Ticket_Tamer/Data/LocalTicketCatalog.swift` | vollständiger statischer Ticketpool |
+
+## Gemeldetes Ticketmodell
+
+`Ticket` enthält laut Report:
+
+- `id`,
+- `ticketNumber`,
+- `title`,
+- `shortDescription`,
+- `userImpact`,
+- `symptoms`,
+- `referencePriority`,
+- `referenceTeam`.
+
+Die SPEC-Architekturskizze nennt zusätzlich `monsterAssetId`. Dieses Feld ist im gemeldeten Interface nicht enthalten; der Report dokumentiert dazu keine bewusste Entscheidung. Modul 003 darf das Ticketmodell nicht nebenbei erweitern. Die Abgrenzung muss spätestens vor Modul 005 entschieden und im Projektlogbuch festgehalten werden.
+
+## Gemeldeter lokaler Katalog
+
+- Schnittstelle: `LocalTicketCatalog.allTickets: [Ticket]`
+- Anzahl: genau 12 laut Report
+- Datenquelle: statisch im Code
+- externe Netzwerk-, Datei- oder API-Zugriffe: keine laut Report
+- Verteilung: jede Kombination aus 4 Teams und 3 Prioritäten genau einmal laut Report
+- einzelne Ticketnummern, Titel und Kombinationen: im Report nicht aufgelistet
 
 ## Zentrale Konstanten-Enums
 
@@ -137,9 +167,9 @@ Ticket-Tamer/
 |---|---|---|
 | `LayoutConstants` | `Ticket_Tamer/Ticket_Tamer/Support/AppConstants.swift` | Volume-Maße und Layoutabstände |
 | `GameplayConstants` | `Ticket_Tamer/Ticket_Tamer/Support/AppConstants.swift` | Minimum 1, Maximum 12, Standardwert 6 |
-| `AssetKeys` | `Ticket_Tamer/Ticket_Tamer/Support/AppConstants.swift` | Schlüssel `"Scene"` für die vorhandene RealityKit-Standardszene |
+| `AssetKeys` | `Ticket_Tamer/Ticket_Tamer/Support/AppConstants.swift` | Schlüssel `"Scene"` |
 
-### Bestätigte Werte
+### Bestätigte Werte aus Modul 001
 
 - `LayoutConstants.centralVolumeWidth = 0.8`
 - `LayoutConstants.centralVolumeHeight = 0.6`
@@ -153,70 +183,83 @@ Ticket-Tamer/
 - `GameplayConstants.defaultTicketCount = 6`
 - `AssetKeys.defaultRealityKitScene = "Scene"`
 
-`BalancingConstants` ist bewusst noch nicht vorhanden.
+`BalancingConstants` ist weiterhin nicht vorhanden.
 
 ## DebugManager-Stand
 
 - genau eine aktive Datei unter `Ticket_Tamer/Ticket_Tamer/Debug/DebugManager.swift`,
-- Kategorien: `lifecycle`, `input`, `physics`, `spawning`, `state`, `audio`,
-- Logging beim App-Einstieg und beim Anzeigen des zentralen Volumes,
-- keine neue Kategorie in Modul 001,
-- `DebugPanel` nicht im regulären Nutzerablauf,
-- Autoclosure wird vor der Logger-Interpolation einmalig aufgelöst; öffentliche Signatur unverändert.
+- Kategorien `lifecycle`, `input`, `physics`, `spawning`, `state`, `audio`,
+- Modul 002 ergänzte keine Kategorie und kein Logging,
+- `DebugPanel` bleibt außerhalb des regulären Nutzerablaufs.
 
-## Build- und Teststand
+## Teststand
 
-| Bereich | Stand |
-|---|---|
-| App-Build | erfolgreich |
-| visionOS-Simulatorstart | erfolgreich |
-| Test-Suite | `TicketTamerTests` |
-| Testdatei | `Ticket_Tamer/Ticket_TamerTests/Ticket_TamerTests.swift` |
-| Tests | 1 von 1 bestanden |
-| Bestandener Test | positive Maße des zentralen Volumes |
-| Plattform | `arm64-apple-xros1.0-simulator` |
-| Apple Vision Pro | vollständiger Gerätetest bleibt Modul 013 vorbehalten |
+### Bereits bestätigter Test aus Modul 001
+
+- positive Maße des zentralen Volumes,
+- auf `arm64-apple-xros1.0-simulator` bestanden.
+
+### In Modul 002 gemeldete neue Tests
+
+- Katalog enthält genau zwölf Tickets,
+- jede Team-/Prioritätskombination genau einmal,
+- Pflichtdaten und Symptomanzahl,
+- eindeutige IDs und Ticketnummern,
+- lokale Verfügbarkeit ohne externe Quelle,
+- ausschließlich erlaubte Enum-Fälle.
+
+Die Ausführung dieser Tests und der gesamten Suite nach Modul 002 ist nicht dokumentiert.
 
 ## Konfliktanfällige Dateien
-
-Folgende Dateien sollen bei paralleler Arbeit jeweils klar einer Person zugeordnet werden:
 
 - `Ticket_Tamer/Ticket_Tamer.xcodeproj/project.pbxproj`
 - `Ticket_Tamer/Ticket_Tamer/App/Ticket_TamerApp.swift`
 - `Ticket_Tamer/Ticket_Tamer/Support/AppConstants.swift`
+- `Ticket_Tamer/Ticket_TamerTests/Ticket_TamerTests.swift`
+- `Ticket_Tamer/Ticket_Tamer/Models/Ticket.swift`
+- `Ticket_Tamer/Ticket_Tamer/Data/LocalTicketCatalog.swift`
 
-Modul 002 soll diese Dateien nur ändern, wenn dies für die reine Ticketdatenstruktur zwingend erforderlich ist. App-Einstieg und Root-View sollen unverändert bleiben.
+Modul 003 soll App-Einstieg, Root-View, Volume-Konfiguration, Tickettexte und Katalog nicht ändern, sofern kein nachgewiesener Buildfehler aus Modul 002 dies zwingend erfordert.
 
-## Für Modul 002 vorgesehene neue Verantwortungsbereiche
+## Für Modul 003 vorgesehene neue Verantwortungsbereiche
 
-Noch nicht vorhanden und erst durch Modul 002 auf Basis des tatsächlichen Xcode-Projekts einzurichten:
+Nach Analyse des echten Projektstands darf Modul 003 einen einfachen Bereich für den zentralen Sitzungszustand einrichten, vorzugsweise unter `Models/` oder einem ebenso nachvollziehbaren bestehenden Verantwortungsbereich. Benötigt werden:
 
-- ein einfacher Bereich für fachliche Modelle, beispielsweise `Models/`,
-- ein einfacher Bereich für den lokalen Ticketkatalog, beispielsweise `Data/` oder `Catalog/`,
-- zusätzliche Swift-Testing-Tests innerhalb des vorhandenen Test-Targets.
-
-Die endgültigen Pfade müssen im `002-Report.md` als tatsächlich eingerichtet dokumentiert werden. Es sollen keine leeren Ordner und keine unnötig komplexe Datenzugriffsarchitektur entstehen.
+- zentrale, im Arbeitsspeicher gehaltene Sitzung,
+- Ticketanzahl 1 bis 12 mit Standardwert 6,
+- zufällige Auswahl aus `LocalTicketCatalog.allTickets` ohne Wiederholung,
+- sicherer aktueller Ticketindex und Zugriff auf das aktuelle Ticket,
+- Modellreset für Ticketanzahl, Sitzungstickets, Index, Phase, Punkte, Entscheidungen und Eingabesperre,
+- Tests ohne UI-Abhängigkeit.
 
 ## Nicht vorhanden und nicht vorwegzunehmen
 
-- Sitzungsmodell oder SessionState,
-- Zufallsauswahl,
-- aktuelle Sitzungstickets,
-- Ticketindex,
-- Score,
-- Eingabesperre,
-- Reset-Logik,
-- fertige Startansicht,
+- fertige Startansicht und Regler,
+- Anzeige oder Navigation der Sitzungsphasen,
+- Ticketkarte,
 - Monster-Asset-Pipeline,
-- räumliche Drag-and-Drop-Interaktion,
-- Priorisierungs- und Teamzuordnungsphase,
+- RealityKit-Interaktionen,
+- Drop-Ziele,
+- Punktebewertung,
 - Audiofeedback,
+- automatischer 1,5-Sekunden-Übergang,
 - Ergebnisansicht,
+- UI-Aktion „Erneut spielen“,
 - optionale Monsterreaktion.
 
 ## Nicht mehr vorhanden oder bewusst ersetzt
 
-- frühere Default-`ContentView` nicht mehr im aktuellen Baum beziehungsweise nicht mehr im aktiven App-Einstieg,
-- frühere Position von `Ticket_TamerApp.swift` im Projektstamm ersetzt durch `Ticket_Tamer/Ticket_Tamer/App/Ticket_TamerApp.swift`,
-- keine separate aktive `DebugManager.swift` im Repository-Stamm,
-- keine parallelen Alt-, Kopie- oder Backup-Dateien.
+- frühere Default-`ContentView` nicht mehr im aktiven Projektbaum beziehungsweise App-Einstieg,
+- frühere Position von `Ticket_TamerApp.swift` ersetzt durch `Ticket_Tamer/Ticket_Tamer/App/Ticket_TamerApp.swift`,
+- keine zweite aktive `DebugManager.swift` im Repository-Stamm,
+- keine gemeldeten parallelen `New`-, `Old`-, `Copy`- oder `Backup`-Dateien.
+
+## Unerwünschte Dateien
+
+Laut Modul-002-Report vorhanden beziehungsweise geändert:
+
+- `.DS_Store`
+- `Ticket_Tamer/.DS_Store`
+- `Ticket_Tamer/Ticket_Tamer/.DS_Store`
+
+Sie sind kein fachlicher Projektbestandteil und müssen in einem bewussten Cleanup entfernt und künftig ignoriert werden. Sie werden nicht als erforderliche Aufgabe von Modul 003 behandelt.

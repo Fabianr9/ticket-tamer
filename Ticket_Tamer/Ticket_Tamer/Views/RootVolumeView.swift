@@ -31,13 +31,10 @@ struct RootVolumeView: View {
             // Modul 006: Untersuchungsphase (F-06 / F-07)
             InvestigationView()
         case .priorisieren:
-            // Modul 008 implementiert die echte Priorisierungsansicht.
-            // Im DEBUG-Build zeigt Modul 007 den Interaktions-Testharness.
-            #if DEBUG
-            DebugInteractionHarnessView()
-            #else
-            sessionPlaceholderView
-            #endif
+            // Modul 008: Echte Priorisierungsansicht — sowohl im DEBUG- als auch im Release-Build.
+            // DebugInteractionHarnessView bleibt als Development-Datei erhalten, ist aber nicht mehr
+            // im normalen .priorisieren-Routing aktiv.
+            PrioritizationView()
         default:
             // Neutraler Platzhalter für Phasen, die in späteren Modulen implementiert werden.
             // Die vorhandene RealityKit-Standardszene bleibt als räumliches Element erhalten.

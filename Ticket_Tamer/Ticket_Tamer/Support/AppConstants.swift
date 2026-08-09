@@ -89,6 +89,36 @@ enum InteractionConstants {
     static let monsterReturnDuration: Double = 0.3
 }
 
+/// Maße und Positionen für die Priorisierungsphase (Modul 008 — F-08 / AK-08).
+enum PrioritizationConstants {
+
+    // MARK: - Monster-Startposition
+
+    /// Startposition des Monsters — unterhalb der drei Ziele, von allen drei erreichbar.
+    static let monsterStartPosition = SIMD3<Float>(0, -0.12, 0)
+
+    // MARK: - Label-Offset
+
+    /// Y-Offset des SwiftUI-Label-Attachments relativ zur Zielentity (oberhalb der Zielkugel).
+    static let labelYOffset: Float = 0.20
+
+    // MARK: - Zielpositionen
+
+    /// Position von Ziel „Normal" (links).
+    ///
+    /// Abstand zu „Wichtig": 0.32 m > 2 × `InteractionConstants.dropTargetRadius` (0.30 m).
+    /// Zielbereiche überschneiden sich nicht.
+    static let targetPositionNormal   = SIMD3<Float>(-0.32, 0.10, 0)
+
+    /// Position von Ziel „Wichtig" (Mitte).
+    static let targetPositionWichtig  = SIMD3<Float>( 0.00, 0.10, 0)
+
+    /// Position von Ziel „Kritisch" (rechts).
+    ///
+    /// Abstand zu „Wichtig": 0.32 m > 2 × `InteractionConstants.dropTargetRadius`.
+    static let targetPositionKritisch = SIMD3<Float>( 0.32, 0.10, 0)
+}
+
 /// Zentralisierte Schluessel fuer bereits vorhandene lokale Ressourcen.
 enum AssetKeys {
 

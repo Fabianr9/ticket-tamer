@@ -193,6 +193,42 @@ final class SessionModel {
         DebugManager.log(.state, "Input freigegeben (isInputLocked = false)")
     }
 
+    // MARK: - Prioritätsentscheidung (Modul 008 — F-08 / AK-08 / AK-10)
+
+    /// Speichert genau eine Prioritätsentscheidung für das aktuelle Ticket.
+    ///
+    /// Vorbedingungen (alle müssen erfüllt sein, sonst No-Op):
+    /// - `currentPhase == .priorisieren`
+    /// - `selectedPriority == nil` (noch keine Entscheidung getroffen)
+    /// - `isInputLocked == false`
+    ///
+    /// Nach erfolgreicher Speicherung:
+    /// - `selectedPriority` enthält die übergebene Priorität.
+    /// - `isInputLocked == true`.
+    /// - `score`, `selectedTeam`, `currentTicketIndex` und `currentPhase` bleiben unverändert.
+    ///
+    /// Kapselt Speicherung und Lock atomisch, damit die aufrufende View beides
+    /// nicht separat auslösen muss (verhindert Rasse zwischen Drop-Auswertung und Lock).
+    ///
+    /// - Parameter priority: Die zu speichernde Priorität.
+    func savePriority(_ priority: TicketPriority) {
+        guard currentPhase == .priorisieren else {
+            DebugManager.log(.state, "savePriority ignoriert: Phase ist \(currentPhase), erwartet .priorisieren")
+            return
+        }
+        guard selectedPriority == nil else {
+            DebugManager.log(.state, "savePriority ignoriert: Prioritaet bereits gesetzt (\(selectedPriority!.rawValue))")
+            return
+        }
+        guard !isInputLocked else {
+            DebugManager.log(.state, "savePriority ignoriert: Input bereits gesperrt")
+            return
+        }
+        selectedPriority = priority
+        lockInput()
+        DebugManager.log(.state, "Prioritaet gespeichert: \(priority.rawValue), isInputLocked=true")
+    }
+
     // MARK: - Reset
 
     /// Setzt den gesamten Modellzustand auf die definierten Startwerte zurück (SPEC F-16, AK-16 Modellanteil).

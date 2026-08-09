@@ -760,3 +760,224 @@ struct InteractionFoundationTests {
         #expect(comp.radius == InteractionConstants.dropTargetRadius)
     }
 }
+
+// MARK: - Modul 008: Priorisierungsphase
+
+/// Tests für Prioritätsspeicherung und Ziel-/Mapping-Struktur (SPEC F-08 / AK-08 / AK-10).
+///
+/// Prüft ausschließlich Modell- und Mapping-Logik ohne laufenden RealityKit-Render-Loop.
+/// RealityKit-Gesten (Hover, Pinch, Drag, Drop) sind manuell im Simulator zu prüfen (AK-08).
+@MainActor
+struct PrioritizationPhaseTests {
+
+    // MARK: - savePriority — Speicherung
+
+    @Test("Priorität .normal kann in .priorisieren gespeichert werden")
+    func priorityNormalCanBeSavedInPriorityPhase() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        model.beginPrioritizationPhase()
+        model.savePriority(.normal)
+        #expect(model.selectedPriority == .normal)
+    }
+
+    @Test("Priorität .wichtig wird korrekt gespeichert")
+    func priorityWichtigIsStoredCorrectly() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        model.beginPrioritizationPhase()
+        model.savePriority(.wichtig)
+        #expect(model.selectedPriority == .wichtig)
+    }
+
+    @Test("Priorität .kritisch wird korrekt gespeichert")
+    func priorityKritischIsStoredCorrectly() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        model.beginPrioritizationPhase()
+        model.savePriority(.kritisch)
+        #expect(model.selectedPriority == .kritisch)
+    }
+
+    @Test("Nach erster Speicherung ist isInputLocked == true")
+    func inputIsLockedAfterFirstSave() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        model.beginPrioritizationPhase()
+        #expect(model.isInputLocked == false)
+        model.savePriority(.normal)
+        #expect(model.isInputLocked == true)
+    }
+
+    @Test("Zweiter Speicherversuch wird ignoriert (genau-einmal-Semantik)")
+    func secondSaveAttemptIsIgnored() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        model.beginPrioritizationPhase()
+        model.savePriority(.normal)
+        model.savePriority(.wichtig)
+        #expect(model.selectedPriority == .normal)
+    }
+
+    @Test("Zweite Priorität überschreibt die erste nicht")
+    func secondPriorityDoesNotOverwriteFirst() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        model.beginPrioritizationPhase()
+        model.savePriority(.kritisch)
+        model.savePriority(.normal)
+        model.savePriority(.wichtig)
+        #expect(model.selectedPriority == .kritisch)
+    }
+
+    @Test("Speicherversuch außerhalb .priorisieren wird ignoriert")
+    func savePriorityOutsidePriorityPhaseIsIgnored() {
+        let model = SessionModel()
+        // Phase: .start
+        model.savePriority(.normal)
+        #expect(model.selectedPriority == nil)
+
+        // Phase: .untersuchen
+        model.startSession(using: { $0 })
+        model.savePriority(.normal)
+        #expect(model.selectedPriority == nil)
+    }
+
+    @Test("Speicherung verändert score nicht")
+    func savePriorityDoesNotChangeScore() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        model.beginPrioritizationPhase()
+        let scoreBefore = model.score
+        model.savePriority(.normal)
+        #expect(model.score == scoreBefore)
+    }
+
+    @Test("Speicherung verändert selectedTeam nicht")
+    func savePriorityDoesNotChangeSelectedTeam() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        model.beginPrioritizationPhase()
+        model.savePriority(.normal)
+        #expect(model.selectedTeam == nil)
+    }
+
+    @Test("Speicherung verändert currentTicketIndex nicht")
+    func savePriorityDoesNotChangeTicketIndex() {
+        let model = SessionModel()
+        model.setTicketCount(3)
+        model.startSession(using: { $0 })
+        model.advanceToNextTicket()
+        let indexBefore = model.currentTicketIndex
+        model.beginPrioritizationPhase()
+        model.savePriority(.wichtig)
+        #expect(model.currentTicketIndex == indexBefore)
+    }
+
+    @Test("Speicherung verändert currentPhase nicht (kein automatischer Übergang in Modul 008)")
+    func savePriorityDoesNotChangePhase() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        model.beginPrioritizationPhase()
+        #expect(model.currentPhase == .priorisieren)
+        model.savePriority(.kritisch)
+        #expect(model.currentPhase == .priorisieren)
+    }
+
+    // MARK: - savePriority — gesperrter Zustand
+
+    @Test("Weitere Gesten während Lock verändern die gespeicherte Entscheidung nicht")
+    func inputLockedPreventsOverwrite() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        model.beginPrioritizationPhase()
+        model.savePriority(.normal)
+        #expect(model.isInputLocked == true)
+        // Direktversuch: isInputLocked ist true → savePriority muss No-Op sein
+        model.savePriority(.kritisch)
+        #expect(model.selectedPriority == .normal)
+    }
+
+    // MARK: - Ungültiger Drop (Modell-Ebene)
+
+    @Test("Ungültiger Drop speichert keine Priorität (selectedPriority bleibt nil)")
+    func invalidDropLeavesSelectedPriorityNil() {
+        // Simuliert ungültigen Drop: DropEvaluator gibt nil → savePriority wird nie aufgerufen.
+        let entityPos = SIMD3<Float>(5.0, 0, 0)  // weit außerhalb aller Ziele
+        let targets = PriorityTargetMapping.allTargets.map {
+            DropEvaluator.TargetDescriptor(id: $0.id, position: $0.position, radius: InteractionConstants.dropTargetRadius)
+        }
+        let result = DropEvaluator.evaluate(entityPosition: entityPos, targets: targets)
+        #expect(result == nil)
+
+        // Wenn DropEvaluator nil liefert, wird savePriority nicht aufgerufen.
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        model.beginPrioritizationPhase()
+        // Kein savePriority → selectedPriority bleibt nil
+        #expect(model.selectedPriority == nil)
+        #expect(model.isInputLocked == false)
+    }
+
+    // MARK: - PriorityTargetMapping — Struktur
+
+    @Test("Genau drei Prioritätsziele existieren")
+    func exactlyThreePriorityTargetsExist() {
+        #expect(PriorityTargetMapping.allTargets.count == 3)
+    }
+
+    @Test("Alle drei technischen Ziel-IDs sind eindeutig")
+    func allThreeTargetIDsAreUnique() {
+        let ids = PriorityTargetMapping.allTargets.map(\.id)
+        #expect(Set(ids).count == ids.count)
+    }
+
+    @Test("Mapping deckt genau .normal, .wichtig, .kritisch ab")
+    func mappingCoversExactlyAllThreePriorities() {
+        let priorities = Set(PriorityTargetMapping.allTargets.map(\.priority))
+        #expect(priorities == Set(TicketPriority.allCases))
+    }
+
+    @Test("Mapping gibt für priority_normal .normal zurück")
+    func mappingReturnsNormalForNormalID() {
+        #expect(PriorityTargetMapping.priority(for: "priority_normal") == .normal)
+    }
+
+    @Test("Mapping gibt für priority_wichtig .wichtig zurück")
+    func mappingReturnsWichtigForWichtigID() {
+        #expect(PriorityTargetMapping.priority(for: "priority_wichtig") == .wichtig)
+    }
+
+    @Test("Mapping gibt für priority_kritisch .kritisch zurück")
+    func mappingReturnsKritischForKritischID() {
+        #expect(PriorityTargetMapping.priority(for: "priority_kritisch") == .kritisch)
+    }
+
+    @Test("Mapping gibt nil für unbekannte Ziel-ID zurück")
+    func mappingReturnsNilForUnknownID() {
+        #expect(PriorityTargetMapping.priority(for: "unbekannt") == nil)
+        #expect(PriorityTargetMapping.priority(for: "") == nil)
+    }
+
+    @Test("Zielabstände sind größer als 2 × dropTargetRadius (keine Überschneidung)")
+    func targetPositionsDoNotOverlap() {
+        let targets = PriorityTargetMapping.allTargets
+        let radius = InteractionConstants.dropTargetRadius
+        for i in targets.indices {
+            for j in targets.indices where j > i {
+                let dist = simd_distance(targets[i].position, targets[j].position)
+                #expect(
+                    dist > 2 * radius,
+                    "Ziele '\(targets[i].id)' und '\(targets[j].id)' überschneiden sich (Abstand \(dist) ≤ \(2*radius))"
+                )
+            }
+        }
+    }
+
+    @Test("PrioritizationConstants: monsterStartPosition ist erreichbar (y < targetPositionNormal.y)")
+    func monsterStartPositionIsBelowTargets() {
+        let monsterY = PrioritizationConstants.monsterStartPosition.y
+        let targetY  = PrioritizationConstants.targetPositionNormal.y
+        #expect(monsterY < targetY)
+    }
+}

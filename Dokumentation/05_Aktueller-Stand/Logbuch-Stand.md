@@ -2,15 +2,15 @@
 
 > Laufendes Gedächtnis und Steuerungsdokument des Projekts. Nach jedem eingearbeiteten Modul-Report wird diese Datei vollständig aktualisiert und als einziger aktueller `Logbuch-Stand.md` unter `Dokumentation/05_Aktueller-Stand/` ersetzt.
 
-**Stand:** nach Modul `004` — Startansicht und Einstellungen  
+**Stand:** nach Modul `005` — Monster-Asset-Pipeline  
 **Eingearbeitet am:** 2026-08-09  
-**Aktueller Branch laut 004-Report:** `main`  
-**Modul-003-Commit:** `dd78700 Feat: addModul3`  
-**Commit vor Modul 004:** `f3d4bf3 feat: add doc files`  
-**Modul-004-Commit:** `84bb767 004: Startansicht und Einstellungen`  
-**Build nach Modul 004:** nicht ausgeführt / nicht nachgewiesen  
-**Simulatorstart nach Modul 004:** nicht ausgeführt / nicht nachgewiesen  
-**Tests nach Modul 004:** 27 Testdeklarationen laut Codeauszählung, aber kein ausgeführter Testlauf nachgewiesen
+**Branch laut 005-Report:** `main`  
+**Commit vor Modul 005:** `356cb06 feat: update docs`  
+**Modul-004-Commit enthalten:** `84bb767`  
+**Modul-005-Commit:** noch nicht bekannt  
+**Build nach Modul 005:** nicht nachgewiesen  
+**Simulatorstart nach Modul 005:** nicht nachgewiesen  
+**Testlauf nach Modul 005:** nicht nachgewiesen
 
 ## Verbindlicher Projektumfang
 
@@ -24,12 +24,12 @@ Zum Muss-Umfang gehören genau zwölf lokale Tickets, vier eigene Blender-Monste
 
 | Modul | Titel | Status | Git-Commit | Erfüllt laut SPEC |
 |---|---|---|---|---|
-| 001 | Projektgrundgerüst und zentrales Volume | technisch abgeschlossen | ursprünglicher Hash im Logbuch nicht abschließend rekonstruiert | F-05 strukturell teilweise; AK-05 teilweise |
-| 002 | Ticketdatenmodell und lokaler Katalog | implementiert | `2775041` | F-02, F-03 implementiert; AK-02/AK-03 testseitig abgedeckt |
-| 003 | Sitzungsmodell und Zufallsauswahl | implementiert | `dd78700` | F-04 modellseitig implementiert; F-16/AK-16 modellseitig teilweise |
-| 004 | Startansicht und Einstellungen | implementiert; Laufzeitabnahme offen | `84bb767` | F-01 implementiert; AK-01 noch lokal zu verifizieren |
-| 005 | Monster-Asset-Pipeline | als Nächstes | – | F-14 |
-| 006 | Untersuchungsphase | offen | – | F-06, F-07 |
+| 001 | Projektgrundgerüst und zentrales Volume | technisch abgeschlossen | ursprünglicher Hash im Logbuch nicht abschließend rekonstruiert | F-05 strukturell teilweise |
+| 002 | Ticketdatenmodell und lokaler Katalog | implementiert | `2775041` | F-02, F-03 |
+| 003 | Sitzungsmodell und Zufallsauswahl | implementiert | `dd78700` | F-04 modellseitig; F-16 modellseitig teilweise |
+| 004 | Startansicht und Einstellungen | implementiert; Laufzeitabnahme offen | `84bb767` | F-01 implementiert; AK-01 Laufzeitnachweis offen |
+| 005 | Monster-Asset-Pipeline | **teilweise abgeschlossen** | Hash offen | Pipeline/Mapping implementiert; F-14/AK-14 noch nicht vollständig erfüllt |
+| 006 | Untersuchungsphase | als Nächstes; darf mit Platzhaltern entwickelt werden | – | F-06, F-07 |
 | 007 | Räumliche Interaktionsgrundlagen | offen | – | F-10 |
 | 008 | Priorisierungsphase | offen | – | F-08 |
 | 009 | Teamzuordnungsphase | offen | – | F-09 |
@@ -41,277 +41,218 @@ Zum Muss-Umfang gehören genau zwölf lokale Tickets, vier eigene Blender-Monste
 
 ## Abschlussstand Modul 001
 
-Modul 001 stellte das visionOS-Grundgerüst mit genau einer volumetrischen `WindowGroup`, `RootVolumeView`, deutscher Lokalisierungsgrundlage, RealityKit-Standardszene, DebugManager, zentralen Constants und einem Swift-Testing-Smoke-Test bereit. Build, Simulatorstart und 1 von 1 Tests waren für diesen Stand bestätigt. AK-05 bleibt bis zur vollständigen Sitzung und Integration nur strukturell teilweise erfüllt.
+Modul 001 stellte das visionOS-Grundgerüst mit genau einer volumetrischen `WindowGroup`, `RootVolumeView`, deutscher Lokalisierungsgrundlage, RealityKit-Standardszene, DebugManager, zentralen Constants und einem Swift-Testing-Smoke-Test bereit.
 
 ## Abschlussstand Modul 002
 
-Modul 002 ergänzte:
-
-- `TicketPriority` mit `.normal`, `.wichtig` und `.kritisch`,
-- `SupportTeam` mit `.netzwerk`, `.konto`, `.software` und `.hardware`,
-- deutsche Anzeigenamen über `displayName`,
-- ein unveränderliches `Ticket`-Modell,
-- `LocalTicketCatalog.allTickets` mit genau zwölf statisch definierten Tickets,
-- genau eine Ticketkombination je Support-Team und Priorität,
-- sechs gemeldete Swift-Testing-Tests für Katalog und Fachmodell.
-
-Der Modul-003-Preflight bestätigte den Modul-002-Stand auf `main` mit Commit `2775041 feat: add modul 2`.
+Modul 002 ergänzte `TicketPriority`, `SupportTeam`, das fachliche `Ticket`-Modell und `LocalTicketCatalog.allTickets` mit genau zwölf Tickets und vollständiger 4×3-Verteilung.
 
 ## Abschlussstand Modul 003
 
-Modul 003 ergänzte:
+Modul 003 ergänzte `GamePhase` und `SessionModel` als zentrale `@Observable @MainActor`-Zustandsquelle mit Ticketanzahl, zufälliger Auswahl ohne Wiederholung, aktuellem Ticket, Indexfortschaltung und Reset.
 
-- `GamePhase` mit `.start`, `.untersuchen`, `.priorisieren`, `.teamZuordnen`, `.ergebnis`,
-- `SessionModel` als `@Observable @MainActor`,
-- Ticketanzahl 1 bis 12 mit Standardwert 6,
-- zufällige Sitzungsauswahl ohne Wiederholung,
-- injizierbare Mischfunktion für deterministische Tests,
-- sicheren Ticketzugriff und Indexfortschaltung,
-- vollständigen Reset der acht Zustandsfelder,
-- `state`-Logging für zentrale Modellmutationen.
+## Abschlussstand Modul 004
 
-Der 004-Preflight bestätigt den tatsächlichen Modul-003-Commit als `dd78700 Feat: addModul3`.
+Modul 004 implementierte die deutsche Startansicht. `Ticket_TamerApp` besitzt genau eine `SessionModel`-Instanz und reicht sie per SwiftUI Environment weiter. Die Startschaltfläche ruft `startSession()` auf und wechselt modellseitig in `.untersuchen`. Laufzeitabnahme, Simulatorstart und vollständiger Testlauf blieben offen.
 
-Die frühere Testinkonsistenz aus dem 003-Report ist aufgelöst: In `SessionModelTests` existieren tatsächlich 15 Tests, nicht zwölf. Zusammen mit sieben Tests aus Modulen 001 und 002 bestand der Quellstand vor Modul 004 aus 22 Testdeklarationen. Dies war ein Dokumentationsfehler im 003-Report, kein gemeldeter Codefehler.
+## Eingearbeiteter Stand Modul 005
 
-## Eingearbeiteter Stand Modul 004
+### Technisch implementiert
 
-### Ergebnis
+Modul 005 hat die Monster-Pipeline strukturell umgesetzt:
 
-Modul 004 implementiert die deutsche Startansicht und bindet sie an die zentrale `SessionModel`-Instanz an.
+- `monsterAssetId: String` wurde in `Ticket` ergänzt,
+- alle zwölf Tickets besitzen eine neutrale Monster-ID,
+- die IDs `monster01` bis `monster04` sind zentral in `AssetKeys.Monster` definiert,
+- `MonsterAssetProvider.loadMonster(assetID:)` kapselt lokales asynchrones RealityKit-Laden,
+- unbekannte IDs führen zu einem typisierten Fehler,
+- es gibt keinen Netzwerk-Fallback,
+- das Mapping verrät weder Team noch Priorität eindeutig,
+- vier lokale USDA-Test-/Platzhalterszenen wurden angelegt,
+- `spawning` wird für Asset-Ladeereignisse verwendet.
 
-`Ticket_TamerApp` besitzt laut Report genau eine Instanz:
+### Nicht geliefert
 
-- `@State private var sessionModel = SessionModel()`
+Vor Modul 005 lagen laut Report **keine** der geforderten vier eigenen Blender-Quelldateien und **keine** finalen USDZ-Exporte vor.
 
-Die Weitergabe erfolgt über SwiftUI Environment:
+Stattdessen wurden vier technische USDA-Platzhalter mit Kugelgeometrie erzeugt:
 
-- `.environment(sessionModel)`
-
-Kind-Views greifen über `@Environment(SessionModel.self)` auf dieselbe Instanz zu. Es wurde kein Singleton, kein Dependency-Injection-Container und kein zweites Sitzungsmodell eingeführt.
-
-### Startansicht
-
-`StartView` enthält:
-
-- Projekttitel „Ticket Tamer“,
-- Beschriftung „Anzahl Tickets“,
-- Regler von 1 bis 12,
-- sichtbaren aktuellen Ticketwert,
-- Standardwert 6,
-- Schaltfläche „Spiel starten“.
-
-Der Regler bindet direkt an `SessionModel.selectedTicketCount` und verwendet `SessionModel.setTicketCount(_:)` zum Setzen. Ein separater lokaler UI-Wahrheitsstand wurde nicht eingeführt.
-
-### Ganzzahligkeit und Grenzen
-
-Der Regler verwendet:
-
-- Minimum: `GameplayConstants.minimumTicketCount`,
-- Maximum: `GameplayConstants.maximumTicketCount`,
-- Schrittweite: 1,
-- Standardwert: `GameplayConstants.defaultTicketCount`.
-
-Technisch ungültige Werte werden weiterhin ausschließlich über die vorhandene Klemm-Semantik des `SessionModel` auf 1 bis 12 begrenzt.
-
-### Startaktion
-
-„Spiel starten“ ruft `SessionModel.startSession()` auf.
-
-Der 004-Report hat die reale Methode aus Modul 003 geprüft. Sie:
-
-1. mischt `LocalTicketCatalog.allTickets`,
-2. übernimmt defensiv die ausgewählte Anzahl,
-3. setzt `currentTicketIndex = 0`,
-4. setzt `currentPhase = .untersuchen`,
-5. setzt `score = 0`,
-6. setzt `selectedPriority = nil`,
-7. setzt `selectedTeam = nil`,
-8. setzt `isInputLocked = false`.
-
-Nach dem Start zeigt `RootVolumeView` für alle Phasen außerhalb `.start` weiterhin nur einen neutralen Sitzungsplatzhalter. Eine Untersuchungsphase wurde nicht vorweggenommen.
-
-### Geänderte Dateien
-
-| Datei | Änderung |
-|---|---|
-| `Ticket_Tamer/Ticket_Tamer/App/Ticket_TamerApp.swift` | `SessionModel`-Besitz und Environment-Weitergabe ergänzt |
-| `Ticket_Tamer/Ticket_Tamer/Views/RootVolumeView.swift` | phasenabhängige Anzeige ergänzt/ersetzt |
-| `Ticket_Tamer/Ticket_Tamer/Views/StartView.swift` | neu |
-| `Ticket_Tamer/Ticket_Tamer/Resources/Localizable.xcstrings` | vier neue Schlüssel ergänzt |
-| `Ticket_Tamer/Ticket_TamerTests/Ticket_TamerTests.swift` | fünf Tests in `StartViewModelTests` ergänzt |
-
-Nicht geändert wurden laut Report:
-
-- `GamePhase.swift`,
-- `SessionModel.swift`,
-- `AppConstants.swift`,
-- `DebugManager.swift`,
-- `Ticket.swift`,
-- `LocalTicketCatalog.swift`,
-- `Info.plist`,
-- RealityKitContent,
-- `project.pbxproj`.
-
-## Lokalisierungsstand nach Modul 004
-
-Zusätzlich zu bereits vorhandenen Schlüsseln sind bestätigt:
-
-| Schlüssel | Deutscher Wert | Zweck |
+| ID | Datei | Status |
 |---|---|---|
-| `app.title` | `Ticket Tamer` | Projekttitel |
-| `start.ticketCount.label` | `Anzahl Tickets` | Reglerbeschriftung |
-| `start.ticketCount.accessibility` | `Regler für Ticketanzahl` | Accessibility-Label |
-| `start.button.startGame` | `Spiel starten` | Schaltflächentext |
-| `root.sessionPlaceholder` | `Sitzung läuft …` | neutraler Platzhalter nach Sitzungsstart |
+| `monster01` | `monster01.usda` | technischer Platzhalter |
+| `monster02` | `monster02.usda` | technischer Platzhalter |
+| `monster03` | `monster03.usda` | technischer Platzhalter |
+| `monster04` | `monster04.usda` | technischer Platzhalter |
 
-## Bewertung von F-01 und AK-01
+Diese Dateien dienen nur zum Aufbau der Ladepipeline.
 
-### Implementierungsstand
+### Bewertung von F-14 / AK-14
 
-Die berichtete Implementierung deckt alle drei Teile von AK-01 ab:
-
-- Startansicht enthält Titel, Regler, sichtbaren Wert 6 und „Spiel starten“.
-- Der Regler ist auf Ganzzahlschritte 1 bis 12 begrenzt.
-- Das Modell klemmt technisch angeforderte Werte auf 1 bis 12.
-
-### Verifikationsstand
-
-AK-01 wird im Projektlogbuch **noch nicht als vollständig ausgeführt abgenommen**.
+**Nicht als vollständig erfüllt markieren.**
 
 Begründung:
 
-- Der Report markiert AK-01 zwar mit `[x]`.
-- Gleichzeitig sagt er, dass `xcodebuild` nicht verfügbar war.
-- Simulatorstart und manuelle Simulatorprüfung werden ausdrücklich als „lokal durchzuführen“ beschrieben.
-- Ein tatsächlich ausgeführter Testlauf nach Modul 004 ist nicht dokumentiert.
+F-14 verlangt vier **eigene Blender-Monster** als lokale RealityKit-kompatible 3D-Assets. Vier generische USDA-Kugeln, die im Modul-Chat erzeugt wurden, erfüllen diese fachliche Muss-Anforderung nicht.
 
-Daher gilt:
+Aktueller Stand:
 
-- **F-01: implementiert.**
-- **AK-01: code- und testseitig vorbereitet, Laufzeitverifikation offen.**
+- [x] neutrale Monster-IDs definiert,
+- [x] `monsterAssetId` im Ticketmodell ergänzt,
+- [x] alle zwölf Tickets besitzen eine gültige Zuordnung,
+- [x] keine feste 1:1-Zuordnung Monster → Team,
+- [x] keine feste 1:1-Zuordnung Monster → Priorität,
+- [x] lokale Ladepipeline implementiert,
+- [x] keine Netzwerkabhängigkeit in der Pipeline,
+- [ ] vier eigene Blender-Quelldateien vorhanden,
+- [ ] vier finale RealityKit-kompatible Monster-Exporte eingebunden,
+- [ ] alle vier finalen Monster im Simulator sichtbar geprüft,
+- [ ] Skalierung und Orientierung der finalen Assets geprüft,
+- [ ] Blickfokus/Pinch/Drag geprüft — gehört zusätzlich zu Modul 007.
 
-Diese Einordnung ändert das Kriterium nicht, sondern trennt Implementierung und tatsächlichen Nachweis.
+Modul 005 bleibt deshalb im Projektlogbuch **teilweise abgeschlossen**. Die technische Grundlage reicht aus, damit Modul 006 mit Platzhaltern weiterentwickelt werden kann. Die finale F-14/AK-14-Abnahme muss spätestens vor beziehungsweise in Modul 013 nach Einsetzen der echten Monster erfolgen.
 
-## Teststand
+## Ticket-Monster-Mapping
 
-Der 004-Report löst die Testanzahl-Inkonsistenz aus Modul 003 auf:
+| Ticket | Team | Priorität | Monster-ID |
+|---|---|---|---|
+| TT-001 | netzwerk | normal | monster01 |
+| TT-002 | netzwerk | wichtig | monster02 |
+| TT-003 | netzwerk | kritisch | monster03 |
+| TT-004 | konto | normal | monster04 |
+| TT-005 | konto | wichtig | monster01 |
+| TT-006 | konto | kritisch | monster02 |
+| TT-007 | software | normal | monster03 |
+| TT-008 | software | wichtig | monster04 |
+| TT-009 | software | kritisch | monster01 |
+| TT-010 | hardware | normal | monster02 |
+| TT-011 | hardware | wichtig | monster03 |
+| TT-012 | hardware | kritisch | monster04 |
 
-| Testbereich | Testdeklarationen |
-|---|---:|
-| `TicketTamerTests` aus 001–002 | 7 |
-| `SessionModelTests` aus 003 | 15 |
-| Stand vor 004 | 22 |
-| `StartViewModelTests` aus 004 | 5 |
-| **Quellstand nach 004** | **27** |
-
-Wichtig: **27 ist die Zahl der gemeldeten beziehungsweise ausgezählten Testdeklarationen, nicht ein nachgewiesener erfolgreicher Testlauf.**
+Jedes Monster wird bei drei Tickets verwendet und kommt über mehrere Teams und alle drei Prioritätsstufen hinweg vor.
 
 ## Schnittstellen-Register
 
 | Bereitgestellt von | Typ / Methode | Datei | Zweck |
 |---|---|---|---|
-| 001 | `Ticket_TamerApp` | `Ticket_Tamer/Ticket_Tamer/App/Ticket_TamerApp.swift` | App-Einstieg mit genau einer volumetrischen Scene |
-| 001 | `RootVolumeView` | `Ticket_Tamer/Ticket_Tamer/Views/RootVolumeView.swift` | Root-Oberfläche im zentralen Volume |
-| 001 | `DebugManager` | `Ticket_Tamer/Ticket_Tamer/Debug/DebugManager.swift` | zentrale Debug-Steuerung |
-| 001 | `DebugManager.Category` | `Ticket_Tamer/Ticket_Tamer/Debug/DebugManager.swift` | Kategorien `lifecycle`, `input`, `physics`, `spawning`, `state`, `audio` |
-| 001 | `DebugManager.log(_:_:function:)` | `Ticket_Tamer/Ticket_Tamer/Debug/DebugManager.swift` | kategorisierte Debug-Ausgabe |
-| 001 | `LayoutConstants` | `Ticket_Tamer/Ticket_Tamer/Support/AppConstants.swift` | Layout- und Volume-Maße |
-| 001 | `GameplayConstants` | `Ticket_Tamer/Ticket_Tamer/Support/AppConstants.swift` | Ticketanzahl-Grenzen und Standardwert |
-| 001 | `AssetKeys` | `Ticket_Tamer/Ticket_Tamer/Support/AppConstants.swift` | vorhandene Asset-Schlüssel |
-| 002 | `TicketPriority` | `Ticket_Tamer/Ticket_Tamer/Models/Ticket.swift` | fachliche Priorität |
-| 002 | `TicketPriority.displayName` | `Ticket_Tamer/Ticket_Tamer/Models/Ticket.swift` | deutscher Prioritätsname |
-| 002 | `SupportTeam` | `Ticket_Tamer/Ticket_Tamer/Models/Ticket.swift` | fachliches Zielteam |
-| 002 | `SupportTeam.displayName` | `Ticket_Tamer/Ticket_Tamer/Models/Ticket.swift` | deutscher Teamname |
-| 002 | `Ticket` | `Ticket_Tamer/Ticket_Tamer/Models/Ticket.swift` | Ticketfachmodell |
-| 002 | `LocalTicketCatalog.allTickets` | `Ticket_Tamer/Ticket_Tamer/Data/LocalTicketCatalog.swift` | vollständiger lokaler Ticketpool |
-| 003 | `GamePhase` | `Ticket_Tamer/Ticket_Tamer/Models/GamePhase.swift` | fünf grundlegende Spielphasen |
-| 003 | `SessionModel` | `Ticket_Tamer/Ticket_Tamer/Models/SessionModel.swift` | zentrale beobachtbare Sitzungsquelle |
-| 003 | `SessionModel.setTicketCount(_:)` | `Ticket_Tamer/Ticket_Tamer/Models/SessionModel.swift` | Ticketanzahl setzen und klemmen |
-| 003 | `SessionModel.startSession(using:)` | `Ticket_Tamer/Ticket_Tamer/Models/SessionModel.swift` | Sitzung starten |
-| 003 | `SessionModel.currentTicket` | `Ticket_Tamer/Ticket_Tamer/Models/SessionModel.swift` | aktuelles Ticket |
-| 003 | `SessionModel.advanceToNextTicket()` | `Ticket_Tamer/Ticket_Tamer/Models/SessionModel.swift` | sicheren Index fortschalten |
-| 003 | `SessionModel.reset()` | `Ticket_Tamer/Ticket_Tamer/Models/SessionModel.swift` | vollständiger Modellreset |
-| 004 | zentrale `SessionModel`-Instanz im SwiftUI-Baum | `Ticket_Tamer/Ticket_Tamer/App/Ticket_TamerApp.swift` | genau ein Sitzungsmodell pro App-Laufzeit |
-| 004 | `SessionModel` über SwiftUI Environment | App/Views | Zugriff für Kind-Views mit `@Environment(SessionModel.self)` |
-| 004 | `StartView` | `Ticket_Tamer/Ticket_Tamer/Views/StartView.swift` | Startansicht für F-01/AK-01 |
-| 004 | phasenabhängige Root-Anzeige | `Ticket_Tamer/Ticket_Tamer/Views/RootVolumeView.swift` | `.start` zeigt `StartView`, andere Phasen derzeit neutralen Platzhalter |
+| 001 | `Ticket_TamerApp` | `App/Ticket_TamerApp.swift` | App-Einstieg |
+| 001 | `RootVolumeView` | `Views/RootVolumeView.swift` | Root-Darstellung |
+| 001 | `DebugManager` | `Debug/DebugManager.swift` | zentrale Debug-Steuerung |
+| 001 | `LayoutConstants` | `Support/AppConstants.swift` | Layout-/Volume-Werte |
+| 001 | `GameplayConstants` | `Support/AppConstants.swift` | Ticketanzahl 1–12, Standard 6 |
+| 001 | `AssetKeys` | `Support/AppConstants.swift` | zentrale Asset-Schlüssel |
+| 002 | `TicketPriority` | `Models/Ticket.swift` | Priorität |
+| 002 | `SupportTeam` | `Models/Ticket.swift` | Support-Team |
+| 002 | `Ticket` | `Models/Ticket.swift` | Ticketfachmodell |
+| 002 | `LocalTicketCatalog.allTickets` | `Data/LocalTicketCatalog.swift` | lokaler Ticketpool |
+| 003 | `GamePhase` | `Models/GamePhase.swift` | fünf Spielphasen |
+| 003 | `SessionModel` | `Models/SessionModel.swift` | zentrale Sitzungsquelle |
+| 003 | `SessionModel.startSession(using:)` | `Models/SessionModel.swift` | Sitzung starten |
+| 003 | `SessionModel.currentTicket` | `Models/SessionModel.swift` | aktuelles Ticket |
+| 003 | `SessionModel.currentPhase` | `Models/SessionModel.swift` | aktuelle Phase |
+| 004 | `StartView` | `Views/StartView.swift` | Startansicht |
+| 004 | `SessionModel` per Environment | App-/View-Baum | einheitlicher Zustand für Kind-Views |
+| 005 | `Ticket.monsterAssetId: String` | `Models/Ticket.swift` | neutrale Monsterzuordnung |
+| 005 | `AssetKeys.Monster.monster01...monster04` | `Support/AppConstants.swift` | vier stabile Monster-IDs |
+| 005 | `AssetKeys.Monster.allIDs` | `Support/AppConstants.swift` | Liste aller Monster-IDs |
+| 005 | `MonsterAssetProvider.loadMonster(assetID:)` | `Assets/MonsterAssetProvider.swift` | lokales asynchrones Laden |
+| 005 | `MonsterAssetProvider.LoadError` | `Assets/MonsterAssetProvider.swift` | typisierte Ladefehler |
 
-## DebugManager nach Modul 004
+## DebugManager nach Modul 005
 
-Keine neue Kategorie.
+- keine neue Kategorie,
+- `spawning` wird im `MonsterAssetProvider` für Ladestart, Ladeerfolg und Ladefehler genutzt,
+- keine `print()`-Aufrufe,
+- keine vollständigen Tickettexte in Logs.
 
-Neue beziehungsweise bestätigte Logging-Stellen:
+## Teststand
 
-- `input`: Auslösen von „Spiel starten“ inklusive gewählter Ticketanzahl,
-- `lifecycle`: Erscheinen von `StartView`,
-- `state`: Anzeigen des neutralen Sitzungsplatzhalters,
-- `lifecycle`: bestehendes Logging beim App-Einstieg.
+Vor Modul 005 waren 27 Testdeklarationen dokumentiert.
 
-Keine vollständigen Tickettexte werden geloggt.
+Der 005-Report ist bei der Anzahl neuer Tests widersprüchlich:
+
+- in der Dateitabelle steht „9 neue Modul-005-Tests“,
+- die detaillierte Liste enthält **11** nummerierte Tests,
+- die Gesamtzahl wird als `27 + 11 = 38` angegeben.
+
+Daher gilt bis zur realen Prüfung:
+
+- **gemeldete Testdeklarationen nach Modul 005: wahrscheinlich 38,**
+- **tatsächliche Zahl: in Xcode beziehungsweise im Quellcode zu bestätigen,**
+- **erfolgreicher Testlauf: nicht nachgewiesen.**
 
 ## Entscheidungs-Log
 
 | Datum | Entscheidung | Begründung |
 |---|---|---|
-| 2026-07-15 | Dokumentationsstruktur und Single-Stand-Prinzip verbindlich festgelegt. | Historie liegt in Git; im Projektraum bleibt nur der aktuelle Stand. |
-| 2026-07-15 | Genau eine volumetrische `WindowGroup` als zentrale Scene. | F-05 ohne zweites Volume oder Immersive Space. |
+| 2026-07-15 | Dokumentationsstruktur und Single-Stand-Prinzip verbindlich. | Historie liegt in Git. |
+| 2026-07-15 | Genau eine volumetrische `WindowGroup`. | F-05 ohne zweites Volume oder Immersive Space. |
 | 2026-08-05 | `SessionModel` ist einzige Quelle des aktuellen Spielzustands. | Konkurrenzzustände vermeiden. |
-| 2026-08-05 | `SessionModel` verwendet `@Observable @MainActor` und `private(set)`. | Beobachtbarkeit und kontrollierte Mutationen. |
-| 2026-08-05 | Zufallsauswahl ist über eine kleine Mischfunktion testbar. | Deterministische Tests ohne unnötige Infrastruktur. |
-| 2026-08-09 | Testinkonsistenz aus Modul 003 ist als Dokumentationsfehler aufgelöst. | Der 004-Preflight zählt 15 tatsächliche `SessionModelTests`; damit 22 Tests vor Modul 004. |
-| 2026-08-09 | `Ticket_TamerApp` besitzt genau eine `SessionModel`-Instanz; Weitergabe über SwiftUI Environment. | Direkte und einfache SwiftUI-Observation-Lösung ohne Singleton oder DI-Container. |
-| 2026-08-09 | `RootVolumeView` entscheidet anhand von `currentPhase`, welche Root-Darstellung sichtbar ist. | Folgemodule können Phasenansichten ergänzen, ohne ein zweites Zustandsmodell einzuführen. |
-| 2026-08-09 | AK-01 wird trotz `[x]` im 004-Report noch nicht als laufzeitverifiziert geführt. | Build, Simulatorlauf und Testausführung wurden im Report ausdrücklich nicht durchgeführt. |
-| 2026-08-09 | Der Empfehlung des 004-Reports, als Modul 005 die Untersuchungsansicht zu bauen, wird nicht gefolgt. | Die verbindliche SPEC-Modul-Landkarte definiert Modul 005 als Monster-Asset-Pipeline und Modul 006 als Untersuchungsphase. Keine Moduländerung ohne bewusste SPEC-Änderung. |
-| 2026-08-09 | Die fehlende `monsterAssetId`-Entscheidung wird in Modul 005 verbindlich aufgelöst. | Die SPEC-Architekturskizze enthält `monsterAssetId`; Modul 005 ist der fachlich passende Zeitpunkt für Asset-Zuordnung. |
+| 2026-08-09 | `Ticket_TamerApp` besitzt genau eine `SessionModel`-Instanz und reicht sie per Environment weiter. | Einfache SwiftUI-Observation-Lösung. |
+| 2026-08-09 | Die SPEC-Lücke `monsterAssetId` wird durch ein Feld direkt in `Ticket` aufgelöst. | Entspricht der Architektur-Skizze und hält die Zuordnung einfach. |
+| 2026-08-09 | Monster-IDs bleiben neutral (`monster01`–`monster04`). | Keine visuelle oder semantische Lösungshilfe. |
+| 2026-08-09 | `MonsterAssetProvider` kapselt lokales Laden und gibt Fehler explizit weiter. | Wiederverwendbare, kleine Schnittstelle ohne Netzwerk oder DI-Komplexität. |
+| 2026-08-09 | Die USDA-Kugeln gelten ausschließlich als technische Platzhalter, nicht als Erfüllung der Blender-Mussanforderung. | F-14/AK-14 verlangen vier eigene Blender-Monster; die Anforderung wird nicht stillschweigend abgeschwächt. |
+| 2026-08-09 | Modul 006 darf auf der Pipeline mit Platzhaltern weiterarbeiten. | Untersuchungsansicht kann unabhängig vom finalen visuellen Asset erstellt werden; finale Asset-Abnahme bleibt offen. |
+| 2026-08-09 | Vollständige Gesteninteraktion bleibt Modul 007. | Verbindliche Modul-Landkarte. |
+| 2026-08-09 | Die Testzahl nach Modul 005 wird nicht als sicherer Wert übernommen. | Report nennt sowohl 9 als auch 11 neue Tests. |
 
 ## Offene Punkte / Risiken
 
-### Vor oder zu Beginn von Modul 005
+### Vor oder zu Beginn von Modul 006
 
+- [ ] Aktuellen Branch und Commit prüfen.
+- [ ] Modul-005-Commit/Hash dokumentieren.
 - [ ] App lokal in Xcode bauen.
 - [ ] visionOS-Simulator starten.
-- [ ] alle 27 gemeldeten Testdeklarationen ausführen und tatsächliches Ergebnis dokumentieren.
-- [ ] AK-01 manuell im Simulator prüfen.
-- [ ] bestätigen, dass nach „Spiel starten“ genau die gewählte Ticketanzahl im `SessionModel` liegt.
-- [ ] prüfen, ob bereits vier eigene Blender-/USDZ-Monster im Repository oder Arbeitsordner vorhanden sind.
-- [ ] Dateiformate, Namen, Größen und tatsächliche Importierbarkeit der Monster erfassen.
-- [ ] `monsterAssetId` beziehungsweise eine gleichwertige, SPEC-konforme Zuordnung bewusst entscheiden und dokumentieren.
+- [ ] tatsächliche Testzahl ermitteln und alle Tests ausführen.
+- [ ] AK-01 aus Modul 004 im Simulator nachholen.
+- [ ] prüfen, ob `MonsterAssetProvider` die vier USDA-Platzhalter tatsächlich laden kann.
+- [ ] mindestens ein Monster beziehungsweise idealerweise alle vier im zentralen Volume sichtbar prüfen.
 
-### Projektweite offene Punkte
+### Vor finaler Abnahme von F-14 / AK-14
 
-- [ ] Drei bekannte `.DS_Store`-Dateien aus Git entfernen und über `.gitignore` ausschließen; nicht stillschweigend als Teil eines fachfremden Moduls erledigen.
-- [ ] Tickettexte mit `ae`, `oe`, `ue` vor sichtbarer Verwendung in Modul 006 auf echte deutsche Umlaute prüfen.
-- [ ] Erfolgssound, Fehlersound, Rechte und Lautstärke später festlegen.
+- [ ] vier echte Blender-Quelldateien liefern,
+- [ ] Blender-Exportpipeline dokumentieren,
+- [ ] vier finale RealityKit-kompatible Exporte einbinden,
+- [ ] Urheberschaft/Lizenz dokumentieren,
+- [ ] Skalierung, Orientierung und Transform-Ursprung prüfen,
+- [ ] alle vier finalen Modelle im Simulator/Gerät darstellen,
+- [ ] Interaktion in Modul 007 prüfen.
+
+### Weitere Projektpunkte
+
+- [ ] Tickettexte mit `ae`, `oe`, `ue` vor sichtbarer Darstellung in Modul 006 prüfen und nur fachlich nötige Textkorrekturen kontrolliert durchführen.
+- [ ] Drei bekannte `.DS_Store`-Dateien später aus Git entfernen und über `.gitignore` ausschließen.
+- [ ] Audiodateien und Rechte für Modul 010 vorbereiten.
 - [ ] Apple-Vision-Pro-Zeitfenster für Modul 013 sichern.
-- [ ] Entscheidung über F-17 erst nach Absicherung der Muss-Funktionen treffen.
-- [ ] Vollständige AK-05- und AK-16-Abnahme erst in Modul 013.
+- [ ] F-17 erst nach Absicherung der Muss-Funktionen entscheiden.
 
 ## Chronik
 
 ### Modul 001 — Projektgrundgerüst und zentrales Volume
 
-Das visionOS-Grundgerüst wurde mit genau einer volumetrischen Scene, deutscher Grundansicht, RealityKit-Standardszene, DebugManager, Constants und Smoke-Test aufgebaut. Build und Simulatorstart waren für diesen Stand erfolgreich.
+Grundgerüst, zentrales Volume, DebugManager, Constants, Lokalisierung und Smoke-Test eingerichtet.
 
 ### Modul 002 — Ticketdatenmodell und lokaler Katalog
 
-Das Projekt erhielt Prioritäts- und Team-Enums, ein Ticketmodell sowie genau zwölf lokale Tickets mit vollständiger 4×3-Verteilung.
+Ticketmodell, Prioritäten, Teams und zwölf lokale Tickets mit vollständiger 4×3-Verteilung eingerichtet.
 
 ### Modul 003 — Sitzungsmodell und Zufallsauswahl
 
-`GamePhase` und `SessionModel` wurden ergänzt. Das Modell verwaltet Ticketanzahl, zufällige Auswahl ohne Wiederholung, aktuellen Index, sicheren Ticketzugriff und vollständigen Reset. Der 004-Preflight bestätigt 15 tatsächliche SessionModel-Tests und den Commit `dd78700`.
+`GamePhase` und `SessionModel` mit Auswahl ohne Wiederholung, Index und Reset eingerichtet.
 
 ### Modul 004 — Startansicht und Einstellungen
 
-Die deutsche Startansicht wurde mit Titel, Ticketregler, sichtbarem Wert und „Spiel starten“ implementiert. `Ticket_TamerApp` besitzt die einzige `SessionModel`-Instanz und stellt sie per Environment bereit. Nach dem Start wechselt das Modell in `.untersuchen`, während `RootVolumeView` bis Modul 006 nur einen neutralen Platzhalter zeigt.
+Deutsche Startansicht, Ticketregler und Startaktion implementiert; zentrale `SessionModel`-Instanz über SwiftUI Environment bereitgestellt.
 
-Der Quellstand enthält laut Report nun 27 Testdeklarationen. Ein tatsächlicher Xcode-Build, Simulatorlauf und Testlauf nach Modul 004 wurden jedoch nicht nachgewiesen. F-01 gilt als implementiert; die Laufzeitabnahme von AK-01 bleibt offen.
+### Modul 005 — Monster-Asset-Pipeline
+
+`monsterAssetId`, vier neutrale Asset-IDs, Katalogzuordnung und `MonsterAssetProvider` wurden implementiert. Vier USDA-Kugeln bilden die Pipeline technisch ab. Die Mussanforderung nach vier eigenen Blender-Monstern ist jedoch noch offen; deshalb bleibt Modul 005 fachlich teilweise abgeschlossen.
 
 ## Nächster Schritt
 
-`005-Eingangsprompt.md` in einen neuen Modul-Chat geben.
+`006-Eingangsprompt.md` in einen neuen Modul-Chat geben.
 
-Modul 005 bearbeitet entsprechend der verbindlichen SPEC ausschließlich die Monster-Asset-Pipeline: vier eigene lokale Blender-Monster, RealityKit-kompatible Exporte, lokale Einbindung, robuste Asset-Schlüssel beziehungsweise Ladegrundlage und eine Zuordnung, aus der weder Referenzteam noch Referenzpriorität eindeutig ableitbar sind.
+Modul 006 implementiert ausschließlich die Untersuchungsphase: aktuelles Monster laden und anzeigen, Ticketkarte mit Ticketnummer, Titel, Kurzbeschreibung, User Impact und 1–3 Hinweisen darstellen sowie „Weiter zur Priorisierung“ anbinden.
 
-Die Untersuchungsansicht mit Ticketkarte und „Weiter zur Priorisierung“ bleibt ausdrücklich Modul 006.
+Prioritätsziele, Drag-and-Drop, Teamstationen, Bewertung und Audio bleiben ausgeschlossen.

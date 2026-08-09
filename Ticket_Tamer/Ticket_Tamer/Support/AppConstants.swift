@@ -119,6 +119,36 @@ enum PrioritizationConstants {
     static let targetPositionKritisch = SIMD3<Float>( 0.32, 0.10, 0)
 }
 
+/// Maße und Positionen für die Teamzuordnungsphase (Modul 009 — F-09 / AK-09).
+enum TeamAssignmentConstants {
+
+    // MARK: - Monster-Startposition
+
+    /// Startposition des Monsters — Mittelpunkt zwischen allen vier Teamstationen.
+    ///
+    /// Abstand zu jeder Station ≈ 0.29 m > `InteractionConstants.dropTargetRadius` (0.15 m),
+    /// damit das Monster nicht von Beginn an in einem Zielbereich liegt.
+    static let monsterStartPosition = SIMD3<Float>(0, 0, 0)
+
+    // MARK: - Zielpositionen (2×2-Layout)
+    //
+    // Horizontaler Abstand: 0.48 m > 2 × 0.15 m = 0.30 m ✓
+    // Vertikaler Abstand:   0.32 m > 2 × 0.15 m = 0.30 m ✓
+    // Diagonaler Abstand:   ≈ 0.58 m ✓
+
+    /// Position Teamstation „Netzwerk" (oben links).
+    static let targetPositionNetzwerk  = SIMD3<Float>(-0.24,  0.16, 0)
+
+    /// Position Teamstation „Konto" (oben rechts).
+    static let targetPositionKonto     = SIMD3<Float>( 0.24,  0.16, 0)
+
+    /// Position Teamstation „Software" (unten links).
+    static let targetPositionSoftware  = SIMD3<Float>(-0.24, -0.16, 0)
+
+    /// Position Teamstation „Hardware" (unten rechts).
+    static let targetPositionHardware  = SIMD3<Float>( 0.24, -0.16, 0)
+}
+
 /// Zentralisierte Schluessel fuer bereits vorhandene lokale Ressourcen.
 enum AssetKeys {
 

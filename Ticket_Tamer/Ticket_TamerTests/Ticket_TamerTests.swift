@@ -981,3 +981,257 @@ struct PrioritizationPhaseTests {
         #expect(monsterY < targetY)
     }
 }
+
+// MARK: - Modul 009: Teamzuordnungsphase
+
+/// Tests für Phasenwechsel, Teamspeicherung und Ziel-/Mapping-Struktur (SPEC F-09 / AK-09 / AK-10).
+///
+/// Prüft ausschließlich Modell- und Mapping-Logik ohne laufenden RealityKit-Render-Loop.
+/// RealityKit-Gesten (Hover, Pinch, Drag, Drop) sind manuell im Simulator zu prüfen (AK-09).
+@MainActor
+struct TeamAssignmentPhaseTests {
+
+    // MARK: - Hilfsmethode: Modell in teamZuordnen-Phase bringen
+
+    private func modelInTeamPhase() -> SessionModel {
+        let model = SessionModel()
+        model.setTicketCount(1)
+        model.startSession(using: { $0 })
+        model.beginPrioritizationPhase()
+        model.savePriority(.normal)
+        model.beginTeamAssignmentPhase()
+        return model
+    }
+
+    // MARK: - beginTeamAssignmentPhase — gültiger Phasenwechsel
+
+    @Test("Gültiger Wechsel: .priorisieren mit gespeicherter Priorität → .teamZuordnen")
+    func beginTeamPhaseTransitionsPriorisierenToTeamZuordnen() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        model.beginPrioritizationPhase()
+        model.savePriority(.normal)
+        model.beginTeamAssignmentPhase()
+        #expect(model.currentPhase == .teamZuordnen)
+    }
+
+    @Test("Gespeicherte Priorität bleibt nach beginTeamAssignmentPhase erhalten")
+    func priorityIsPreservedAfterBeginTeamPhase() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        model.beginPrioritizationPhase()
+        model.savePriority(.kritisch)
+        model.beginTeamAssignmentPhase()
+        #expect(model.selectedPriority == .kritisch)
+    }
+
+    @Test("Ticketindex bleibt nach beginTeamAssignmentPhase unverändert")
+    func ticketIndexIsUnchangedAfterBeginTeamPhase() {
+        let model = SessionModel()
+        model.setTicketCount(3)
+        model.startSession(using: { $0 })
+        model.advanceToNextTicket()
+        let indexBefore = model.currentTicketIndex
+        model.beginPrioritizationPhase()
+        model.savePriority(.wichtig)
+        model.beginTeamAssignmentPhase()
+        #expect(model.currentTicketIndex == indexBefore)
+    }
+
+    @Test("Score bleibt nach beginTeamAssignmentPhase unverändert")
+    func scoreIsUnchangedAfterBeginTeamPhase() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        model.beginPrioritizationPhase()
+        model.savePriority(.normal)
+        let scoreBefore = model.score
+        model.beginTeamAssignmentPhase()
+        #expect(model.score == scoreBefore)
+    }
+
+    @Test("Input ist nach beginTeamAssignmentPhase freigegeben (für Teamphase entsperrt)")
+    func inputIsUnlockedAfterBeginTeamPhase() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        model.beginPrioritizationPhase()
+        model.savePriority(.normal)
+        // Nach savePriority ist Input gesperrt.
+        #expect(model.isInputLocked == true)
+        model.beginTeamAssignmentPhase()
+        // beginTeamAssignmentPhase gibt Input für die neue Teamentscheidung frei.
+        #expect(model.isInputLocked == false)
+    }
+
+    // MARK: - beginTeamAssignmentPhase — ungültige Aufrufe (No-Op)
+
+    @Test("Phasenwechsel ohne gespeicherte Priorität wird ignoriert")
+    func beginTeamPhaseWithoutPriorityIsIgnored() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        model.beginPrioritizationPhase()
+        // Keine Priorität gespeichert — No-Op erwartet.
+        model.beginTeamAssignmentPhase()
+        #expect(model.currentPhase == .priorisieren)
+    }
+
+    @Test("Phasenwechsel aus falscher Phase (.untersuchen) wird ignoriert")
+    func beginTeamPhaseFromWrongPhaseIsIgnored() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        // Phase ist .untersuchen — No-Op erwartet.
+        model.beginTeamAssignmentPhase()
+        #expect(model.currentPhase == .untersuchen)
+    }
+
+    // MARK: - saveTeam — Speicherung
+
+    @Test("Team .netzwerk kann in .teamZuordnen gespeichert werden")
+    func teamNetzwerkCanBeSavedInTeamPhase() {
+        let model = modelInTeamPhase()
+        model.saveTeam(.netzwerk)
+        #expect(model.selectedTeam == .netzwerk)
+    }
+
+    @Test("Team .konto kann in .teamZuordnen gespeichert werden")
+    func teamKontoCanBeSavedInTeamPhase() {
+        let model = modelInTeamPhase()
+        model.saveTeam(.konto)
+        #expect(model.selectedTeam == .konto)
+    }
+
+    @Test("Team .software kann in .teamZuordnen gespeichert werden")
+    func teamSoftwareCanBeSavedInTeamPhase() {
+        let model = modelInTeamPhase()
+        model.saveTeam(.software)
+        #expect(model.selectedTeam == .software)
+    }
+
+    @Test("Team .hardware kann in .teamZuordnen gespeichert werden")
+    func teamHardwareCanBeSavedInTeamPhase() {
+        let model = modelInTeamPhase()
+        model.saveTeam(.hardware)
+        #expect(model.selectedTeam == .hardware)
+    }
+
+    @Test("Teamdrop setzt isInputLocked auf true")
+    func saveTeamSetsInputLock() {
+        let model = modelInTeamPhase()
+        #expect(model.isInputLocked == false)
+        model.saveTeam(.software)
+        #expect(model.isInputLocked == true)
+    }
+
+    @Test("Zweiter Teamspeicherversuch wird ignoriert (genau-einmal-Semantik)")
+    func secondSaveTeamAttemptIsIgnored() {
+        let model = modelInTeamPhase()
+        model.saveTeam(.netzwerk)
+        model.saveTeam(.konto)
+        #expect(model.selectedTeam == .netzwerk)
+    }
+
+    @Test("Erstes gespeichertes Team wird durch weiteren Versuch nicht überschrieben")
+    func firstTeamIsNotOverwritten() {
+        let model = modelInTeamPhase()
+        model.saveTeam(.hardware)
+        model.saveTeam(.software)
+        model.saveTeam(.netzwerk)
+        #expect(model.selectedTeam == .hardware)
+    }
+
+    @Test("Speichern außerhalb .teamZuordnen wird ignoriert")
+    func saveTeamOutsideTeamPhaseIsIgnored() {
+        let model = SessionModel()
+        // Phase: .start
+        model.saveTeam(.netzwerk)
+        #expect(model.selectedTeam == nil)
+
+        // Phase: .untersuchen
+        model.startSession(using: { $0 })
+        model.saveTeam(.konto)
+        #expect(model.selectedTeam == nil)
+
+        // Phase: .priorisieren
+        model.beginPrioritizationPhase()
+        model.saveTeam(.software)
+        #expect(model.selectedTeam == nil)
+    }
+
+    @Test("saveTeam verändert score nicht")
+    func saveTeamDoesNotChangeScore() {
+        let model = modelInTeamPhase()
+        let scoreBefore = model.score
+        model.saveTeam(.netzwerk)
+        #expect(model.score == scoreBefore)
+    }
+
+    @Test("saveTeam verändert selectedPriority nicht")
+    func saveTeamDoesNotChangePriority() {
+        let model = modelInTeamPhase()
+        // Priorität wurde in beginTeamPhase() gesetzt (.normal durch modelInTeamPhase)
+        #expect(model.selectedPriority == .normal)
+        model.saveTeam(.konto)
+        #expect(model.selectedPriority == .normal)
+    }
+
+    @Test("saveTeam verändert currentTicketIndex nicht")
+    func saveTeamDoesNotChangeTicketIndex() {
+        let model = SessionModel()
+        model.setTicketCount(3)
+        model.startSession(using: { $0 })
+        model.advanceToNextTicket()
+        let indexBefore = model.currentTicketIndex
+        model.beginPrioritizationPhase()
+        model.savePriority(.wichtig)
+        model.beginTeamAssignmentPhase()
+        model.saveTeam(.software)
+        #expect(model.currentTicketIndex == indexBefore)
+    }
+
+    @Test("Phase bleibt nach saveTeam .teamZuordnen (kein automatischer Übergang in Modul 009)")
+    func saveTeamDoesNotChangePhase() {
+        let model = modelInTeamPhase()
+        model.saveTeam(.hardware)
+        #expect(model.currentPhase == .teamZuordnen)
+    }
+
+    // MARK: - TeamTargetMapping — Struktur
+
+    @Test("Genau vier Teamziele existieren")
+    func exactlyFourTeamTargetsExist() {
+        #expect(TeamTargetMapping.allTargets.count == 4)
+    }
+
+    @Test("Alle vier technischen Ziel-IDs sind eindeutig")
+    func allFourTeamTargetIDsAreUnique() {
+        let ids = TeamTargetMapping.allTargets.map(\.id)
+        #expect(Set(ids).count == ids.count)
+    }
+
+    @Test("Mapping deckt genau alle vier SupportTeam-Werte ab")
+    func mappingCoversExactlyAllFourTeams() {
+        let teams = Set(TeamTargetMapping.allTargets.map(\.team))
+        #expect(teams == Set(SupportTeam.allCases))
+    }
+
+    @Test("Unbekannte Ziel-ID liefert kein Team")
+    func mappingReturnsNilForUnknownID() {
+        #expect(TeamTargetMapping.team(for: "unbekannt") == nil)
+        #expect(TeamTargetMapping.team(for: "") == nil)
+        #expect(TeamTargetMapping.team(for: "priority_normal") == nil)
+    }
+
+    @Test("Teamziel-Abstände sind größer als 2 × dropTargetRadius (keine Überschneidung)")
+    func teamTargetPositionsDoNotOverlap() {
+        let targets = TeamTargetMapping.allTargets
+        let radius = InteractionConstants.dropTargetRadius
+        for i in targets.indices {
+            for j in targets.indices where j > i {
+                let dist = simd_distance(targets[i].position, targets[j].position)
+                #expect(
+                    dist > 2 * radius,
+                    "Ziele '\(targets[i].id)' und '\(targets[j].id)' überschneiden sich (Abstand \(dist) ≤ \(2*radius))"
+                )
+            }
+        }
+    }
+}

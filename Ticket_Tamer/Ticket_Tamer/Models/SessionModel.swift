@@ -229,6 +229,74 @@ final class SessionModel {
         DebugManager.log(.state, "Prioritaet gespeichert: \(priority.rawValue), isInputLocked=true")
     }
 
+    // MARK: - Teamzuordnungsphase (Modul 009 — F-09 / AK-09 / AK-10)
+
+    /// Wechselt kontrolliert von der Priorisierungs- in die Teamzuordnungsphase.
+    ///
+    /// Vorbedingungen (beide müssen erfüllt sein, sonst No-Op):
+    /// - `currentPhase == .priorisieren`
+    /// - `selectedPriority != nil`
+    ///
+    /// Effekte:
+    /// - `currentPhase = .teamZuordnen`
+    /// - `isInputLocked = false` (Input für neue Teamentscheidung freigegeben)
+    ///
+    /// Unverändert: `score`, `currentTicketIndex`, `currentTicket`, `selectedPriority`, `selectedTeam`.
+    ///
+    /// **Verwendung:** Unit-Tests, SwiftUI-Preview, `#if DEBUG`-Entwicklungsweg.
+    /// Darf im normalen Release-Spielablauf (Modul 009) **nicht** automatisch aufgerufen werden.
+    /// Modul 010 übernimmt den zeitgesteuerten Übergang gemäß F-13.
+    func beginTeamAssignmentPhase() {
+        guard currentPhase == .priorisieren else {
+            DebugManager.log(.state, "beginTeamAssignmentPhase ignoriert: Phase ist \(currentPhase), erwartet .priorisieren")
+            return
+        }
+        guard selectedPriority != nil else {
+            DebugManager.log(.state, "beginTeamAssignmentPhase ignoriert: keine Prioritaet gespeichert")
+            return
+        }
+        currentPhase = .teamZuordnen
+        // Input kontrolliert freigeben.
+        // selectedTeam ist nil — kein View-Refresh kann diesen Unlock nach
+        // gespeichertem Team erneut auslösen (saveTeam sperrt danach definitiv).
+        isInputLocked = false
+        DebugManager.log(.state, "Phase gewechselt: priorisieren -> teamZuordnen, Input freigegeben, Ticketindex: \(currentTicketIndex)")
+    }
+
+    /// Speichert genau eine Teamentscheidung für das aktuelle Ticket.
+    ///
+    /// Vorbedingungen (alle müssen erfüllt sein, sonst No-Op):
+    /// - `currentPhase == .teamZuordnen`
+    /// - `selectedTeam == nil` (noch keine Teamentscheidung)
+    /// - `isInputLocked == false`
+    ///
+    /// Effekte:
+    /// - `selectedTeam` enthält das übergebene Team.
+    /// - `isInputLocked == true`.
+    ///
+    /// Unverändert: `selectedPriority`, `score`, `currentTicketIndex`, `currentPhase`.
+    ///
+    /// Kapselt Speicherung und Lock atomisch analog zu `savePriority(_:)`.
+    ///
+    /// - Parameter team: Das zu speichernde Support-Team.
+    func saveTeam(_ team: SupportTeam) {
+        guard currentPhase == .teamZuordnen else {
+            DebugManager.log(.state, "saveTeam ignoriert: Phase ist \(currentPhase), erwartet .teamZuordnen")
+            return
+        }
+        guard selectedTeam == nil else {
+            DebugManager.log(.state, "saveTeam ignoriert: Team bereits gesetzt (\(selectedTeam!.rawValue))")
+            return
+        }
+        guard !isInputLocked else {
+            DebugManager.log(.state, "saveTeam ignoriert: Input bereits gesperrt")
+            return
+        }
+        selectedTeam = team
+        lockInput()
+        DebugManager.log(.state, "Team gespeichert: \(team.rawValue), isInputLocked=true")
+    }
+
     // MARK: - Reset
 
     /// Setzt den gesamten Modellzustand auf die definierten Startwerte zurück (SPEC F-16, AK-16 Modellanteil).

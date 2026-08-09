@@ -1,61 +1,61 @@
 import RealityKit
 import SwiftUI
 
-// MARK: - Ziel-ID → TicketPriority Mapping (Modul 008 — F-08 / AK-08)
+// MARK: - Ziel-ID → SupportTeam Mapping (Modul 009 — F-09 / AK-09)
 
-/// Zentrale Zuordnung der drei technischen Ziel-IDs auf `TicketPriority`-Werte.
+/// Zentrale Zuordnung der vier technischen Ziel-IDs auf `SupportTeam`-Werte.
 ///
 /// `internal` (kein expliziter Modifier), damit automatisierte Tests das Mapping
-/// direkt prüfen können. Nutzerinnen und Nutzer sehen ausschließlich
-/// `TicketPriority.displayName` (deutsche Labels). Technische IDs sind nie sichtbar.
-enum PriorityTargetMapping {
+/// direkt prüfen können. Technische IDs erscheinen nie in der Benutzeroberfläche;
+/// sichtbar sind ausschließlich die deutschen `SupportTeam.displayName`-Werte.
+enum TeamTargetMapping {
 
     // MARK: - Ziel-Descriptor
 
     struct TargetDefinition {
         /// Fachlich neutrale technische Ziel-ID (erscheint nie in der UI).
         let id: String
-        /// Fachlicher Prioritätswert.
-        let priority: TicketPriority
+        /// Fachlicher Team-Wert.
+        let team: SupportTeam
         /// Räumliche Position im Volume-Koordinatensystem.
         let position: SIMD3<Float>
     }
 
     // MARK: - Vollständige Zielliste
 
-    /// Genau drei Prioritätsziele — nicht mehr, nicht weniger.
+    /// Genau vier Teamstationen — nicht mehr, nicht weniger.
     ///
-    /// Positionen aus `PrioritizationConstants`: Abstand jeweils 0.32 m >
-    /// 2 × `InteractionConstants.dropTargetRadius` (0.30 m), keine Überschneidung.
+    /// Positionen aus `TeamAssignmentConstants`: 2×2-Layout.
+    /// Alle Abstände > 2 × `InteractionConstants.dropTargetRadius` — keine Überschneidung.
     static let allTargets: [TargetDefinition] = [
-        .init(id: "priority_normal",   priority: .normal,   position: PrioritizationConstants.targetPositionNormal),
-        .init(id: "priority_wichtig",  priority: .wichtig,  position: PrioritizationConstants.targetPositionWichtig),
-        .init(id: "priority_kritisch", priority: .kritisch, position: PrioritizationConstants.targetPositionKritisch),
+        .init(id: "team_netzwerk",  team: .netzwerk,  position: TeamAssignmentConstants.targetPositionNetzwerk),
+        .init(id: "team_konto",     team: .konto,     position: TeamAssignmentConstants.targetPositionKonto),
+        .init(id: "team_software",  team: .software,  position: TeamAssignmentConstants.targetPositionSoftware),
+        .init(id: "team_hardware",  team: .hardware,  position: TeamAssignmentConstants.targetPositionHardware),
     ]
 
     // MARK: - Mapping
 
-    /// Gibt die `TicketPriority` für eine technische Ziel-ID zurück, oder `nil` bei
-    /// unbekannter ID.
-    static func priority(for targetID: String) -> TicketPriority? {
-        allTargets.first { $0.id == targetID }?.priority
+    /// Gibt das `SupportTeam` für eine technische Ziel-ID zurück, oder `nil` bei unbekannter ID.
+    static func team(for targetID: String) -> SupportTeam? {
+        allTargets.first { $0.id == targetID }?.team
     }
 }
 
-// MARK: - Priorisierungsansicht (Modul 008 — F-08 / AK-08 / AK-10)
+// MARK: - Teamzuordnungsansicht (Modul 009 — F-09 / AK-09 / AK-10)
 
-/// Räumliche Priorisierungsansicht für `GamePhase.priorisieren`.
+/// Räumliche Teamzuordnungsansicht für `GamePhase.teamZuordnen`.
 ///
-/// Zeigt das Monster des aktuellen Tickets und drei klar mit deutschen Bezeichnungen
-/// beschriftete Prioritätsziele (Normal, Wichtig, Kritisch). Das Monster ist per
-/// Blickfokus, Pinch und Drag interaktiv.
+/// Zeigt das Monster des aktuellen Tickets und vier klar mit deutschen Bezeichnungen
+/// beschriftete Teamstationen (Netzwerk, Konto, Software, Hardware) in einem 2×2-Layout.
+/// Das Monster ist per Blickfokus, Pinch und Drag interaktiv.
 ///
-/// - Gültiger Drop: `SessionModel.savePriority(_:)` speichert die Priorität genau einmal.
+/// - Gültiger Drop: `SessionModel.saveTeam(_:)` speichert die Teamentscheidung genau einmal.
 /// - Ungültiger Drop: Monster kehrt zur Ausgangsposition zurück, kein Zustandswechsel.
+/// - Keine Bewertung gegen `referenceTeam` (Modul 010).
 /// - Keine automatische Phasenweiterleitung (Modul 010 / F-13).
-/// - Keine Bewertung gegen `referencePriority` (Modul 010).
 @MainActor
-struct PrioritizationView: View {
+struct TeamAssignmentView: View {
 
     // MARK: - Environment
 
@@ -85,35 +85,23 @@ struct PrioritizationView: View {
                     .onEnded { value in handleDragEnded(value: value) }
             )
 
-            // Deutsche Labels für die drei Prioritätsziele.
-            // Als ZStack-Overlay — zuverlässig ohne Attachment-API.
-            // Visuell mit den drei Zielkugeln ausgerichtet (links / Mitte / rechts).
-            HStack(spacing: 12) {
-                ForEach(PriorityTargetMapping.allTargets, id: \.id) { target in
-                    priorityLabel(target.priority.displayName, priority: target.priority)
+            // Deutsche Labels für die vier Teamstationen.
+            // Als ZStack-Overlay — zuverlässig ohne Attachment-API (analog zu 008-Fix).
+            // 2×2-Grid: oben Netzwerk/Konto, unten Software/Hardware.
+            VStack(spacing: 8) {
+                HStack(spacing: 8) {
+                    teamLabel(for: .netzwerk)
+                    teamLabel(for: .konto)
+                }
+                Spacer()
+                HStack(spacing: 8) {
+                    teamLabel(for: .software)
+                    teamLabel(for: .hardware)
                 }
             }
-            .padding(.top, 20)
-            .padding(.horizontal, 20)
-
-            // DEBUG-Einstieg in die Teamphase — nur für Entwicklung/Simulator-Prüfung.
-            // Nicht im Release-Build, nicht als F-09-Nutzerfunktion (AK-09).
-            // Modul 010 übernimmt den normalen zeitgesteuerten Übergang (F-13).
-            #if DEBUG
-            if model.selectedPriority != nil {
-                VStack {
-                    Spacer()
-                    Button("🔧 Team [DEV]") {
-                        model.beginTeamAssignmentPhase()
-                        DebugManager.log(.state, "[DEV] beginTeamAssignmentPhase manuell ausgeloest")
-                    }
-                    .font(.caption)
-                    .padding(8)
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
-                    .padding(.bottom, 12)
-                }
-            }
-            #endif
+            .padding(.top, 16)
+            .padding(.bottom, 16)
+            .padding(.horizontal, 16)
 
             // Fehlermeldung bei Ladefehlern (kein Crash, kein Auto-Wechsel).
             if let error = loadError {
@@ -129,67 +117,71 @@ struct PrioritizationView: View {
             await setupScene()
         }
         .onAppear {
-            // Eingabe nur freigeben, wenn noch keine Entscheidung getroffen wurde.
-            // Kein Unlock nach View-Refresh bei bereits gespeicherter Priorität (AK-10).
-            if model.selectedPriority == nil {
-                model.unlockInput()
-                DebugManager.log(.state, "PrioritizationView erschienen, Input freigegeben")
+            // Eingabe nur freigeben, wenn noch keine Teamentscheidung getroffen wurde.
+            // Kein Unlock nach View-Refresh bei bereits gespeichertem Team (AK-10).
+            // beginTeamAssignmentPhase() übernimmt das initiale Unlock; dieser Guard
+            // schützt vor erneutem Entsperren bei View-Refresh nach saveTeam(_:).
+            if model.selectedTeam != nil {
+                DebugManager.log(.state, "TeamAssignmentView erschienen, Team bereits gespeichert: \(model.selectedTeam!.rawValue)")
             } else {
-                DebugManager.log(.state, "PrioritizationView erschienen, Prioritaet bereits gespeichert: \(model.selectedPriority!.rawValue)")
+                DebugManager.log(.state, "TeamAssignmentView erschienen, Phase: \(model.currentPhase)")
             }
         }
     }
 
     // MARK: - Label-Subview
 
-    /// Sichtbares deutsches Label für ein Prioritätsziel.
+    /// Sichtbares deutsches Label für eine Teamstation.
     @ViewBuilder
-    private func priorityLabel(_ text: String, priority: TicketPriority) -> some View {
-        Text(text)
+    private func teamLabel(for team: SupportTeam) -> some View {
+        Text(team.displayName)
             .font(.title2)
             .fontWeight(.semibold)
             .foregroundStyle(.white)
             .padding(.horizontal, 18)
             .padding(.vertical, 10)
-            .background(labelColor(for: priority).opacity(0.7), in: RoundedRectangle(cornerRadius: 12))
+            .background(labelColor(for: team).opacity(0.75), in: RoundedRectangle(cornerRadius: 12))
             .frame(maxWidth: .infinity)
     }
 
-    /// Hintergrundfarbe je Priorität — visuell unterscheidbar, semantisch passend.
-    private func labelColor(for priority: TicketPriority) -> Color {
-        switch priority {
-        case .normal:   return .green
-        case .wichtig:  return .orange
-        case .kritisch: return .red
+    /// Hintergrundfarbe je Team — visuell unterscheidbar, keine Bewertungssignale.
+    ///
+    /// Keine Ampelfarben: keine Farbe suggeriert richtig/falsch oder besser/schlechter.
+    private func labelColor(for team: SupportTeam) -> Color {
+        switch team {
+        case .netzwerk:  return .blue
+        case .konto:     return .purple
+        case .software:  return .teal
+        case .hardware:  return .indigo
         }
     }
 
     // MARK: - Szenenaufbau
 
-    /// Erzeugt die drei Prioritätsziele und lädt das Monster asynchron.
+    /// Erzeugt die vier Teamstationen und lädt das Monster asynchron.
     private func setupScene() async {
-        // Drei Prioritätsziele aufbauen.
-        for targetDef in PriorityTargetMapping.allTargets {
+        // Vier Teamstationen aufbauen.
+        for targetDef in TeamTargetMapping.allTargets {
             let entity = Entity()
-            entity.name = "priorityTarget_\(targetDef.id)"
+            entity.name = "teamTarget_\(targetDef.id)"
             entity.position = targetDef.position
             entity.components.set(
                 DropTargetComponent(
                     id: targetDef.id,
                     radius: InteractionConstants.dropTargetRadius,
-                    debugName: targetDef.priority.displayName
+                    debugName: targetDef.team.displayName
                 )
             )
 
-            // Sichtbare Zielkugel mit Prioritätsfarbe.
+            // Sichtbare Zielkugel mit Teamfarbe (neutral, kein Bewertungssignal).
             let mesh = MeshResource.generateSphere(radius: InteractionConstants.dropTargetRadius)
             var material = SimpleMaterial()
-            material.color = .init(tint: uiColor(for: targetDef.priority).withAlphaComponent(0.55))
+            material.color = .init(tint: uiColor(for: targetDef.team).withAlphaComponent(0.50))
             let indicator = ModelEntity(mesh: mesh, materials: [material])
             entity.addChild(indicator)
 
             targetEntities.append(entity)
-            DebugManager.log(.spawning, "Prioritaetsziel bereit: \(targetDef.id) an \(targetDef.position)")
+            DebugManager.log(.spawning, "Teamstation bereit: \(targetDef.id) an \(targetDef.position)")
         }
 
         // Monster laden.
@@ -202,7 +194,7 @@ struct PrioritizationView: View {
         do {
             let entity = try await MonsterAssetProvider.loadMonster(assetID: ticket.monsterAssetId)
             entity.scale = SIMD3(repeating: LayoutConstants.monsterScale)
-            entity.position = PrioritizationConstants.monsterStartPosition
+            entity.position = TeamAssignmentConstants.monsterStartPosition
             originTransform = entity.transform
             MonsterInteractionConfigurator.configure(entity, mode: .dragDrop)
             monsterEntity = entity
@@ -213,12 +205,13 @@ struct PrioritizationView: View {
         }
     }
 
-    /// UIColor-Pendant für SimpleMaterial (je Priorität).
-    private func uiColor(for priority: TicketPriority) -> UIColor {
-        switch priority {
-        case .normal:   return .systemGreen
-        case .wichtig:  return .systemOrange
-        case .kritisch: return .systemRed
+    /// UIColor-Pendant für SimpleMaterial (je Team, neutral).
+    private func uiColor(for team: SupportTeam) -> UIColor {
+        switch team {
+        case .netzwerk:  return .systemBlue
+        case .konto:     return .systemPurple
+        case .software:  return .systemTeal
+        case .hardware:  return .systemIndigo
         }
     }
 
@@ -264,9 +257,9 @@ struct PrioritizationView: View {
 
         if let hitID = DropEvaluator.evaluate(entity: entity, targets: targets) {
             DebugManager.log(.physics, "Gueltiger Drop: Ziel=\(hitID)")
-            if let priority = PriorityTargetMapping.priority(for: hitID) {
-                model.savePriority(priority)
-                DebugManager.log(.state, "Prioritaet gespeichert: \(priority.rawValue), isInputLocked=\(model.isInputLocked)")
+            if let team = TeamTargetMapping.team(for: hitID) {
+                model.saveTeam(team)
+                DebugManager.log(.state, "Team gespeichert: \(team.rawValue), isInputLocked=\(model.isInputLocked)")
             } else {
                 DebugManager.log(.physics, "Unbekannte Ziel-ID: \(hitID)")
                 returnMonsterToOrigin(entity: entity)
@@ -295,6 +288,8 @@ struct PrioritizationView: View {
     model.setTicketCount(1)
     model.startSession(using: { $0 })
     model.beginPrioritizationPhase()
-    return PrioritizationView()
+    model.savePriority(.normal)
+    model.beginTeamAssignmentPhase()
+    return TeamAssignmentView()
         .environment(model)
 }

@@ -35,6 +35,10 @@ struct RootVolumeView: View {
             // DebugInteractionHarnessView bleibt als Development-Datei erhalten, ist aber nicht mehr
             // im normalen .priorisieren-Routing aktiv.
             PrioritizationView()
+        case .teamZuordnen:
+            // Modul 009: Teamzuordnungsansicht (F-09 / AK-09).
+            // Normaler Einstieg: über SessionModel.beginTeamAssignmentPhase() (Modul 010 / F-13).
+            TeamAssignmentView()
         default:
             // Neutraler Platzhalter für Phasen, die in späteren Modulen implementiert werden.
             // Die vorhandene RealityKit-Standardszene bleibt als räumliches Element erhalten.

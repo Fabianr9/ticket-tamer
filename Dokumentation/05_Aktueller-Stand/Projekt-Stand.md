@@ -2,16 +2,18 @@
 
 > Aktuelle Landkarte des bestätigten Codes und der bekannten Projektbestandteile. Nach jedem Modul wird dieses Dokument vollständig neu erzeugt und unter `Dokumentation/05_Aktueller-Stand/Projekt-Stand.md` ersetzt. Die Code-Historie liegt ausschließlich in Git.
 
-**Stand:** nach Modul `008` — Priorisierungsphase  
+**Stand:** nach Modul `009` — Teamzuordnungsphase  
 **Eingearbeitet am:** 2026-08-09  
 **Branch laut Report:** `main`  
 **Modul-008-Commit:** `200093b 008: Priorisierungsphase`  
-**008-Fix:** implementiert, Commit/Hash noch offen  
-**Build:** bestätigt  
-**Simulatorstart:** bestätigt  
-**Testdeklarationen:** 86  
+**008-Fix-Commits:** `af4cbe4` (Docs), `b716ed1` (PrioritizationView visuell korrigiert) — beide committed ✓  
+**Modul-009-Commit:** steht aus (`009: Teamzuordnungsphase`)  
+**Build:** nach Modul 009 offen  
+**Simulatorstart:** nach Modul 009 offen  
+**Testdeklarationen:** 110  
 **Vollständiger Testlauf:** nicht nachgewiesen  
-**Manuelle Priorisierungs-Gestenprüfung:** offen
+**Manuelle Priorisierungs-Gestenprüfung:** offen  
+**Manuelle Teamzuordnungs-Gestenprüfung:** offen
 
 ## Technischer Gesamtstand
 
@@ -27,17 +29,20 @@ Der gemeldete Quellstand enthält:
 - echte Priorisierungsphase,
 - drei beschriftete Prioritätsziele,
 - atomare Speicherung einer Priorität,
-- Input-Lock nach gültigem Prioritätsdrop.
+- Input-Lock nach gültigem Prioritätsdrop,
+- Teamzuordnungsphase,
+- vier räumliche Teamstationen (2×2-Layout),
+- atomare Speicherung einer Teamentscheidung,
+- Input-Lock nach gültigem Teamdrop.
 
 Noch nicht vorhanden:
 
-- normale Teamzuordnungsansicht,
-- `saveTeam(_:)`,
-- Übergang zur Teamphase im normalen Flow,
-- Bewertung,
+- Bewertung gegen `referenceTeam` / `referencePriority`,
 - Punkte,
 - Audio,
-- automatischer 1,5-Sekunden-Übergang.
+- automatischer 1,5-Sekunden-Übergang (F-13),
+- automatischer Wechsel zum nächsten Ticket,
+- Ergebnisansicht.
 
 ## Tatsächlicher relevanter Dateibaum
 
@@ -71,7 +76,8 @@ Ticket_Tamer/
 │  │  ├─ InvestigationView.swift
 │  │  ├─ PrioritizationView.swift
 │  │  ├─ RootVolumeView.swift
-│  │  └─ StartView.swift
+│  │  ├─ StartView.swift
+│  │  └─ TeamAssignmentView.swift          ← neu in 009
 │  ├─ Assets.xcassets
 │  └─ Info.plist
 ├─ Ticket_TamerTests/
@@ -98,12 +104,12 @@ Dokumentation/
 ├─ 03_Modul-Eingangsprompts/
 │  ├─ 001-Eingangsprompt.md
 │  ├─ ...
-│  ├─ 008-Eingangsprompt.md
 │  └─ 009-Eingangsprompt.md
 ├─ 04_Modul-Reports/
 │  ├─ 001-Report.md
 │  ├─ ...
-│  └─ 008-Report.md
+│  ├─ 008-Report.md
+│  └─ 009-Report.md                        ← neu
 └─ 05_Aktueller-Stand/
    ├─ Logbuch-Stand.md
    └─ Projekt-Stand.md
@@ -114,21 +120,22 @@ Dokumentation/
 | Datei | Zweck | Status |
 |---|---|---|
 | `App/Ticket_TamerApp.swift` | App-Einstieg, Volume, SessionModel, Component-Registrierung | aktiv |
-| `Views/RootVolumeView.swift` | Root-Routing für Start, Untersuchung und Priorisierung | geändert in 008 |
+| `Views/RootVolumeView.swift` | Root-Routing: Start, Untersuchung, Priorisierung, Teamzuordnung | geändert in 009 |
 | `Views/StartView.swift` | Startansicht | aktiv |
 | `Views/InvestigationView.swift` | Untersuchungsphase | aktiv |
-| `Views/PrioritizationView.swift` | drei Prioritätsziele + Monster-Drag/Drop | neu in 008, danach visuell korrigiert |
-| `Views/Debug/DebugInteractionHarnessView.swift` | Development-Harness aus 007 | vorhanden, nicht mehr normales `.priorisieren`-Routing |
-| `Models/SessionModel.swift` | zentrale Zustandsquelle inkl. `savePriority(_:)` | ergänzt |
+| `Views/PrioritizationView.swift` | drei Prioritätsziele + Monster-Drag/Drop + `#if DEBUG`-Team-Button | ergänzt in 009 |
+| `Views/TeamAssignmentView.swift` | vier Teamstationen + Monster-Drag/Drop + Labels als Overlay | neu in 009 |
+| `Views/Debug/DebugInteractionHarnessView.swift` | Development-Harness aus 007 | vorhanden, nicht im normalen Routing |
+| `Models/SessionModel.swift` | zentrale Zustandsquelle inkl. `beginTeamAssignmentPhase()`, `saveTeam(_:)` | ergänzt in 009 |
 | `Models/Ticket.swift` | Ticket inkl. Referenzdaten und `monsterAssetId` | aktiv |
 | `Data/LocalTicketCatalog.swift` | zwölf lokale Tickets | aktiv |
 | `Assets/MonsterAssetProvider.swift` | lokales Monsterladen | aktiv |
 | `Components/DropTargetComponent.swift` | generischer Drop-Zielmarker | aktiv |
 | `Services/MonsterInteractionConfigurator.swift` | Hover/Input/Collision/Drag-Konfiguration | aktiv |
 | `Services/DropEvaluator.swift` | räumliche Drop-Auswertung | aktiv |
-| `Support/AppConstants.swift` | Layout-, Gameplay-, Interaction- und Priorisierungsconstants | ergänzt |
+| `Support/AppConstants.swift` | Layout-, Gameplay-, Interaction-, Priorisierungs- und Teamkonstanten | ergänzt in 009 |
 | `Resources/Localizable.xcstrings` | deutsche UI-Texte | aktiv |
-| `Ticket_TamerTests/Ticket_TamerTests.swift` | 86 Testdeklarationen | ergänzt |
+| `Ticket_TamerTests/Ticket_TamerTests.swift` | 110 Testdeklarationen | ergänzt in 009 |
 
 ## Root-Phasenrouting
 
@@ -140,8 +147,10 @@ RootVolumeView
 │  └─ InvestigationView
 ├─ .priorisieren
 │  └─ PrioritizationView
-└─ .teamZuordnen / .ergebnis
-   └─ derzeit neutraler Platzhalter
+├─ .teamZuordnen
+│  └─ TeamAssignmentView                   ← neu in 009
+└─ .ergebnis
+   └─ neutraler Platzhalter
 ```
 
 ## Priorisierungsphase
@@ -156,116 +165,88 @@ RootVolumeView
 
 ### Mapping
 
-`PriorityTargetMapping` kapselt:
+`PriorityTargetMapping` kapselt `allTargets` und `priority(for:)`.
 
-- `allTargets`,
-- `priority(for:)`.
+### DEBUG-Einstieg in Teamphase
 
-### SessionModel
+`PrioritizationView` zeigt nach gespeicherter Priorität einen `#if DEBUG`-Button „🔧 Team [DEV]". Tippen ruft `model.beginTeamAssignmentPhase()` auf. Nur im Debug-Build, kein normaler Nutzerpfad.
 
-Neue Methode:
+## Teamzuordnungsphase
 
-`savePriority(_ priority: TicketPriority)`
+### Ziele (2×2-Layout)
 
-Vorbedingungen:
+| technische ID | Label | Wert | Position |
+|---|---|---|---|
+| `team_netzwerk` | Netzwerk | `SupportTeam.netzwerk` | (-0.24, +0.16, 0) |
+| `team_konto` | Konto | `SupportTeam.konto` | (+0.24, +0.16, 0) |
+| `team_software` | Software | `SupportTeam.software` | (-0.24, -0.16, 0) |
+| `team_hardware` | Hardware | `SupportTeam.hardware` | (+0.24, -0.16, 0) |
 
-- Phase `.priorisieren`,
-- noch keine Priorität,
-- Input nicht gesperrt.
+Minimaler Abstand: 0.32 m vertikal > 2 × 0.15 m (dropTargetRadius). Keine Überschneidung.
 
-Effekte:
+### Mapping
 
-- Priorität speichern,
-- Input sperren.
+`TeamTargetMapping` kapselt `allTargets` und `team(for:)`.
 
-Keine Änderung an:
+### SessionModel — neue Methoden
 
-- Score,
-- Team,
-- Ticketindex,
-- Phase.
+**`beginTeamAssignmentPhase()`**
+
+Vorbedingungen: Phase `.priorisieren`, `selectedPriority != nil`.  
+Effekte: Phase → `.teamZuordnen`, `isInputLocked = false`.  
+Unverändert: `score`, `currentTicketIndex`, `selectedPriority`, `selectedTeam`.  
+No-Op bei: falscher Phase oder fehlender Priorität.
+
+**`saveTeam(_ team: SupportTeam)`**
+
+Vorbedingungen: Phase `.teamZuordnen`, `selectedTeam == nil`, `isInputLocked == false`.  
+Effekte: `selectedTeam = team`, `isInputLocked = true`.  
+Unverändert: `selectedPriority`, `score`, `currentTicketIndex`, `currentPhase`.  
+No-Op bei: falscher Phase, bereits gespeichertem Team, gesperrtem Input.
 
 ## Sichtbarkeits-Fix aus Modul 008
 
-### Vor Fix
-
-- Zielkugeln wegen Alpha 0,15 kaum sichtbar.
-- RealityView-Attachment-Labels nicht sichtbar.
-
-### Nach Fix
-
-- drei farblich unterscheidbare Zielkugeln mit Opacity 0,55,
-- Labels als SwiftUI-Overlay,
-- Funktionslogik unverändert.
-
-**Git:** Fix-Commit noch nicht bestätigt.
+- Drei farblich unterscheidbare Zielkugeln mit Opacity 0.55.
+- Labels als SwiftUI-Overlay.
+- Fix-Commit: `b716ed1` — vollständig committed und aktiv.
 
 ## Build- und Verifikationsstand
 
 | Prüfung | Stand |
 |---|---|
-| App-Build | bestätigt |
-| Simulatorstart | bestätigt |
-| Startansicht sichtbar | bestätigt |
-| Untersuchungsansicht sichtbar | bestätigt |
-| Priorisierungsansicht sichtbar | bestätigt |
-| korrigierte Zielkugeln im finalen Commit | Implementierung gemeldet; Commit offen |
-| korrigierte Labels im finalen Commit | Implementierung gemeldet; Commit offen |
-| Drag auf Normal | offen |
-| Drag auf Wichtig | offen |
-| Drag auf Kritisch | offen |
-| Invalid-Drop | offen |
-| Lock-Laufzeitprüfung | offen |
-| vollständige 86 Tests | offen |
+| App-Build | offen (nach Modul 009) |
+| Simulatorstart | offen |
+| Startansicht sichtbar | bestätigt (Modul 008) |
+| Untersuchungsansicht sichtbar | bestätigt (Modul 008) |
+| Priorisierungsansicht sichtbar | bestätigt (Modul 008) |
+| Teamzuordnungsansicht sichtbar | offen |
+| Drag auf Normal/Wichtig/Kritisch | offen |
+| Drag auf Netzwerk/Konto/Software/Hardware | offen |
+| Invalid-Drop Priorität | offen |
+| Invalid-Drop Team | offen |
+| Lock-Laufzeitprüfung Priorität | offen |
+| Lock-Laufzeitprüfung Team | offen |
+| vollständige 110 Tests | offen |
 
-## Schnittstellen für Modul 009/010
+## Schnittstellen für Modul 010/011
 
 | Schnittstelle | Zweck |
 |---|---|
-| `SessionModel.selectedPriority` | bereits gespeicherte Priorität |
-| `SessionModel.selectedTeam` | Teamentscheidung ab Modul 009 |
-| `SessionModel.savePriority(_:)` | Muster für atomare Teamentscheidung |
-| `SessionModel.lockInput()` | Eingabe sperren |
-| `SessionModel.unlockInput()` | Eingabe für neue Phase freigeben |
-| `SupportTeam` | `.netzwerk`, `.konto`, `.software`, `.hardware` |
-| `SupportTeam.displayName` | deutsche Labels |
-| `DropTargetComponent` | Teamstationen markieren |
-| `DropEvaluator` | Teamdrop auswerten |
+| `SessionModel.selectedPriority` | gespeicherte Priorität |
+| `SessionModel.selectedTeam` | gespeicherte Teamentscheidung |
+| `SessionModel.savePriority(_:)` | atomare Prioritätsspeicherung |
+| `SessionModel.saveTeam(_:)` | atomare Teamspeicherung |
+| `SessionModel.beginTeamAssignmentPhase()` | Phasenwechsel (Modul 010 löst zeitgesteuert aus) |
+| `SessionModel.score` | Punktestand (Modul 010 vergibt Punkte) |
+| `SessionModel.advanceToNextTicket()` | nächstes Ticket |
+| `SupportTeam` / `displayName` | Teamwerte und deutsche Labels |
+| `TicketPriority` / `displayName` | Prioritätswerte und Labels |
+| `PriorityTargetMapping` | Prioritätsziele und Mapping |
+| `TeamTargetMapping` | Teamziele und Mapping |
+| `DropTargetComponent` | Zielstationen markieren |
+| `DropEvaluator` | Drop auswerten |
 | `MonsterInteractionConfigurator` | Monster `.dragDrop` konfigurieren |
-| `MonsterAssetProvider` | aktuelles Monster laden |
-| `PriorityTargetMapping` | später für Bewertungs-/Debugkontext verfügbar |
-| `PrioritizationConstants` | Priorisierungspositionen |
-
-## Noch zu ergänzende SessionModel-Schnittstellen
-
-Modul 009 benötigt voraussichtlich:
-
-- `beginTeamAssignmentPhase()`
-- `saveTeam(_:)`
-
-### `beginTeamAssignmentPhase()`
-
-Soll einen kontrollierten Wechsel ermöglichen:
-
-- nur von `.priorisieren`,
-- nur wenn `selectedPriority != nil`,
-- wechselt zu `.teamZuordnen`,
-- entsperrt Input für die neue Teamentscheidung,
-- verändert Score und Ticketindex nicht,
-- speichert kein Team.
-
-**Wichtig:** Modul 009 darf diese Methode im normalen Spielablauf noch nicht automatisch nach Zeit auslösen. Modul 010 übernimmt den zeitgesteuerten Übergang gemäß F-13.
-
-### `saveTeam(_:)`
-
-Soll analog zu `savePriority(_:)`:
-
-- nur in `.teamZuordnen`,
-- nur einmal,
-- nur bei ungesperrtem Input,
-- `selectedTeam` setzen,
-- Input sperren,
-- Score/Phase/Index unverändert lassen.
+| `MonsterAssetProvider` | Monster laden |
 
 ## Monster-Asset-Status
 
@@ -278,17 +259,21 @@ Soll analog zu `savePriority(_:)`:
 
 ## Teststand
 
-- 64 Testdeklarationen vor Modul 008,
-- 22 neue Tests,
-- 86 Testdeklarationen nach Modul 008,
-- kein vollständiger Testlauf nachgewiesen.
+| Modul | neue Tests | kumulativ |
+|---|---|---|
+| vor Modul 008 | — | 64 |
+| Modul 008 | +22 | 86 |
+| Modul 009 | +24 | 110 |
+
+Kein vollständiger Testlauf nachgewiesen.
 
 ## Offene Punkte
 
-- Fix-Commit für Modul 008 fehlt.
-- `.git/index.lock` prüfen.
-- vollständigen Testlauf mit 86 Tests ausführen.
-- Priorisierungs-Gesten manuell prüfen.
-- vier finale Blender-Monster fehlen.
+- Modul-009-Commit (`009: Teamzuordnungsphase`) steht aus.
+- App-Build und Simulatorstart nach Modul 009 prüfen.
+- Vollständigen Testlauf mit 110 Tests ausführen.
+- Priorisierungs-Gesten manuell prüfen (aus Modul 008 offen).
+- Teamzuordnungs-Gesten manuell prüfen (alle vier Teams, Invalid-Drop, Lock).
+- Vier finale Blender-Monster fehlen.
 - `.DS_Store`-Bereinigung bleibt offen.
-- Audioassets für Modul 010 fehlen beziehungsweise sind noch nicht bestätigt.
+- Audioassets für Modul 010 fehlen.

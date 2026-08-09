@@ -469,3 +469,95 @@ struct MonsterAssetPipelineTests {
         }
     }
 }
+
+// MARK: - Modul 006: Untersuchungsphase
+
+/// Tests für Phasenwechsel und Datenverfügbarkeit in der Untersuchungsphase (F-06 / F-07 / AK-06 / AK-07).
+///
+/// Geprüft werden ausschließlich Modell- und Datenbedingungen.
+/// Die sichtbare UI (Monster, Ticketkarte, Button-Position) wird manuell im Simulator geprüft.
+@MainActor
+struct InvestigationPhaseTests {
+
+    // MARK: - Phasenwechsel (AK-07)
+
+    @Test("Phasenwechsel von untersuchen zu priorisieren")
+    func phaseTransitionsFromUntersuchenToPriorisieren() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        #expect(model.currentPhase == .untersuchen)
+        model.beginPrioritizationPhase()
+        #expect(model.currentPhase == .priorisieren)
+    }
+
+    @Test("Ticketindex bleibt beim Phasenwechsel unverändert")
+    func ticketIndexRemainsUnchangedAfterPhaseTransition() {
+        let model = SessionModel()
+        model.setTicketCount(3)
+        model.startSession(using: { $0 })
+        model.advanceToNextTicket()
+        let indexBefore = model.currentTicketIndex
+        model.beginPrioritizationPhase()
+        #expect(model.currentTicketIndex == indexBefore)
+    }
+
+    @Test("currentTicket bleibt beim Phasenwechsel dasselbe")
+    func currentTicketRemainsTheSameAfterPhaseTransition() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        let ticketBefore = model.currentTicket
+        model.beginPrioritizationPhase()
+        #expect(model.currentTicket == ticketBefore)
+    }
+
+    @Test("selectedPriority bleibt nil nach Phasenwechsel")
+    func selectedPriorityRemainsNilAfterPhaseTransition() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        model.beginPrioritizationPhase()
+        #expect(model.selectedPriority == nil)
+    }
+
+    @Test("Phasenwechsel aus falscher Phase wird ignoriert")
+    func phaseTransitionFromWrongPhaseIsIgnored() {
+        let model = SessionModel()
+        // Vor Sitzungsstart: Phase ist .start — Aufruf ist No-Op
+        #expect(model.currentPhase == .start)
+        model.beginPrioritizationPhase()
+        #expect(model.currentPhase == .start)
+
+        // Nach Sitzungsstart und Wechsel zu .priorisieren: weiterer Aufruf ist No-Op
+        model.startSession(using: { $0 })
+        model.beginPrioritizationPhase()
+        #expect(model.currentPhase == .priorisieren)
+        model.beginPrioritizationPhase()
+        #expect(model.currentPhase == .priorisieren)
+    }
+
+    // MARK: - Datenverfügbarkeit (AK-06)
+
+    @Test("currentTicket enthält alle für die Untersuchungsansicht benötigten Daten")
+    func currentTicketHasAllRequiredInvestigationData() {
+        let model = SessionModel()
+        model.setTicketCount(12)
+        model.startSession(using: { $0 })
+        for ticket in model.sessionTickets {
+            #expect(!ticket.ticketNumber.isEmpty, "ticketNumber fehlt: \(ticket.id)")
+            #expect(!ticket.title.isEmpty, "title fehlt: \(ticket.id)")
+            #expect(!ticket.shortDescription.isEmpty, "shortDescription fehlt: \(ticket.id)")
+            #expect(!ticket.userImpact.isEmpty, "userImpact fehlt: \(ticket.id)")
+            #expect(!ticket.symptoms.isEmpty, "symptoms leer: \(ticket.id)")
+            #expect(!ticket.monsterAssetId.isEmpty, "monsterAssetId fehlt: \(ticket.id)")
+        }
+    }
+
+    @Test("Alle Tickets im Katalog haben 1 bis 3 Symptome")
+    func allCatalogTicketsHaveOneToThreeSymptoms() {
+        for ticket in LocalTicketCatalog.allTickets {
+            #expect(
+                (1...3).contains(ticket.symptoms.count),
+                "Ticket \(ticket.ticketNumber) hat \(ticket.symptoms.count) Symptome, erwartet 1–3"
+            )
+        }
+    }
+}

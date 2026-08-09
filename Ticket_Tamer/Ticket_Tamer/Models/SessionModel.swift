@@ -148,6 +148,27 @@ final class SessionModel {
         }
     }
 
+    // MARK: - Phasenwechsel Modul 006 (F-06 / F-07 / AK-07)
+
+    /// Wechselt von der Untersuchungsphase in die Priorisierungsphase desselben Tickets.
+    ///
+    /// Vorbedingung: `currentPhase == .untersuchen`.
+    /// Verstöße gegen die Vorbedingung werden als No-Op behandelt – kein Absturz, kein Zustandsbruch.
+    ///
+    /// Garantien:
+    /// - Ändert ausschließlich `currentPhase`.
+    /// - `currentTicketIndex` bleibt unverändert.
+    /// - `selectedPriority` und `selectedTeam` bleiben `nil`.
+    /// - `score` bleibt unverändert.
+    func beginPrioritizationPhase() {
+        guard currentPhase == .untersuchen else {
+            DebugManager.log(.state, "beginPrioritizationPhase ignoriert: Phase ist \(currentPhase), erwartet .untersuchen")
+            return
+        }
+        currentPhase = .priorisieren
+        DebugManager.log(.state, "Phase gewechselt: untersuchen -> priorisieren, Ticketindex: \(currentTicketIndex)")
+    }
+
     // MARK: - Reset
 
     /// Setzt den gesamten Modellzustand auf die definierten Startwerte zurück (SPEC F-16, AK-16 Modellanteil).

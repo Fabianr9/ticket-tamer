@@ -34,6 +34,23 @@ enum LayoutConstants {
 
     /// Abstand unter dem vorhandenen RealityKit-Default-Modell.
     static let modelBottomPadding = 24.0
+
+    // MARK: - Investigation View (Modul 006)
+
+    /// Abstand zwischen Monster-Panel und Ticketkarte.
+    static let investigationSpacing = 24.0
+
+    /// Aussenabstand der Untersuchungsansicht.
+    static let investigationPadding = 24.0
+
+    /// Innenabstand der Ticketkarte.
+    static let investigationCardPadding = 16.0
+
+    /// Zeilenabstand innerhalb der Ticketkarte.
+    static let investigationCardSpacing = 12.0
+
+    /// Skalierungsfaktor fuer den Monster-Entity im Volume (RealityKit-Float, ca. 20 cm Kantenlänge).
+    static let monsterScale: Float = 0.2
 }
 
 /// Spielweite Grundwerte aus der SPEC, ohne Sitzungslogik vorwegzunehmen.

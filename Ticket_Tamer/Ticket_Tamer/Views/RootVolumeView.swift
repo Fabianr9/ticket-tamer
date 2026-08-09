@@ -27,6 +27,9 @@ struct RootVolumeView: View {
         switch model.currentPhase {
         case .start:
             StartView()
+        case .untersuchen:
+            // Modul 006: Untersuchungsphase (F-06 / F-07)
+            InvestigationView()
         default:
             // Neutraler Platzhalter für Phasen, die in späteren Modulen implementiert werden.
             // Die vorhandene RealityKit-Standardszene bleibt als räumliches Element erhalten.

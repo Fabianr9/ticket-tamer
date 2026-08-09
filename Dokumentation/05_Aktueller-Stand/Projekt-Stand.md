@@ -5,32 +5,36 @@
 **Stand:** nach Modul `004` — Startansicht und Einstellungen  
 **Eingearbeitet am:** 2026-08-09  
 **Branch:** `main`  
-**Commit Modul 003:** `dd78700 Feat: addModul3`  
-**Commit Modul 004:** `84bb767 004: Startansicht und Einstellungen`  
-**Build nach Modul 004:** nicht mit Xcode nachgewiesen (xcodebuild im Sandbox-Umfeld nicht verfügbar)  
-**Testlauf nach Modul 004:** nicht mit Xcode nachgewiesen
+**Modul-003-Commit:** `dd78700 Feat: addModul3`  
+**Commit vor Modul 004:** `f3d4bf3 feat: add doc files`  
+**Modul-004-Commit:** `84bb767 004: Startansicht und Einstellungen`  
+**Build nach Modul 004:** nicht nachgewiesen  
+**Simulatorstart nach Modul 004:** nicht nachgewiesen  
+**Tests nach Modul 004:** 27 Testdeklarationen im Quellstand; Ausführung nicht nachgewiesen
 
 ## Technischer Gesamtstand
 
-Modul 004 ergänzt das Sitzungsmodell aus Modul 003 um eine vollständige deutsche Startansicht. Die App zeigt beim Start einen Projekttitel, einen ganzzahligen Ticketregler (1–12, Standardwert 6) mit sichtbarem Zahlenwert und die Schaltfläche „Spiel starten". Nach dem Start erscheint ein neutraler Platzhalter, bis Modul 005 die Untersuchungsansicht implementiert. `SessionModel` wird einmalig in `Ticket_TamerApp` besessen und per SwiftUI-Environment weitergegeben.
+Der gemeldete Quellstand enthält:
 
-Bestätigte Bestandteile:
+- genau ein zentrales volumetrisches Fenster,
+- keine zweite Scene und keinen Immersive Space,
+- deutsche Basistexte und die RealityKit-Standardszene,
+- fachliche Tickettypen und genau zwölf lokale Tickets,
+- ein zentrales `SessionModel`,
+- Ticketanzahl 1 bis 12 mit Standardwert 6,
+- zufällige Ticketwahl ohne Wiederholung,
+- sicheren Ticketzugriff und vollständigen Modellreset,
+- eine deutsche Startansicht,
+- eine einzige `SessionModel`-Instanz im App-Baum,
+- SwiftUI-Environment-Weitergabe des Sitzungsmodells,
+- phasenabhängige Root-Darstellung,
+- 27 gemeldete Testdeklarationen.
 
-- genau ein zentrales volumetrisches Fenster
-- keine zweite Scene und keinen Immersive Space
-- deutsche Basistexte und die RealityKit-Standardszene
-- fachliche Tickettypen und genau zwölf lokale Tickets
-- `GamePhase`-Enum mit fünf Phasen
-- zentrales `SessionModel` (`@Observable @MainActor`)
-- Besitz von `SessionModel` in `Ticket_TamerApp`, Weitergabe per Environment
-- phasenabhängige `RootVolumeView`
-- deutsche `StartView` mit Projekttitel, Regler, Zahlenwert, Startschaltfläche
-- vier neue Lokalisierungsschlüssel
-- 27 Swift-Testing-Tests (22 aus Modul 001–003, 5 neu in Modul 004)
+Der Quellstand wurde im Modul-004-Chat nicht mit Xcode gebaut, im Simulator gestartet oder vollständig getestet. Diese Verifikation ist vor beziehungsweise zu Beginn von Modul 005 nachzuholen.
 
 ## Repository- und Dokumentationsstruktur
 
-```
+```text
 Ticket-Tamer/
 ├─ Ticket_Tamer/
 │  ├─ Ticket_Tamer.xcodeproj/
@@ -52,7 +56,7 @@ Ticket-Tamer/
 │  │  │  └─ AppConstants.swift
 │  │  ├─ Views/
 │  │  │  ├─ RootVolumeView.swift
-│  │  │  └─ StartView.swift          ← neu in Modul 004
+│  │  │  └─ StartView.swift
 │  │  ├─ Assets.xcassets
 │  │  └─ Info.plist
 │  ├─ Ticket_TamerTests/
@@ -91,12 +95,13 @@ Ticket-Tamer/
    │  ├─ 001-Eingangsprompt.md
    │  ├─ 002-Eingangsprompt.md
    │  ├─ 003-Eingangsprompt.md
-   │  └─ 004-Eingangsprompt.md
+   │  ├─ 004-Eingangsprompt.md
+   │  └─ 005-Eingangsprompt.md
    ├─ 04_Modul-Reports/
    │  ├─ 001-Report.md
    │  ├─ 002-Report.md
    │  ├─ 003-Report.md
-   │  └─ 004-Report.md               ← neu in Modul 004
+   │  └─ 004-Report.md
    └─ 05_Aktueller-Stand/
       ├─ Logbuch-Stand.md
       └─ Projekt-Stand.md
@@ -104,84 +109,109 @@ Ticket-Tamer/
 
 ## Hinweise zum Dateibaum
 
-- `StartView.swift` wurde in Modul 004 neu in `Views/` angelegt.
-- `RootVolumeView.swift` wurde in Modul 004 ersetzt (phasenabhängige Steuerung).
-- `Ticket_TamerApp.swift` wurde in Modul 004 ergänzt (SessionModel-Besitz und Environment).
-- `Localizable.xcstrings` wurde in Modul 004 um vier Keys ergänzt.
-- `Ticket_TamerTests.swift` wurde in Modul 004 um Struct `StartViewModelTests` mit 5 Tests ergänzt.
-- Das Projekt verwendet `PBXFileSystemSynchronizedRootGroup`; `StartView.swift` sollte automatisch erfasst werden. Falls nicht, muss die Datei in Xcode manuell zur Gruppe hinzugefügt werden.
-- `Products/` ist eine Xcode-Buildproduktgruppe und kein Quellcodeordner.
+- `StartView.swift` wurde in Modul 004 neu ergänzt.
+- `Ticket_TamerApp.swift`, `RootVolumeView.swift`, `Localizable.xcstrings` und `Ticket_TamerTests.swift` wurden in Modul 004 geändert.
+- `GamePhase.swift`, `SessionModel.swift`, `AppConstants.swift`, `DebugManager.swift`, `Ticket.swift`, `LocalTicketCatalog.swift`, `Info.plist`, RealityKitContent und `project.pbxproj` wurden laut Report nicht verändert.
+- `project.pbxproj` nutzt weiterhin `PBXFileSystemSynchronizedRootGroup`; `StartView.swift` wurde deshalb nicht manuell eingetragen.
+- `Products/` ist eine Xcode-Buildproduktgruppe, kein Quellcodeordner.
+- Die aus Modul 002 bekannten `.DS_Store`-Dateien bleiben als Repository-Hygieneproblem dokumentiert, sind aber im fachlichen Baum nicht aufgeführt.
+- Es sind noch keine eigenen Monster-Assets im bestätigten Dateibaum dokumentiert.
 
 ## Dateien und Zweck
 
 | Datei | Zweck | Status | Seit Modul |
 |---|---|---|---|
-| `Ticket_Tamer/Ticket_Tamer.xcodeproj/project.pbxproj` | Xcode-Projektstruktur | unverändert in 004 | 001 |
-| `Ticket_Tamer/Ticket_Tamer/App/Ticket_TamerApp.swift` | App-Einstieg; besitzt SessionModel, gibt ihn per Environment weiter | ergänzt in 004 | 001 |
-| `Ticket_Tamer/Ticket_Tamer/Views/RootVolumeView.swift` | Phasenabhängige Root-Ansicht | ersetzt in 004 | 001 |
-| `Ticket_Tamer/Ticket_Tamer/Views/StartView.swift` | Deutsche Startansicht (F-01, AK-01) | neu | 004 |
+| `Ticket_Tamer/Ticket_Tamer.xcodeproj/project.pbxproj` | Xcode-Projektstruktur mit synchronisierten Dateigruppen | unverändert in 004 | 001 |
+| `Ticket_Tamer/Ticket_Tamer/App/Ticket_TamerApp.swift` | App-Einstieg, eine volumetrische Scene, Besitz der einzigen `SessionModel`-Instanz | ergänzt | 001/004 |
+| `Ticket_Tamer/Ticket_Tamer/Views/RootVolumeView.swift` | Root-Switch über `currentPhase`; `.start` → `StartView`, sonst aktuell neutraler Platzhalter | ersetzt/geändert | 001/004 |
+| `Ticket_Tamer/Ticket_Tamer/Views/StartView.swift` | deutsche Startansicht mit Regler und Startschaltfläche | neu | 004 |
 | `Ticket_Tamer/Ticket_Tamer/Debug/DebugManager.swift` | zentrale kategorisierte Debug-Steuerung | unverändert in 004 | 001 |
-| `Ticket_Tamer/Ticket_Tamer/Support/AppConstants.swift` | Layout-, Ticketanzahl- und Asset-Konstanten | unverändert in 004 | 001 |
-| `Ticket_Tamer/Ticket_Tamer/Resources/Localizable.xcstrings` | deutsche Lokalisierung; vier neue Keys in 004 | ergänzt in 004 | 001 |
-| `Ticket_Tamer/Ticket_Tamer/Info.plist` | volumetrische Scene-Rolle | unverändert in 004 | 001 |
-| `Ticket_Tamer/Ticket_Tamer/Assets.xcassets` | Asset-Katalog | vorhanden | Ausgangsprojekt |
-| `Ticket_Tamer/Ticket_Tamer/Models/Ticket.swift` | TicketPriority, SupportTeam, Ticket | unverändert in 004 | 002 |
-| `Ticket_Tamer/Ticket_Tamer/Data/LocalTicketCatalog.swift` | statischer Katalog mit genau zwölf Tickets | unverändert in 004 | 002 |
-| `Ticket_Tamer/Ticket_Tamer/Models/GamePhase.swift` | fünf Spielphasen | unverändert in 004 | 003 |
+| `Ticket_Tamer/Ticket_Tamer/Support/AppConstants.swift` | zentrale Layout-, Ticketanzahl- und Asset-Konstanten | unverändert in 004 | 001 |
+| `Ticket_Tamer/Ticket_Tamer/Resources/Localizable.xcstrings` | deutsche Lokalisierungsgrundlage und Startansicht-Schlüssel | ergänzt | 001/004 |
+| `Ticket_Tamer/Ticket_Tamer/Info.plist` | volumetrische Scene-Rolle | unverändert | 001 |
+| `Ticket_Tamer/Ticket_Tamer/Assets.xcassets` | Asset-Katalog des App-Targets | vorhanden | Ausgangsprojekt |
+| `Ticket_Tamer/Ticket_Tamer/Models/Ticket.swift` | `TicketPriority`, `SupportTeam`, `Ticket` | unverändert in 004 | 002 |
+| `Ticket_Tamer/Ticket_Tamer/Data/LocalTicketCatalog.swift` | genau zwölf statische lokale Tickets | unverändert in 004 | 002 |
+| `Ticket_Tamer/Ticket_Tamer/Models/GamePhase.swift` | fünf grundlegende Spielphasen | unverändert in 004 | 003 |
 | `Ticket_Tamer/Ticket_Tamer/Models/SessionModel.swift` | zentraler beobachtbarer Sitzungszustand | unverändert in 004 | 003 |
-| `Ticket_Tamer/Ticket_TamerTests/Ticket_TamerTests.swift` | 27 Tests für alle Module | ergänzt in 004 | 001–004 |
-| `Ticket_Tamer/Packages/RealityKitContent/…` | RealityKit-Paket und Standardszene | unverändert | Ausgangsprojekt |
+| `Ticket_Tamer/Ticket_TamerTests/Ticket_TamerTests.swift` | Tests für Fundament, Ticketdaten, SessionModel und Startmodell | ergänzt auf 27 gemeldete Testdeklarationen | 001–004 |
+| `Ticket_Tamer/Packages/RealityKitContent/...` | vorhandenes RealityKitContent-Package und Standardszene | unverändert | Ausgangsprojekt |
 
-## Öffentliche Schnittstellen
+## Öffentliche beziehungsweise modulinterne Schnittstellen
+
+Die Typen sind innerhalb des App-Moduls verfügbar; explizite `public`-Zugriffsmodifikatoren sind nicht bestätigt.
 
 | Typ oder Methode | Datei | Zweck |
 |---|---|---|
-| `Ticket_TamerApp` | `App/Ticket_TamerApp.swift` | App-Einstieg; besitzt und verteilt SessionModel |
-| `RootVolumeView` | `Views/RootVolumeView.swift` | Phasenabhängige Root-Ansicht |
-| `StartView` | `Views/StartView.swift` | Startansicht (F-01, AK-01) |
+| `Ticket_TamerApp` | `App/Ticket_TamerApp.swift` | App-Einstieg und Besitzer des Sitzungsmodells |
+| eine `SessionModel`-Instanz als `@State` | `App/Ticket_TamerApp.swift` | zentrale Instanz pro App-Laufzeit |
+| `.environment(sessionModel)` | `App/Ticket_TamerApp.swift` | Weitergabe an Kind-Views |
+| `RootVolumeView` | `Views/RootVolumeView.swift` | phasenabhängige Root-Darstellung |
+| `StartView` | `Views/StartView.swift` | Startansicht F-01/AK-01 |
+| `@Environment(SessionModel.self)` | Kind-Views | Zugriff auf dieselbe SessionModel-Instanz |
 | `DebugManager` | `Debug/DebugManager.swift` | Debug-Steuerung |
+| `DebugManager.Category` | `Debug/DebugManager.swift` | `lifecycle`, `input`, `physics`, `spawning`, `state`, `audio` |
+| `DebugManager.log(_:_:function:)` | `Debug/DebugManager.swift` | kategorisierte Logs |
 | `LayoutConstants` | `Support/AppConstants.swift` | Volume- und Layoutwerte |
 | `GameplayConstants` | `Support/AppConstants.swift` | Ticketanzahl 1–12, Standard 6 |
-| `AssetKeys` | `Support/AppConstants.swift` | Asset-Schlüssel |
-| `TicketPriority` | `Models/Ticket.swift` | .normal, .wichtig, .kritisch |
+| `AssetKeys` | `Support/AppConstants.swift` | vorhandene Asset-Schlüssel |
+| `TicketPriority` | `Models/Ticket.swift` | drei Prioritäten |
+| `TicketPriority.displayName` | `Models/Ticket.swift` | deutsche Bezeichnungen |
 | `SupportTeam` | `Models/Ticket.swift` | vier Support-Teams |
+| `SupportTeam.displayName` | `Models/Ticket.swift` | deutsche Bezeichnungen |
 | `Ticket` | `Models/Ticket.swift` | Ticketfachmodell |
 | `LocalTicketCatalog.allTickets` | `Data/LocalTicketCatalog.swift` | vollständiger lokaler Ticketpool |
-| `GamePhase` | `Models/GamePhase.swift` | .start, .untersuchen, .priorisieren, .teamZuordnen, .ergebnis |
-| `SessionModel` | `Models/SessionModel.swift` | @Observable @MainActor; einzige Zustandsquelle |
-| `SessionModel.selectedTicketCount` | `Models/SessionModel.swift` | gewählte Ticketanzahl (1–12) |
-| `SessionModel.setTicketCount(_:)` | `Models/SessionModel.swift` | Ticketanzahl auf 1–12 klemmen |
-| `SessionModel.startSession(using:)` | `Models/SessionModel.swift` | Sitzung starten; Phase → .untersuchen |
-| `SessionModel.sessionTickets` | `Models/SessionModel.swift` | ausgewählte Tickets |
-| `SessionModel.currentTicket` | `Models/SessionModel.swift` | sicherer Zugriff auf aktuelles Ticket |
-| `SessionModel.currentTicketIndex` | `Models/SessionModel.swift` | aktueller Ticketindex |
+| `GamePhase` | `Models/GamePhase.swift` | `.start`, `.untersuchen`, `.priorisieren`, `.teamZuordnen`, `.ergebnis` |
+| `SessionModel` | `Models/SessionModel.swift` | `@Observable @MainActor`, zentrale Zustandsquelle |
+| `SessionModel.selectedTicketCount` | `Models/SessionModel.swift` | ausgewählte Ticketanzahl |
+| `SessionModel.setTicketCount(_:)` | `Models/SessionModel.swift` | Ticketanzahl klemmen und setzen |
+| `SessionModel.startSession(using:)` | `Models/SessionModel.swift` | Sitzung starten |
+| `SessionModel.sessionTickets` | `Models/SessionModel.swift` | ausgewählte Sitzungstickets |
+| `SessionModel.currentTicket` | `Models/SessionModel.swift` | aktuelles Ticket |
+| `SessionModel.currentTicketIndex` | `Models/SessionModel.swift` | aktueller Index |
+| `SessionModel.currentPhase` | `Models/SessionModel.swift` | aktuelle Phase |
 | `SessionModel.advanceToNextTicket()` | `Models/SessionModel.swift` | Index sicher vorschalten |
-| `SessionModel.currentPhase` | `Models/SessionModel.swift` | aktuelle Spielphase |
-| `SessionModel.reset()` | `Models/SessionModel.swift` | vollständiger Modellreset → Phase .start |
+| `SessionModel.reset()` | `Models/SessionModel.swift` | vollständiger Modellreset |
 
-## SessionModel — Besitz und Bereitstellung
+## Startansicht und Zustandsfluss
 
-| Aspekt | Details |
+```text
+Ticket_TamerApp
+└─ besitzt genau ein SessionModel
+   └─ .environment(sessionModel)
+      └─ RootVolumeView
+         ├─ currentPhase == .start
+         │  └─ StartView
+         │     ├─ Projekttitel
+         │     ├─ Ticketanzahl
+         │     ├─ Slider 1...12, step 1
+         │     └─ "Spiel starten" -> model.startSession()
+         │
+         └─ currentPhase != .start
+            └─ neutraler Sitzungsplatzhalter
+```
+
+Nach `startSession()` setzt das Modell laut geprüftem Code die Phase auf `.untersuchen`. Die fachliche Untersuchungsansicht ist noch nicht implementiert.
+
+## Lokalisierungsschlüssel
+
+| Schlüssel | Wert (de) |
 |---|---|
-| Eigentümer | `Ticket_TamerApp` via `@State private var sessionModel = SessionModel()` |
-| Weitergabe | `.environment(sessionModel)` in der `WindowGroup` |
-| Lesen in Views | `@Environment(SessionModel.self) private var model` |
-| Zweite Instanz | nicht vorhanden |
+| `app.title` | `Ticket Tamer` |
+| `start.ticketCount.label` | `Anzahl Tickets` |
+| `start.ticketCount.accessibility` | `Regler für Ticketanzahl` |
+| `start.button.startGame` | `Spiel starten` |
+| `root.sessionPlaceholder` | `Sitzung läuft …` |
 
-## SessionModel-Zustand
+## Zentrale Konstanten
 
-| Feld | Typ | Resetwert | Wert nach startSession() |
-|---|---|---|---|
-| `selectedTicketCount` | `Int` | 6 | unverändert |
-| `sessionTickets` | `[Ticket]` | `[]` | selectedTicketCount Tickets |
-| `currentTicketIndex` | `Int` | 0 | 0 |
-| `currentPhase` | `GamePhase` | `.start` | `.untersuchen` |
-| `score` | `Int` | 0 | 0 |
-| `selectedPriority` | `TicketPriority?` | `nil` | `nil` |
-| `selectedTeam` | `SupportTeam?` | `nil` | `nil` |
-| `isInputLocked` | `Bool` | `false` | `false` |
+| Enum | Datei | Inhalt |
+|---|---|---|
+| `LayoutConstants` | `Support/AppConstants.swift` | Volume-Maße und Layoutabstände |
+| `GameplayConstants` | `Support/AppConstants.swift` | Minimum 1, Maximum 12, Standardwert 6 |
+| `AssetKeys` | `Support/AppConstants.swift` | bisher nur vorhandene Standardszene |
 
-## Zentrale Konstanten (unverändert)
+### Bestätigte Werte
 
 - `LayoutConstants.centralVolumeWidth = 0.8`
 - `LayoutConstants.centralVolumeHeight = 0.6`
@@ -195,81 +225,94 @@ Ticket-Tamer/
 - `GameplayConstants.defaultTicketCount = 6`
 - `AssetKeys.defaultRealityKitScene = "Scene"`
 
-## Lokalisierungsschlüssel (vollständig)
-
-| Key | Wert (de) | Seit Modul |
-|---|---|---|
-| `app.title` | „Ticket Tamer" | 001 |
-| `app.modulePlaceholder` | „Grundgerüst für das zentrale Ticket-Tamer-Volume" | 001 (nicht mehr im aktiven Pfad) |
-| `start.ticketCount.label` | „Anzahl Tickets" | 004 |
-| `start.ticketCount.accessibility` | „Regler für Ticketanzahl" | 004 |
-| `start.button.startGame` | „Spiel starten" | 004 |
-| `root.sessionPlaceholder` | „Sitzung läuft …" | 004 |
-
-## Regler — technische Details
-
-| Aspekt | Wert |
-|---|---|
-| Minimum | `GameplayConstants.minimumTicketCount` (1) |
-| Maximum | `GameplayConstants.maximumTicketCount` (12) |
-| Standardwert | `GameplayConstants.defaultTicketCount` (6) |
-| Schrittweite | `step: 1` (SwiftUI Slider) |
-| Binding | Custom `Binding<Double>` → `setTicketCount(Int($0.rounded()))` |
-| Wahrheitsquelle | `SessionModel.selectedTicketCount` (kein lokaler Spiegel) |
+`BalancingConstants` ist weiterhin bewusst nicht vorhanden.
 
 ## DebugManager-Stand
 
-| Kategorie | Wo | Seit Modul |
-|---|---|---|
-| `.lifecycle` | `Ticket_TamerApp.init()` | 001 |
-| `.lifecycle` | `StartView.onAppear` | 004 |
-| `.state` | `SessionModel` — Ticketanzahl, Sitzungsstart, Indexfortschaltung, Reset | 003 |
-| `.state` | `RootVolumeView.sessionPlaceholderView.onAppear` | 004 |
-| `.input` | `StartView` — beim Auslösen von „Spiel starten" | 004 |
+- keine neue Kategorie in Modul 004,
+- `input`: Startschaltfläche,
+- `lifecycle`: `StartView.onAppear`,
+- `state`: neutraler Sitzungsplatzhalter,
+- bestehendes Lifecycle-Logging beim App-Einstieg,
+- keine vollständigen Tickettexte in Logs.
 
 ## Build- und Teststand
 
 | Bereich | Stand |
 |---|---|
-| App-Build nach Modul 001 | erfolgreich bestätigt |
-| Build nach Modul 002–004 | nicht mit Xcode nachgewiesen |
-| Tests nach Modul 003 | 22 Tests; Inkonsistenz im 003-Report aufgelöst (15 neue Tests, nicht 12) |
-| Tests nach Modul 004 | 27 Tests (22 + 5 neue); Ausführung in Xcode offen |
-| Zielplattform | Apple Vision Pro Simulator / visionOS |
-| Gerätetest | Modul 013 |
+| Build nach Modul 001 | erfolgreich bestätigt |
+| Build nach Modul 002 | nicht separat nachgewiesen |
+| Build nach Modul 003 | nicht nachgewiesen |
+| Build nach Modul 004 | nicht nachgewiesen |
+| Simulatorstart nach Modul 004 | nicht nachgewiesen |
+| Testdeklarationen 001–002 | 7 |
+| Tatsächliche SessionModel-Testdeklarationen aus 003 | 15 |
+| StartViewModel-Testdeklarationen aus 004 | 5 |
+| **Gesamt im Quellstand** | **27** |
+| Tatsächlich ausgeführte Tests nach 004 | nicht nachgewiesen |
+| Gerätetest Apple Vision Pro | Modul 013 |
 
-### Teststrukturen
+## F-01 / AK-01
 
-| Struct | Tests | Modul |
-|---|---|---|
-| `TicketTamerTests` | 7 | 001–002 |
-| `SessionModelTests` | 15 | 003 |
-| `StartViewModelTests` | 5 | 004 |
-| **Gesamt** | **27** | |
+- F-01 ist laut Quellimplementierung umgesetzt.
+- AK-01 ist noch nicht abschließend laufzeitverifiziert.
+- Die Kennzeichnung `[x]` im 004-Report wird nicht als ausgeführte Simulatorabnahme interpretiert, weil derselbe Report Build und Simulatorprüfung als lokal noch durchzuführen beschreibt.
 
-## Noch nicht vorhanden beziehungsweise nicht vorwegzunehmen
+## Konfliktanfällige Dateien
 
-- Ticketkarte mit Ticketnummer, Titel, Kurzbeschreibung, User Impact, Symptomen
-- sichtbare Untersuchungsphase
-- Monster-Asset-Pipeline und Monsterzuordnung
-- Blickfokus, Pinch, Drag und Drop-Ziele
-- Methoden zum Speichern von Prioritäts- oder Teamentscheidungen
-- Punktebewertung und Audiofeedback
-- automatische Übergänge nach 1,5 Sekunden
-- Ergebnisansicht und „Erneut spielen"-Schaltfläche
-- optionale Monsterreaktion
+- `Ticket_Tamer/Ticket_Tamer.xcodeproj/project.pbxproj`
+- `Ticket_Tamer/Ticket_Tamer/App/Ticket_TamerApp.swift`
+- `Ticket_Tamer/Ticket_Tamer/Views/RootVolumeView.swift`
+- `Ticket_Tamer/Ticket_Tamer/Support/AppConstants.swift`
+- `Ticket_Tamer/Ticket_Tamer/Models/Ticket.swift`
+- `Ticket_Tamer/Ticket_Tamer/Models/SessionModel.swift`
+- `Ticket_Tamer/Ticket_Tamer/Data/LocalTicketCatalog.swift`
+- `Ticket_Tamer/Ticket_TamerTests/Ticket_TamerTests.swift`
+
+Modul 005 soll Startansicht und SessionModel nicht verändern, sofern keine zwingende Asset-Schnittstelle dies erfordert.
+
+## Für Modul 005 relevant
+
+Noch nicht im bestätigten Baum vorhanden:
+
+- vier eigene Blender-Quelldateien,
+- vier RealityKit-kompatible Monster-Exporte,
+- eindeutige Asset-Schlüssel für die vier Monster,
+- bestätigte Monster-Lade-/Bereitstellungsschnittstelle,
+- dokumentierte modellunabhängige Monsterzuordnung zu Tickets.
+
+Die SPEC-Architekturskizze enthält in `Ticket` ein Feld `monsterAssetId`. Dieses Feld fehlt bisher im implementierten Ticketmodell. Modul 005 muss diese dokumentierte Abweichung bewusst auflösen und darf sie nicht stillschweigend ignorieren.
+
+## Nicht vorhanden beziehungsweise nicht vorwegzunehmen
+
+- fertige Untersuchungsphase,
+- Ticketkarte,
+- „Weiter zur Priorisierung“,
+- vollständige Monster-Gesteninteraktion,
+- Prioritätsziele,
+- Teamstationen,
+- Bewertungsmethoden,
+- Punktevergabe,
+- Audiofeedback,
+- automatische 1,5-Sekunden-Übergänge,
+- Ergebnisansicht,
+- optionale Monsterreaktion.
 
 ## Offene technische und fachliche Punkte
 
-- Lokaler Build und Testlauf nach Modul 004 fehlen.
-- `project.pbxproj` wurde nicht manuell angepasst; `StartView.swift` muss ggf. in Xcode zur synchronisierten Gruppe hinzugefügt werden.
-- `monsterAssetId` fehlt gegenüber der SPEC-Architekturskizze.
+- Xcode-Build nach Modul 004 fehlt.
+- Simulatorlauf und manuelle AK-01-Prüfung fehlen.
+- Ausführung aller 27 Tests fehlt.
+- `monsterAssetId` beziehungsweise eine gleichwertige SPEC-konforme Asset-Zuordnung ist offen.
+- Existenz und Qualität der vier eigenen Blender-Modelle müssen in Modul 005 real geprüft werden.
 - Tickettexte verwenden teilweise `ae`, `oe`, `ue`.
-- Drei `.DS_Store`-Dateien im Repository (Hygieneproblem).
-- `SessionModel` besitzt noch keine fachlichen Mutationsmethoden für `selectedPriority`, `selectedTeam` und `isInputLocked`.
-- Vollständige Prüfung auf Apple Vision Pro bleibt Modul 013 vorbehalten.
+- Drei `.DS_Store`-Dateien sind laut Modul-002-Report im Repository vorhanden.
+- Vollständige Apple-Vision-Pro-Prüfung bleibt Modul 013 vorbehalten.
 
 ## Nicht mehr vorhanden oder bewusst ersetzt
 
-- Frühere `RootVolumeView` (statische Platzhalteransicht ohne SessionModel) durch phasenabhängige Version ersetzt.
-- `app.modulePlaceholder` ist noch im String Catalog vorhanden, aber nicht mehr im aktiven App-Pfad verwendet.
+- frühere Default-`ContentView` nicht im aktiven App-Einstieg,
+- frühere Position von `Ticket_TamerApp.swift` ersetzt durch `App/`,
+- keine separate aktive `DebugManager.swift` im Repository-Stamm,
+- neutraler Root-Inhalt aus Modul 001 wurde in Modul 004 durch phasenabhängige Darstellung ersetzt,
+- keine parallelen Alt-, Kopie- oder Backup-Dateien gemeldet.

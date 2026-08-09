@@ -68,6 +68,27 @@ enum GameplayConstants {
     static let defaultTicketCount = 6
 }
 
+/// Maße und Toleranzen für die räumliche Interaktionsgrundlage (Modul 007 — F-10 / AK-10).
+enum InteractionConstants {
+
+    // MARK: - Monster-Kollision
+
+    /// Radius der sphärischen Kollisionsform am Monster in Metern.
+    ///
+    /// Kleiner als `dropTargetRadius`, damit die Kollisionsform das Ziel nicht überdeckt.
+    static let monsterCollisionRadius: Float = 0.10
+
+    // MARK: - Drop-Zielbereich
+
+    /// Standard-Trefferradius eines generischen Drop-Ziels in Metern.
+    static let dropTargetRadius: Float = 0.15
+
+    // MARK: - Rückkehr-Animation
+
+    /// Dauer der Rückkehrbewegung bei ungültigem Drop in Sekunden.
+    static let monsterReturnDuration: Double = 0.3
+}
+
 /// Zentralisierte Schluessel fuer bereits vorhandene lokale Ressourcen.
 enum AssetKeys {
 

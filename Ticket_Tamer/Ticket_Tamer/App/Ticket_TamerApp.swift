@@ -27,6 +27,8 @@ struct Ticket_TamerApp: App {
     // MARK: - Lifecycle
 
     init() {
+        // Modul 007: Benutzerdefinierte RealityKit-Komponente registrieren.
+        DropTargetComponent.registerComponent()
         DebugManager.log(.lifecycle, "App-Einstieg initialisiert")
     }
 

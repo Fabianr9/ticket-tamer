@@ -169,6 +169,30 @@ final class SessionModel {
         DebugManager.log(.state, "Phase gewechselt: untersuchen -> priorisieren, Ticketindex: \(currentTicketIndex)")
     }
 
+    // MARK: - Eingabesperre (Modul 007 — F-10 / AK-10)
+
+    /// Sperrt Eingaben, wenn sie noch nicht gesperrt sind.
+    ///
+    /// No-Op, wenn `isInputLocked` bereits `true` ist (verhindert Mehrfachauswertung).
+    /// Verändert weder `score` noch `currentPhase` noch `selectedPriority` noch `selectedTeam`.
+    func lockInput() {
+        guard !isInputLocked else {
+            DebugManager.log(.state, "lockInput ignoriert: bereits gesperrt")
+            return
+        }
+        isInputLocked = true
+        DebugManager.log(.state, "Input gesperrt (isInputLocked = true)")
+    }
+
+    /// Entsperrt die Eingabe für den nächsten Phasenaufbau.
+    ///
+    /// Wird von Modul 008 / 009 beim Aufbau des nächsten Tickets verwendet.
+    /// Verändert weder `score` noch `currentPhase` noch `selectedPriority` noch `selectedTeam`.
+    func unlockInput() {
+        isInputLocked = false
+        DebugManager.log(.state, "Input freigegeben (isInputLocked = false)")
+    }
+
     // MARK: - Reset
 
     /// Setzt den gesamten Modellzustand auf die definierten Startwerte zurück (SPEC F-16, AK-16 Modellanteil).

@@ -1,4 +1,5 @@
 import Testing
+import simd
 @testable import Ticket_Tamer
 
 /// Smoke-Tests für die technische Grundlage aus Modul 001.
@@ -559,5 +560,203 @@ struct InvestigationPhaseTests {
                 "Ticket \(ticket.ticketNumber) hat \(ticket.symptoms.count) Symptome, erwartet 1–3"
             )
         }
+    }
+}
+
+// MARK: - Modul 007: Räumliche Interaktionsgrundlagen
+
+/// Tests für Input-Lock-Semantik und Drop-Auswertung (SPEC F-10 / AK-10).
+///
+/// Prüft ausschließlich Modell- und Servicelogik ohne laufenden RealityKit-Render-Loop.
+/// RealityKit-Gesten (Hover, Pinch, Drag) sind manuell im Simulator zu prüfen.
+@MainActor
+struct InteractionFoundationTests {
+
+    // MARK: - Input-Lock — Initialzustand
+
+    @Test("Input-Lock startet false")
+    func inputLockStartsFalse() {
+        let model = SessionModel()
+        #expect(model.isInputLocked == false)
+    }
+
+    @Test("Input-Lock nach Sitzungsstart weiterhin false")
+    func inputLockIsFalseAfterSessionStart() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        #expect(model.isInputLocked == false)
+    }
+
+    // MARK: - lockInput
+
+    @Test("lockInput setzt isInputLocked auf true")
+    func lockInputSetsLockTrue() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        model.lockInput()
+        #expect(model.isInputLocked == true)
+    }
+
+    @Test("Zweites lockInput während Lock ist No-Op (genau-einmal-Semantik)")
+    func secondLockInputWhileLockedIsNoOp() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        model.lockInput()
+        #expect(model.isInputLocked == true)
+        // Zweiter Aufruf — darf keinen Fehler verursachen und den Zustand nicht doppelt setzen.
+        model.lockInput()
+        #expect(model.isInputLocked == true)
+    }
+
+    @Test("lockInput verändert score nicht")
+    func lockInputDoesNotChangeScore() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        let scoreBefore = model.score
+        model.lockInput()
+        #expect(model.score == scoreBefore)
+    }
+
+    @Test("lockInput verändert currentPhase nicht")
+    func lockInputDoesNotChangePhase() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        let phaseBefore = model.currentPhase
+        model.lockInput()
+        #expect(model.currentPhase == phaseBefore)
+    }
+
+    @Test("lockInput verändert selectedPriority nicht")
+    func lockInputDoesNotChangeSelectedPriority() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        model.lockInput()
+        #expect(model.selectedPriority == nil)
+    }
+
+    @Test("lockInput verändert selectedTeam nicht")
+    func lockInputDoesNotChangeSelectedTeam() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        model.lockInput()
+        #expect(model.selectedTeam == nil)
+    }
+
+    // MARK: - unlockInput
+
+    @Test("unlockInput entsperrt die Eingabe")
+    func unlockInputUnlocks() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        model.lockInput()
+        #expect(model.isInputLocked == true)
+        model.unlockInput()
+        #expect(model.isInputLocked == false)
+    }
+
+    @Test("unlockInput aus entsperrtem Zustand ist stabil")
+    func unlockInputFromUnlockedStateIsStable() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        #expect(model.isInputLocked == false)
+        model.unlockInput()
+        #expect(model.isInputLocked == false)
+    }
+
+    // MARK: - Reset und Lock
+
+    @Test("Reset setzt isInputLocked auf false zurück")
+    func resetSetsInputLockFalse() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        model.lockInput()
+        #expect(model.isInputLocked == true)
+        model.reset()
+        #expect(model.isInputLocked == false)
+    }
+
+    // MARK: - DropEvaluator — Positionsbasiert (kein RealityKit-Render-Loop)
+
+    @Test("DropEvaluator: Entity innerhalb Radius gilt als gültig")
+    func dropEvaluatorMatchInsideRadius() {
+        let entityPos = SIMD3<Float>(0.1, 0, 0)
+        let target = DropEvaluator.TargetDescriptor(
+            id: "testTargetA",
+            position: SIMD3(0, 0, 0),
+            radius: 0.15
+        )
+        let result = DropEvaluator.evaluate(entityPosition: entityPos, targets: [target])
+        #expect(result == "testTargetA")
+    }
+
+    @Test("DropEvaluator: Entity auf Randpunkt (== radius) gilt als gültig")
+    func dropEvaluatorMatchAtExactRadius() {
+        let entityPos = SIMD3<Float>(0.15, 0, 0)
+        let target = DropEvaluator.TargetDescriptor(
+            id: "testTargetA",
+            position: SIMD3(0, 0, 0),
+            radius: 0.15
+        )
+        let result = DropEvaluator.evaluate(entityPosition: entityPos, targets: [target])
+        #expect(result == "testTargetA")
+    }
+
+    @Test("DropEvaluator: Entity außerhalb Radius gilt als ungültig")
+    func dropEvaluatorNilOutsideRadius() {
+        let entityPos = SIMD3<Float>(0.30, 0, 0)
+        let target = DropEvaluator.TargetDescriptor(
+            id: "testTargetA",
+            position: SIMD3(0, 0, 0),
+            radius: 0.15
+        )
+        let result = DropEvaluator.evaluate(entityPosition: entityPos, targets: [target])
+        #expect(result == nil)
+    }
+
+    @Test("DropEvaluator: Bei leerer Zielliste immer nil")
+    func dropEvaluatorEmptyTargetsIsNil() {
+        let result = DropEvaluator.evaluate(
+            entityPosition: SIMD3(0, 0, 0),
+            targets: []
+        )
+        #expect(result == nil)
+    }
+
+    @Test("DropEvaluator: Bei mehreren Zielen gewinnt das nächste")
+    func dropEvaluatorPicksNearestTarget() {
+        let entityPos = SIMD3<Float>(0.05, 0, 0)
+        let near = DropEvaluator.TargetDescriptor(id: "near", position: SIMD3(0, 0, 0), radius: 0.15)
+        let far  = DropEvaluator.TargetDescriptor(id: "far",  position: SIMD3(0.5, 0, 0), radius: 0.15)
+        let result = DropEvaluator.evaluate(entityPosition: entityPos, targets: [near, far])
+        #expect(result == "near")
+    }
+
+    // MARK: - DropTargetComponent — Neutralität
+
+    @Test("Generische Ziel-IDs sind fachlich neutral (keine Prioritäts-/Teambezeichner)")
+    func dropTargetIDsAreNeutral() {
+        let forbiddenTerms = ["normal", "wichtig", "kritisch",
+                              "netzwerk", "konto", "software", "hardware"]
+        let testIDs = ["testTargetA", "testTargetB", "zoneLeft", "zoneRight"]
+        for id in testIDs {
+            let lowered = id.lowercased()
+            for term in forbiddenTerms {
+                #expect(!lowered.contains(term), "ID '\(id)' enthält verbotenen Begriff '\(term)'")
+            }
+        }
+    }
+
+    @Test("DropTargetComponent speichert ID und Radius unveränderlich")
+    func dropTargetComponentStoresFieldsImmutably() {
+        let comp = DropTargetComponent(id: "testTargetA", radius: 0.15, debugName: "Test")
+        #expect(comp.id == "testTargetA")
+        #expect(comp.radius == 0.15)
+        #expect(comp.debugName == "Test")
+    }
+
+    @Test("DropTargetComponent-Standardradius entspricht InteractionConstants")
+    func dropTargetDefaultRadiusMatchesConstants() {
+        let comp = DropTargetComponent(id: "x")
+        #expect(comp.radius == InteractionConstants.dropTargetRadius)
     }
 }

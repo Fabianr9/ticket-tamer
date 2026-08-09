@@ -1,5 +1,6 @@
 import RealityKit
 import RealityKitContent
+import Foundation
 
 // MARK: - Monster Asset Provider (F-14 / AK-14)
 

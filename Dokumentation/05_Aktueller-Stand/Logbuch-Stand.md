@@ -2,16 +2,17 @@
 
 > Laufendes Gedächtnis und Steuerungsdokument des Projekts. Nach jedem eingearbeiteten Modul-Report wird diese Datei vollständig aktualisiert und als einziger aktueller `Logbuch-Stand.md` unter `Dokumentation/05_Aktueller-Stand/` ersetzt.
 
-**Stand:** nach Modul `007` — Räumliche Interaktionsgrundlagen  
+**Stand:** nach Modul `008` — Priorisierungsphase  
 **Eingearbeitet am:** 2026-08-09  
-**Branch laut 007-Report:** `main`  
-**Commit vor Modul 007:** `243c56c feat: add docs`  
-**Modul-006-Commit bestätigt:** `177e2b9 feat: Modul006`  
-**Modul-007-Commit:** noch offen  
-**Build nach Modul 007:** nicht nachgewiesen  
-**Simulatorstart nach Modul 007:** nicht nachgewiesen  
-**Testlauf nach Modul 007:** nicht nachgewiesen  
-**Testdeklarationen laut Quellstand:** 64
+**Branch laut 008-Report:** `main`  
+**Commit Modul 008:** `200093b 008: Priorisierungsphase`  
+**Nachträglicher Fix-Commit:** noch ausstehend  
+**Fix-Nachricht:** `008-fix: Kugeln sichtbar (Farbe + Opacity), Labels als ZStack-Overlay`  
+**Build nach Modul 008:** bestätigt  
+**Simulatorstart:** bestätigt  
+**Vollständiger Testlauf:** nicht nachgewiesen  
+**Testdeklarationen laut Quellstand:** 86  
+**Manuelle Gestenabnahme AK-08/AK-10:** offen
 
 ## Verbindlicher Projektumfang
 
@@ -28,356 +29,336 @@ Zum Muss-Umfang gehören genau zwölf lokale Tickets, vier eigene Blender-Monste
 | 001 | Projektgrundgerüst und zentrales Volume | technisch abgeschlossen | ursprünglicher Hash nicht abschließend rekonstruiert | F-05 strukturell teilweise |
 | 002 | Ticketdatenmodell und lokaler Katalog | implementiert | `2775041` | F-02, F-03 |
 | 003 | Sitzungsmodell und Zufallsauswahl | implementiert | `dd78700` | F-04 modellseitig; F-16 modellseitig teilweise |
-| 004 | Startansicht und Einstellungen | implementiert; Laufzeitabnahme offen | `84bb767` | F-01 implementiert; AK-01 Laufzeitnachweis offen |
+| 004 | Startansicht und Einstellungen | implementiert; frühere Laufzeitabnahme teilweise nachgeholt | `84bb767` | F-01 implementiert |
 | 005 | Monster-Asset-Pipeline | teilweise abgeschlossen | `68b84f3` | Pipeline/Mapping implementiert; finale Blender-Assets offen |
-| 006 | Untersuchungsphase | implementiert; Laufzeitabnahme offen | `177e2b9` | F-06/F-07 implementiert; AK-06/AK-07 Laufzeitnachweis offen |
-| 007 | Räumliche Interaktionsgrundlagen | implementiert; Laufzeitabnahme offen | Hash offen | F-10 generisch implementiert; AK-10 fachlich noch teilweise offen |
-| 008 | Priorisierungsphase | als Nächstes | – | F-08 |
-| 009 | Teamzuordnungsphase | offen | – | F-09 |
+| 006 | Untersuchungsphase | implementiert; sichtbarer Simulatorstand inzwischen bestätigt | `177e2b9` | F-06/F-07 implementiert |
+| 007 | Räumliche Interaktionsgrundlagen | implementiert; Gestenabnahme offen | Hash im 008-Report nicht genannt | F-10 generisch implementiert |
+| 008 | Priorisierungsphase | implementiert; Gestenabnahme und Fix-Commit offen | `200093b` + Fix ausstehend | F-08 implementiert; AK-08 Laufzeitnachweis offen |
+| 009 | Teamzuordnungsphase | als Nächstes | – | F-09 |
 | 010 | Bewertung und Audiofeedback | offen | – | F-11, F-12, F-13 |
 | 011 | Ergebnis und Neustart | offen | – | F-15, F-16 |
 | 012 | Optionale Monsterreaktion | offen, Kann-Modul | – | F-17 |
 | 013 | Integration und Gerätetest | offen | – | F-01 bis F-16 als Integrationstest |
 | 014 | Abschlussmodul: Doku & Cleanup | offen | – | Dokumentenkonsistenz und Abgabeprüfung |
 
-## Abschlussstand Modul 001
+## Abschlussstand Module 001–007
 
-Modul 001 stellte das visionOS-Grundgerüst mit genau einer volumetrischen `WindowGroup`, `RootVolumeView`, deutscher Lokalisierungsgrundlage, RealityKit-Standardszene, DebugManager, zentralen Constants und einem Swift-Testing-Smoke-Test bereit.
+### Modul 001
 
-## Abschlussstand Modul 002
+Grundgerüst, genau ein zentrales Volume, DebugManager, Constants, Lokalisierung und Smoke-Test eingerichtet.
 
-Modul 002 ergänzte `TicketPriority`, `SupportTeam`, das fachliche `Ticket`-Modell und `LocalTicketCatalog.allTickets` mit genau zwölf Tickets und vollständiger 4×3-Verteilung.
+### Modul 002
 
-## Abschlussstand Modul 003
+`TicketPriority`, `SupportTeam`, `Ticket` und genau zwölf lokale Support-Tickets mit vollständiger 4×3-Verteilung eingerichtet.
 
-Modul 003 ergänzte `GamePhase` und `SessionModel` als zentrale `@Observable @MainActor`-Zustandsquelle mit Ticketanzahl, zufälliger Auswahl ohne Wiederholung, aktuellem Ticket, Indexfortschaltung und Reset.
+### Modul 003
 
-## Abschlussstand Modul 004
+`GamePhase` und `SessionModel` mit Auswahl ohne Wiederholung, aktuellem Ticket, Index und Reset eingerichtet.
 
-Modul 004 implementierte die deutsche Startansicht. `Ticket_TamerApp` besitzt genau eine `SessionModel`-Instanz und reicht sie per SwiftUI Environment weiter. Die Startschaltfläche ruft `startSession()` auf und wechselt modellseitig in `.untersuchen`.
+### Modul 004
 
-## Abschlussstand Modul 005
+Deutsche Startansicht mit Ticketregler und „Spiel starten“ implementiert; eine `SessionModel`-Instanz wird über SwiftUI Environment geteilt.
 
-Modul 005 ergänzte `Ticket.monsterAssetId`, vier neutrale Monster-IDs, das vollständige Ticket-Monster-Mapping und `MonsterAssetProvider`. Die vier aktuellen USDA-Kugeln sind nur technische Platzhalter; die finalen eigenen Blender-Monster fehlen weiterhin.
+### Modul 005
 
-## Abschlussstand Modul 006
+`monsterAssetId`, vier neutrale Monster-IDs, Ticket-Mapping und `MonsterAssetProvider` implementiert. Vier USDA-Kugeln sind weiterhin technische Platzhalter; finale eigene Blender-Monster fehlen.
 
-Modul 006 ergänzte `InvestigationView` und `SessionModel.beginPrioritizationPhase()`. Die Untersuchungsansicht zeigt Monster, Ticketnummer, Titel, Kurzbeschreibung, Auswirkung und alle Hinweise, aber keine Referenzlösung. Der Modul-007-Preflight bestätigt den tatsächlichen Modul-006-Commit:
+### Modul 006
 
-`177e2b9 feat: Modul006`
+`InvestigationView` und `beginPrioritizationPhase()` implementiert. Tickettexte wurden auf korrekte Umlaute bereinigt.
 
-## Eingearbeiteter Stand Modul 007
+### Modul 007
+
+Generische räumliche Interaktionsgrundlage mit `DropTargetComponent`, `MonsterInteractionConfigurator`, `DropEvaluator`, Input-Lock und DEBUG-Harness implementiert.
+
+## Eingearbeiteter Stand Modul 008
 
 ### Ergebnis
 
-Modul 007 implementiert eine wiederverwendbare, fachlich neutrale RealityKit-Interaktionsgrundlage für Monster.
+Modul 008 implementiert die echte Priorisierungsphase für `GamePhase.priorisieren`.
 
-Neu beziehungsweise ergänzt wurden:
+Neu beziehungsweise geändert wurden:
 
-- `DropTargetComponent`,
-- `MonsterInteractionConfigurator`,
+- `Views/PrioritizationView.swift`,
+- `SessionModel.savePriority(_:)`,
+- echtes `.priorisieren`-Routing in `RootVolumeView`,
+- `PrioritizationConstants`,
+- `PriorityTargetMapping`,
+- 22 neue Tests in `PrioritizationPhaseTests`.
+
+Das DEBUG-Harness aus Modul 007 bleibt als Development-Datei erhalten, ist aber nicht mehr Teil des normalen `.priorisieren`-Routings.
+
+### Drei Prioritätsziele
+
+Genau drei technische Ziele sind definiert:
+
+| Ziel-ID | sichtbare Bezeichnung | gespeicherter Wert |
+|---|---|---|
+| `priority_normal` | Normal | `.normal` |
+| `priority_wichtig` | Wichtig | `.wichtig` |
+| `priority_kritisch` | Kritisch | `.kritisch` |
+
+Das Mapping ist zentral in `PriorityTargetMapping` gekapselt.
+
+### Monsterinteraktion
+
+`PrioritizationView` verwendet die vorhandenen Modul-007-Schnittstellen:
+
+- `MonsterAssetProvider.loadMonster(assetID:)`,
+- `MonsterInteractionConfigurator.configure(_:mode: .dragDrop)`,
 - `DropEvaluator`,
-- `InteractionConstants`,
-- `SessionModel.lockInput()`,
-- `SessionModel.unlockInput()`,
-- DEBUG-only `DebugInteractionHarnessView`,
-- Registrierung von `DropTargetComponent`,
-- DEBUG-Routing in `.priorisieren`,
-- 19 neue Tests in `InteractionFoundationTests`.
+- `DropTargetComponent`.
 
-### Gewählte Eingabe-API
+Es wurde keine zweite Drag-/Drop-Implementierung aufgebaut.
 
-Der Report verwendet bewusst:
+### Prioritätsspeicherung
 
-`DragGesture().targetedToAnyEntity()`
+Neue SessionModel-Methode:
 
-und nicht `ManipulationComponent`.
+`savePriority(_ priority: TicketPriority)`
 
-Gemeldete Begründung:
+Gemeldete Vorbedingungen:
 
-- der Release-Moment muss explizit kontrollierbar sein,
-- `.onEnded` wird für die Drop-Semantik benötigt,
-- direkte Kontrolle über gültige/ungültige Ablage und Input-Lock,
-- keine eigene Handtracking-/ARKit-Pipeline.
+- `currentPhase == .priorisieren`,
+- `selectedPriority == nil`,
+- `isInputLocked == false`.
 
-Die Entity-Konfiguration umfasst:
+Gemeldete Effekte:
 
-- `InputTargetComponent` mit indirekter Eingabe,
-- `CollisionComponent`,
-- `HoverEffectComponent`,
-- reine Translation über Drag; Rotation und Skalierung werden nicht durch die Gesture-Logik verändert.
+- `selectedPriority = priority`,
+- `lockInput()`.
 
-### Generischer Drop-Zieltyp
+Unverändert:
 
-`DropTargetComponent` markiert fachlich neutrale Zielbereiche.
+- `score`,
+- `selectedTeam`,
+- `currentTicketIndex`,
+- `currentPhase`.
 
-Gemeldete Felder:
+Die Speicherung und der Lock bilden damit einen atomaren fachlichen Vorgang.
 
-- `id: String`
-- `radius: Float`
-- `debugName: String?`
-
-Der Typ kennt keine Priorität und kein Support-Team.
-
-### Drop-Auswertung
-
-`DropEvaluator` arbeitet positionsbasiert im Weltkoordinatensystem.
-
-Semantik:
-
-- Distanz Monster ↔ Ziel ≤ Zielradius → gültig,
-- außerhalb aller Zielbereiche → ungültig,
-- bei mehreren Treffern gewinnt das räumlich nächste Ziel,
-- keine Bildschirmkoordinaten.
-
-### Ungültiges Ablegen
+### Ungültiger Drop
 
 Bei ungültigem Drop:
 
-- Monster kehrt zur gespeicherten Ausgangstransformation zurück,
-- `isInputLocked` bleibt unverändert/false,
-- keine Phase wird geändert,
-- kein Ticketindex wird geändert,
-- kein Score wird geändert,
-- keine Priorität wird gespeichert,
-- kein Team wird gespeichert.
+- keine Priorität gespeichert,
+- kein Input-Lock,
+- kein Score,
+- keine Phasenänderung,
+- kein Ticketwechsel,
+- Monster kehrt zur Ausgangsposition zurück.
 
-Die Rückkehr verwendet laut Report eine kurze Animation mit `InteractionConstants.monsterReturnDuration`.
+### Kein automatischer Übergang
 
-### Gültiges generisches Ablegen
+Nach gültiger Prioritätsentscheidung bleibt `currentPhase == .priorisieren`.
 
-Bei gültigem generischen Drop:
+Das ist beabsichtigt: F-13 und der automatische Übergang nach ungefähr 1,5 Sekunden gehören verbindlich zu Modul 010.
 
-- genau ein Drop wird akzeptiert,
-- die neutrale Ziel-ID steht dem aufrufenden Handler zur Verfügung,
-- `SessionModel.lockInput()` setzt `isInputLocked = true`,
-- weitere Drag-/Release-Ereignisse werden ignoriert,
-- keine fachliche Entscheidung wird in Modul 007 gespeichert,
-- kein Score wird geändert,
-- keine Phase wird geändert.
+Es wurde kein zusätzlicher Nutzer-Button erfunden.
 
-### Input-Lock
+## Nachträgliche visuelle Korrektur
 
-Neue Schnittstellen:
+Der erste Simulatorlauf deckte zwei reale UI-Probleme auf:
 
-- `SessionModel.lockInput()`
-- `SessionModel.unlockInput()`
+### Problem 1: Zielkugeln praktisch unsichtbar
 
-Beide verändern laut Report weder:
+Ursache laut Report:
 
-- `score`,
-- `currentPhase`,
-- `selectedPriority`,
-- `selectedTeam`.
+- Material-Alpha 0,15 war im Simulator zu transparent.
 
-`reset()` setzt den Lock weiterhin auf `false`.
+Korrektur:
 
-### DEBUG-Harness
+- prioritätsspezifische Farben,
+- Opacity 0,55.
 
-Datei:
+### Problem 2: Labels fehlten
 
-`Views/Debug/DebugInteractionHarnessView.swift`
+Ursache laut Report:
 
-Eigenschaften:
+- die verwendeten SwiftUI-Attachments erschienen im Simulator nicht zuverlässig.
 
-- nur unter `#if DEBUG`,
-- sichtbar in `.priorisieren`,
-- neutraler Zielbereich `testTargetA`,
-- keine Prioritäts-/Teambezeichnung,
-- Release-Build zeigt für `.priorisieren` weiterhin den neutralen Platzhalter.
+Korrektur:
 
-Das Harness dient ausschließlich der technischen Interaktionsprüfung und ist keine fachliche Priorisierungsansicht.
+- Attachment-Code entfernt,
+- Labels als SwiftUI-`ZStack`-/`HStack`-Overlay dargestellt,
+- horizontale Zuordnung links / Mitte / rechts zu Normal / Wichtig / Kritisch.
 
-## Bewertung von F-10 / AK-10
+Die fachliche Drop-, Lock- und Mapping-Logik blieb unverändert.
 
-### Implementierungsstand
+### Git-Status der Korrektur
 
-Generisch implementiert sind:
+Der Fix ist im beschriebenen Arbeitsstand implementiert, aber noch nicht als Commit mit Hash bestätigt.
 
-- Blick-/Hover-Zielbarkeit,
-- Pinch-/Drag-Grundlage,
-- räumliche Translation,
-- generische Drop-Ziele,
-- gültige/ungültige Drop-Auswertung,
-- Rücksetzung bei ungültigem Drop,
-- genau-einmal-Input-Lock.
+Offener Commit:
 
-### Noch nicht fachlich vollständig
+`008-fix: Kugeln sichtbar (Farbe + Opacity), Labels als ZStack-Overlay`
 
-AK-10 spricht von einer tatsächlich gespeicherten Entscheidung.
+Grund laut Report:
 
-Noch offen:
+- `.git/index.lock` während paralleler Xcode-Git-Aktivität.
 
-- Speichern von `selectedPriority` in Modul 008,
-- Speichern von `selectedTeam` in Modul 009.
+Der Projektstand darf daher den Fix nicht als bereits versioniert behandeln, bis der Commit tatsächlich vorliegt.
 
-Daher gilt:
+## Bewertung F-08 / AK-08
 
-- **F-10: generische Interaktionsgrundlage implementiert.**
-- **AK-10: generisch vorbereitet, fachlich erst nach Modulen 008/009 vollständig integrierbar.**
-- **Laufzeitverifikation der Gesten: offen.**
+### Implementiert
+
+- drei Prioritätsziele,
+- drei deutsche Labels,
+- Monster in `.dragDrop`,
+- Mapping Ziel → `TicketPriority`,
+- genau einmalige Speicherung,
+- Lock nach gültigem Drop,
+- keine zweite Prioritätsentscheidung.
+
+### Laufzeitverifiziert
+
+- App-Build bestätigt,
+- Simulatorstart bestätigt,
+- Startansicht sichtbar,
+- Untersuchungsansicht sichtbar,
+- Priorisierungsansicht sichtbar,
+- visuelle Probleme im ersten Lauf erkannt.
+
+### Noch offen
+
+- Monster real auf `Normal` ziehen und `.normal` bestätigen,
+- Monster real auf `Wichtig` ziehen und `.wichtig` bestätigen,
+- Monster real auf `Kritisch` ziehen und `.kritisch` bestätigen,
+- ungültigen Drop real prüfen,
+- Input-Lock nach gültigem Drop real prüfen,
+- erneutes Ziehen während Lock real prüfen.
+
+Daher:
+
+- **F-08: implementiert.**
+- **AK-08: strukturell und modellseitig implementiert; vollständige manuelle Gestenabnahme offen.**
+
+## Bewertung AK-10 — Prioritätsanteil
+
+Implementiert:
+
+- ungültiger Drop → kein Zustandswechsel,
+- ungültiger Drop → Rückkehr,
+- gültiger Drop → genau eine Priorität,
+- gültiger Drop → Input-Lock,
+- Mehrfachversuch → erste Entscheidung bleibt bestehen.
+
+Offen:
+
+- manuelle Laufzeitprüfung der Gesture-Kette.
+
+Der Teamanteil von AK-10 folgt in Modul 009.
 
 ## Teststand
 
 | Bereich | Stand |
 |---|---:|
-| Testdeklarationen vor Modul 007 | 45 |
-| neue `InteractionFoundationTests` | 19 |
-| **Testdeklarationen nach Modul 007** | **64** |
-| tatsächlicher Testlauf | nicht nachgewiesen |
-| manuelle Gestenprüfung | nicht nachgewiesen |
+| Testdeklarationen vor Modul 008 | 64 |
+| neue `PrioritizationPhaseTests` | 22 |
+| **Testdeklarationen nach Modul 008** | **86** |
+| vollständiger Testlauf | nicht nachgewiesen |
 
-Gemeldete Testbereiche umfassen:
-
-- Lock-Initialzustand,
-- `lockInput()` / `unlockInput()`,
-- No-Op bei erneutem Lock,
-- keine Veränderung von Score/Phase/Priorität/Team,
-- Reset entsperrt,
-- Drop innerhalb Radius,
-- Drop auf Radiusgrenze,
-- Drop außerhalb Radius,
-- leere Zielliste,
-- mehrere Ziele → nächstes gewinnt,
-- neutrale Ziel-IDs,
-- unveränderliche Component-Felder,
-- Standardradius.
+Die Zahl 86 ist als Quellcode-/Deklarationsstand bestätigt, nicht als bestandener Testlauf.
 
 ## Schnittstellen-Register
 
-| Bereitgestellt von | Typ / Methode | Datei | Zweck |
-|---|---|---|---|
-| 001 | `Ticket_TamerApp` | `App/Ticket_TamerApp.swift` | App-Einstieg |
-| 001 | `RootVolumeView` | `Views/RootVolumeView.swift` | Root-Darstellung |
-| 001 | `DebugManager` | `Debug/DebugManager.swift` | zentrale Debug-Steuerung |
-| 001 | `LayoutConstants` | `Support/AppConstants.swift` | Layout-/Volume-Werte |
-| 001 | `GameplayConstants` | `Support/AppConstants.swift` | Ticketanzahl |
-| 001 | `AssetKeys` | `Support/AppConstants.swift` | Asset-Schlüssel |
-| 002 | `TicketPriority` | `Models/Ticket.swift` | Priorität |
-| 002 | `SupportTeam` | `Models/Ticket.swift` | Support-Team |
-| 002 | `Ticket` | `Models/Ticket.swift` | Ticketfachmodell |
-| 002 | `LocalTicketCatalog.allTickets` | `Data/LocalTicketCatalog.swift` | lokaler Ticketpool |
-| 003 | `GamePhase` | `Models/GamePhase.swift` | Spielphasen |
-| 003 | `SessionModel` | `Models/SessionModel.swift` | zentrale Sitzungsquelle |
-| 003 | `SessionModel.currentTicket` | `Models/SessionModel.swift` | aktuelles Ticket |
-| 003 | `SessionModel.currentPhase` | `Models/SessionModel.swift` | aktuelle Phase |
-| 004 | `StartView` | `Views/StartView.swift` | Startansicht |
-| 004 | `SessionModel` via Environment | App-/View-Baum | gemeinsame Zustandsquelle |
-| 005 | `Ticket.monsterAssetId` | `Models/Ticket.swift` | Monsterzuordnung |
-| 005 | `MonsterAssetProvider.loadMonster(assetID:)` | `Assets/MonsterAssetProvider.swift` | lokales Monsterladen |
-| 006 | `InvestigationView` | `Views/InvestigationView.swift` | Untersuchungsphase |
-| 006 | `SessionModel.beginPrioritizationPhase()` | `Models/SessionModel.swift` | `.untersuchen → .priorisieren` |
-| 007 | `DropTargetComponent(id:radius:debugName:)` | `Components/DropTargetComponent.swift` | generisches Drop-Ziel |
-| 007 | `MonsterInteractionConfigurator.configure(_:mode:)` | `Services/MonsterInteractionConfigurator.swift` | Interaktionskonfiguration |
-| 007 | `MonsterInteractionMode` | `Services/MonsterInteractionConfigurator.swift` | `.dragDrop` / `.inspectionOnly` |
-| 007 | `DropEvaluator.evaluate(entity:targets:)` | `Services/DropEvaluator.swift` | Entity-basierte Drop-Auswertung |
-| 007 | `DropEvaluator.evaluate(entityPosition:targets:)` | `Services/DropEvaluator.swift` | testbare Positionsauswertung |
-| 007 | `SessionModel.lockInput()` | `Models/SessionModel.swift` | Eingabe sperren |
-| 007 | `SessionModel.unlockInput()` | `Models/SessionModel.swift` | Eingabe freigeben |
-| 007 | `InteractionConstants` | `Support/AppConstants.swift` | Collision-/Drop-Radien und Rückkehrdauer |
+| Modul | Schnittstelle | Zweck |
+|---|---|---|
+| 003 | `SessionModel` | zentrale Sitzungsquelle |
+| 003 | `SessionModel.currentPhase` | aktive Phase |
+| 003 | `SessionModel.currentTicket` | aktuelles Ticket |
+| 003 | `SessionModel.selectedPriority` | gespeicherte Prioritätsentscheidung |
+| 003 | `SessionModel.selectedTeam` | spätere Teamentscheidung |
+| 003 | `SessionModel.score` | späterer Punktestand |
+| 005 | `Ticket.monsterAssetId` | Monster-ID |
+| 005 | `MonsterAssetProvider.loadMonster(assetID:)` | lokales Monsterladen |
+| 006 | `SessionModel.beginPrioritizationPhase()` | Wechsel `.untersuchen → .priorisieren` |
+| 007 | `DropTargetComponent` | generisches Drop-Ziel |
+| 007 | `MonsterInteractionConfigurator.configure(_:mode:)` | Interaktionskonfiguration |
+| 007 | `DropEvaluator` | Drop-Auswertung |
+| 007 | `SessionModel.lockInput()` | Input sperren |
+| 007 | `SessionModel.unlockInput()` | Input freigeben |
+| 008 | `SessionModel.savePriority(_:)` | Priorität genau einmal speichern + Lock |
+| 008 | `PriorityTargetMapping` | Ziel-ID ↔ Priorität |
+| 008 | `PrioritizationConstants` | Positionen der Prioritätsziele und des Monsters |
+| 008 | `PrioritizationView` | fachliche Priorisierungsansicht |
 
-## DebugManager nach Modul 007
+## DebugManager nach Modul 008
 
 Keine neue Kategorie.
 
 Verwendet werden:
 
-- `.input`: Drag-/Release-Ereignisse und ignorierte Eingaben,
-- `.physics`: Drop-Auswertung,
-- `.state`: Lock setzen/freigeben,
-- `.spawning`: Monster- und DEBUG-Zielerzeugung.
+- `.spawning`: Monster und Ziel-Entities,
+- `.input`: Drag-/Release-Ereignisse,
+- `.physics`: gültige/ungültige Drop-Auswertung,
+- `.state`: Priorität, Lock und Unlock-Entscheidung.
 
-Keine vollständigen Tickettexte werden geloggt.
+Referenzpriorität und richtige Lösung werden nicht geloggt.
 
 ## Entscheidungs-Log
 
 | Datum | Entscheidung | Begründung |
 |---|---|---|
 | 2026-07-15 | Dokumentationsstruktur und Single-Stand-Prinzip verbindlich. | Historie liegt in Git. |
-| 2026-07-15 | Genau eine volumetrische `WindowGroup`. | F-05 ohne zweites Volume oder Immersive Space. |
-| 2026-08-05 | `SessionModel` ist einzige Quelle des aktuellen Spielzustands. | Konkurrenzzustände vermeiden. |
-| 2026-08-09 | Genau eine `SessionModel`-Instanz wird per SwiftUI Environment geteilt. | Einfache Zustandsweitergabe. |
-| 2026-08-09 | `monsterAssetId` ist Teil von `Ticket`. | Entspricht der SPEC-Architekturskizze. |
-| 2026-08-09 | USDA-Kugeln bleiben reine technische Platzhalter. | Finale Blender-Monster fehlen. |
-| 2026-08-09 | `beginPrioritizationPhase()` ist eine kleine phasengebundene Mutation. | Kein Bedarf für allgemeine State-Machine. |
-| 2026-08-09 | Modul 007 nutzt gezieltes `DragGesture` statt `ManipulationComponent`. | Explizite Release-Auswertung für Drop-Semantik laut Modulreport. |
-| 2026-08-09 | Drop-Ziele bleiben in Modul 007 vollständig fachlich neutral. | Prioritäten gehören Modul 008, Teams Modul 009. |
-| 2026-08-09 | `SessionModel.lockInput()` / `unlockInput()` kapseln die Eingabesperre. | Genau-einmal-Semantik ohne direkte Property-Manipulation aus Views. |
-| 2026-08-09 | Das DEBUG-Harness bleibt nur bis zur echten Priorisierungsphase relevant. | Technische Prüfung ohne Vorziehen von Modul 008. |
-| 2026-08-09 | AK-10 wird nicht als vollständig erfüllt markiert. | Fachliche Entscheidungsspeicherung fehlt noch; Gestenlaufzeitprüfung ebenfalls offen. |
+| 2026-07-15 | Genau eine volumetrische `WindowGroup`. | F-05. |
+| 2026-08-05 | `SessionModel` ist einzige Quelle des Sitzungszustands. | Konkurrenzzustände vermeiden. |
+| 2026-08-09 | Monster-IDs bleiben neutral; USDA-Dateien sind nur Platzhalter. | F-14 darf nicht abgeschwächt werden. |
+| 2026-08-09 | Modul 007 stellt generische Drop- und Lock-Grundlage bereit. | Fachliche Ziele bleiben Folge-Modulen vorbehalten. |
+| 2026-08-09 | Priorität wird über `savePriority(_:)` atomar mit Input-Lock gespeichert. | Genau-einmal-Semantik und `private(set)` bleiben kontrolliert. |
+| 2026-08-09 | Priorisierungsziel-Mapping liegt zentral in `PriorityTargetMapping`. | Keine verteilten ID-Strings. |
+| 2026-08-09 | Modul 008 führt keinen automatischen Wechsel zur Teamphase aus. | F-13 gehört Modul 010. |
+| 2026-08-09 | Sichtbare Prioritätslabels werden als SwiftUI-Overlay statt RealityView-Attachments dargestellt. | Simulator zeigte die Attachments nicht zuverlässig. |
+| 2026-08-09 | Der 008-Fix wird bis zum tatsächlichen Git-Commit als uncommitted Arbeitsstand geführt. | Hash fehlt und `.git/index.lock` blockierte den Commit. |
+| 2026-08-09 | Modul 009 darf eine kontrollierte `beginTeamAssignmentPhase()`-Methode bereitstellen, aber sie nicht automatisch auslösen. | Teamphase muss implementier- und testbar sein; der automatische zeitgesteuerte Übergang bleibt Modul 010. |
 
 ## Offene Punkte / Risiken
 
-### Vor oder zu Beginn von Modul 008
+### Vor oder zu Beginn von Modul 009
 
-- [ ] aktuellen Branch und Commit prüfen,
-- [ ] tatsächlichen Modul-007-Commit/Hash eintragen,
-- [ ] App lokal in Xcode bauen,
-- [ ] visionOS-Simulator starten,
-- [ ] alle 64 Testdeklarationen ausführen,
-- [ ] AK-01 nachprüfen,
-- [ ] AK-06/AK-07 nachprüfen,
-- [ ] DEBUG-Harness manuell prüfen: Hover, Pinch, Drag, gültiger/ungültiger Drop, Lock,
-- [ ] tatsächliche visionOS-26-Kompatibilität der Gesture-/RealityKit-Aufrufe verifizieren,
-- [ ] prüfen, ob `.git/index.lock` noch besteht und Git normal arbeitet.
+- [ ] 008-Fix tatsächlich committen und Hash dokumentieren,
+- [ ] `.git/index.lock`-Problem prüfen/bereinigen,
+- [ ] vollständige Test-Suite mit 86 Tests ausführen,
+- [ ] Gestenprüfung AK-08 durchführen,
+- [ ] Invalid-Drop und Input-Lock im Simulator prüfen,
+- [ ] prüfen, ob die korrigierten Zielkugeln und Labels im aktuellen Commit sichtbar sind.
+
+### Für Modul 009
+
+- [ ] `saveTeam(_:)` nach demselben atomaren Muster wie `savePriority(_:)` ergänzen,
+- [ ] vier Teamstationen implementieren,
+- [ ] kontrollierten Übergang in `.teamZuordnen` bereitstellen, ohne F-13 vorwegzunehmen,
+- [ ] DEBUG-/Development-Weg für manuelle Teamansicht-Prüfung festlegen, solange Modul 010 den normalen automatischen Übergang noch nicht ausführt.
 
 ### Modul 005 weiterhin offen
 
 - [ ] vier eigene Blender-Quelldateien,
 - [ ] vier finale RealityKit-kompatible Exporte,
 - [ ] Export-/Lizenzdokumentation,
-- [ ] Skalierung/Orientierung finaler Assets,
-- [ ] Darstellung finaler Monster.
+- [ ] finale Assetdarstellung.
 
-### Projektweite offene Punkte
+### Projektweit
 
 - [ ] `.DS_Store`-Bereinigung,
-- [ ] Audioassets/Rechte für Modul 010,
+- [ ] zwei lokale Audioassets für Modul 010,
 - [ ] Apple-Vision-Pro-Zeitfenster für Modul 013,
 - [ ] F-17 erst nach Muss-Funktionen entscheiden.
 
 ## Chronik
 
-### Modul 001 — Projektgrundgerüst und zentrales Volume
+### Modul 001–007
 
-Grundgerüst, zentrales Volume, DebugManager, Constants, Lokalisierung und Smoke-Test eingerichtet.
+Grundgerüst, Ticketdaten, Sitzungsmodell, Startansicht, Monster-Pipeline, Untersuchungsphase und generische räumliche Interaktion wurden schrittweise eingerichtet.
 
-### Modul 002 — Ticketdatenmodell und lokaler Katalog
+### Modul 008 — Priorisierungsphase
 
-Ticketmodell, Prioritäten, Teams und zwölf lokale Tickets mit vollständiger 4×3-Verteilung eingerichtet.
-
-### Modul 003 — Sitzungsmodell und Zufallsauswahl
-
-`GamePhase` und `SessionModel` mit Auswahl ohne Wiederholung, Index und Reset eingerichtet.
-
-### Modul 004 — Startansicht und Einstellungen
-
-Deutsche Startansicht, Ticketregler und Startaktion implementiert; zentrale `SessionModel`-Instanz per Environment bereitgestellt.
-
-### Modul 005 — Monster-Asset-Pipeline
-
-Monster-ID-Mapping und lokaler Provider implementiert; finale Blender-Monster fehlen weiterhin.
-
-### Modul 006 — Untersuchungsphase
-
-`InvestigationView` zeigt das aktive Ticket und Monster. `beginPrioritizationPhase()` wechselt kontrolliert zum selben Ticket in `.priorisieren`.
-
-### Modul 007 — Räumliche Interaktionsgrundlagen
-
-Generische Drag-/Drop-Grundlage, Drop-Ziel-Component, DropEvaluator und Input-Lock wurden implementiert. Ein DEBUG-only Harness erlaubt die technische Prüfung in `.priorisieren`, ohne echte Prioritätsziele vorwegzunehmen. Der Quellstand enthält 64 Testdeklarationen, aber noch keinen ausgeführten Build-, Test- oder Simulatornachweis.
+`PrioritizationView` mit drei beschrifteten räumlichen Zielen wurde implementiert. `savePriority(_:)` speichert die Priorität genau einmal und sperrt die Eingabe. Build und Simulatorstart sind erstmals in diesem Modul ausdrücklich bestätigt. Der erste Simulatorlauf deckte zwei Darstellungsprobleme auf; Kugeltransparenz und Labeldarstellung wurden anschließend korrigiert. Die Korrektur ist noch nicht mit einem Git-Hash bestätigt. 86 Testdeklarationen sind vorhanden, ein vollständiger Testlauf und die manuelle Gestenabnahme stehen noch aus.
 
 ## Nächster Schritt
 
-`008-Eingangsprompt.md` in einen neuen Modul-Chat geben.
+`009-Eingangsprompt.md` in einen neuen Modul-Chat geben.
 
-Modul 008 implementiert ausschließlich die Priorisierungsphase:
+Modul 009 implementiert ausschließlich die Teamzuordnungsphase mit vier beschrifteten Stationen `Netzwerk`, `Konto`, `Software`, `Hardware`, Wiederverwendung der Drag-/Drop-Grundlage und genau einmaligem Speichern von `selectedTeam`.
 
-- drei beschriftete Ziele `Normal`, `Wichtig`, `Kritisch`,
-- Monster laden und mit `.dragDrop` konfigurieren,
-- generische Drop-Auswertung aus Modul 007 wiederverwenden,
-- gültige Ziel-ID auf `TicketPriority` mappen,
-- Prioritätsentscheidung genau einmal im `SessionModel` speichern,
-- ungültiger Drop verändert keine Entscheidung,
-- Eingabe nach gültigem Drop sperren.
-
-Teamstationen, Bewertung, Audio und automatischer Übergang bleiben ausgeschlossen.
+Bewertung, Punkte, Sounds und automatischer 1,5-Sekunden-Übergang bleiben Modul 010 vorbehalten.

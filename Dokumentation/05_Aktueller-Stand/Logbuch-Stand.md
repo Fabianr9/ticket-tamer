@@ -2,15 +2,16 @@
 
 > Laufendes Gedächtnis und Steuerungsdokument des Projekts. Nach jedem eingearbeiteten Modul-Report wird diese Datei vollständig aktualisiert und als einziger aktueller `Logbuch-Stand.md` unter `Dokumentation/05_Aktueller-Stand/` ersetzt.
 
-**Stand:** nach Modul `005` — Monster-Asset-Pipeline  
+**Stand:** nach Modul `006` — Untersuchungsphase  
 **Eingearbeitet am:** 2026-08-09  
-**Branch laut 005-Report:** `main`  
-**Commit vor Modul 005:** `356cb06 feat: update docs`  
-**Modul-004-Commit enthalten:** `84bb767`  
-**Modul-005-Commit:** noch nicht bekannt  
-**Build nach Modul 005:** nicht nachgewiesen  
-**Simulatorstart nach Modul 005:** nicht nachgewiesen  
-**Testlauf nach Modul 005:** nicht nachgewiesen
+**Branch laut 006-Report:** `main`  
+**Commit vor Modul 006:** `98cd95d fix:import error`  
+**Modul-005-Commit bestätigt:** `68b84f3 feat:Modul005`  
+**Modul-006-Commit:** noch nicht bekannt  
+**Build nach Modul 006:** nicht nachgewiesen  
+**Simulatorstart nach Modul 006:** nicht nachgewiesen  
+**Testlauf nach Modul 006:** nicht nachgewiesen  
+**Testdeklarationen laut Quellstand:** 45
 
 ## Verbindlicher Projektumfang
 
@@ -24,13 +25,13 @@ Zum Muss-Umfang gehören genau zwölf lokale Tickets, vier eigene Blender-Monste
 
 | Modul | Titel | Status | Git-Commit | Erfüllt laut SPEC |
 |---|---|---|---|---|
-| 001 | Projektgrundgerüst und zentrales Volume | technisch abgeschlossen | ursprünglicher Hash im Logbuch nicht abschließend rekonstruiert | F-05 strukturell teilweise |
+| 001 | Projektgrundgerüst und zentrales Volume | technisch abgeschlossen | ursprünglicher Hash nicht abschließend rekonstruiert | F-05 strukturell teilweise |
 | 002 | Ticketdatenmodell und lokaler Katalog | implementiert | `2775041` | F-02, F-03 |
 | 003 | Sitzungsmodell und Zufallsauswahl | implementiert | `dd78700` | F-04 modellseitig; F-16 modellseitig teilweise |
 | 004 | Startansicht und Einstellungen | implementiert; Laufzeitabnahme offen | `84bb767` | F-01 implementiert; AK-01 Laufzeitnachweis offen |
-| 005 | Monster-Asset-Pipeline | **teilweise abgeschlossen** | Hash offen | Pipeline/Mapping implementiert; F-14/AK-14 noch nicht vollständig erfüllt |
-| 006 | Untersuchungsphase | als Nächstes; darf mit Platzhaltern entwickelt werden | – | F-06, F-07 |
-| 007 | Räumliche Interaktionsgrundlagen | offen | – | F-10 |
+| 005 | Monster-Asset-Pipeline | teilweise abgeschlossen | `68b84f3` | Pipeline/Mapping implementiert; finale Blender-Assets offen |
+| 006 | Untersuchungsphase | implementiert; Laufzeitabnahme offen | Hash offen | F-06/F-07 implementiert; AK-06/AK-07 Laufzeitnachweis offen |
+| 007 | Räumliche Interaktionsgrundlagen | als Nächstes | – | F-10 |
 | 008 | Priorisierungsphase | offen | – | F-08 |
 | 009 | Teamzuordnungsphase | offen | – | F-09 |
 | 010 | Bewertung und Audiofeedback | offen | – | F-11, F-12, F-13 |
@@ -55,80 +56,175 @@ Modul 003 ergänzte `GamePhase` und `SessionModel` als zentrale `@Observable @Ma
 
 Modul 004 implementierte die deutsche Startansicht. `Ticket_TamerApp` besitzt genau eine `SessionModel`-Instanz und reicht sie per SwiftUI Environment weiter. Die Startschaltfläche ruft `startSession()` auf und wechselt modellseitig in `.untersuchen`. Laufzeitabnahme, Simulatorstart und vollständiger Testlauf blieben offen.
 
-## Eingearbeiteter Stand Modul 005
+## Abschlussstand Modul 005
 
-### Technisch implementiert
+### Technische Pipeline
 
-Modul 005 hat die Monster-Pipeline strukturell umgesetzt:
+Modul 005 ergänzte:
 
-- `monsterAssetId: String` wurde in `Ticket` ergänzt,
-- alle zwölf Tickets besitzen eine neutrale Monster-ID,
-- die IDs `monster01` bis `monster04` sind zentral in `AssetKeys.Monster` definiert,
-- `MonsterAssetProvider.loadMonster(assetID:)` kapselt lokales asynchrones RealityKit-Laden,
-- unbekannte IDs führen zu einem typisierten Fehler,
-- es gibt keinen Netzwerk-Fallback,
-- das Mapping verrät weder Team noch Priorität eindeutig,
-- vier lokale USDA-Test-/Platzhalterszenen wurden angelegt,
-- `spawning` wird für Asset-Ladeereignisse verwendet.
+- `Ticket.monsterAssetId`,
+- vier neutrale IDs `monster01` bis `monster04`,
+- vollständiges Ticket-Monster-Mapping,
+- `MonsterAssetProvider.loadMonster(assetID:)`,
+- typisierte Ladefehler,
+- lokale USDA-Platzhalter,
+- `spawning`-Logging.
 
-### Nicht geliefert
+Der Modul-006-Preflight bestätigt den tatsächlichen Modul-005-Commit als:
 
-Vor Modul 005 lagen laut Report **keine** der geforderten vier eigenen Blender-Quelldateien und **keine** finalen USDZ-Exporte vor.
+`68b84f3 feat:Modul005`
 
-Stattdessen wurden vier technische USDA-Platzhalter mit Kugelgeometrie erzeugt:
+### Weiterhin offene Muss-Anforderung
 
-| ID | Datei | Status |
-|---|---|---|
-| `monster01` | `monster01.usda` | technischer Platzhalter |
-| `monster02` | `monster02.usda` | technischer Platzhalter |
-| `monster03` | `monster03.usda` | technischer Platzhalter |
-| `monster04` | `monster04.usda` | technischer Platzhalter |
+Die vier USDA-Kugeln sind technische Platzhalter und keine finalen eigenen Blender-Monster. F-14/AK-14 bleiben deshalb teilweise offen.
 
-Diese Dateien dienen nur zum Aufbau der Ladepipeline.
+## Eingearbeiteter Stand Modul 006
 
-### Bewertung von F-14 / AK-14
+### Ergebnis
 
-**Nicht als vollständig erfüllt markieren.**
+Modul 006 implementiert die Untersuchungsphase auf Basis von `SessionModel.currentTicket`.
+
+Neu beziehungsweise geändert wurden:
+
+- `InvestigationView`,
+- `.untersuchen`-Routing in `RootVolumeView`,
+- `SessionModel.beginPrioritizationPhase()`,
+- sieben neue deutsche Lokalisierungsschlüssel,
+- fünf neue Layoutwerte,
+- kontrollierte Umlautkorrekturen in den Tickettexten,
+- sieben neue Tests in `InvestigationPhaseTests`.
+
+### Untersuchungsansicht
+
+Die neue `InvestigationView` zeigt laut Report:
+
+- Monster des aktiven Tickets,
+- Ticketnummer,
+- Titel,
+- Kurzbeschreibung,
+- Auswirkung,
+- alle 1 bis 3 Symptome beziehungsweise Hinweise,
+- Schaltfläche „Weiter zur Priorisierung“.
+
+Die Daten stammen ausschließlich aus `SessionModel.currentTicket`.
+
+Nicht angezeigt werden:
+
+- `referencePriority`,
+- `referenceTeam`,
+- `monsterAssetId` als sichtbarer Nutzertext.
+
+Bei fehlendem aktuellen Ticket beziehungsweise fehlgeschlagenem Monsterladen existieren lokale Fehler-/Fallbacktexte.
+
+### Monsterdarstellung
+
+Die View nutzt direkt die bestehende Modul-005-Schnittstelle:
+
+`MonsterAssetProvider.loadMonster(assetID:)`
+
+Der aktuelle Stand verwendet weiterhin die vier USDA-Kugel-Platzhalter. Es wurden keine neuen Blender-Modelle erzeugt und keine Gesteninteraktion ergänzt.
+
+Die berichtete Monster-Skalierung ist ohne Simulator noch ungeprüft.
+
+### Phasenwechsel
+
+`SessionModel` wurde um `beginPrioritizationPhase()` ergänzt.
+
+Gemeldete Semantik:
+
+- gültig nur aus `.untersuchen`,
+- setzt die Phase auf `.priorisieren`,
+- verändert `currentTicketIndex` nicht,
+- verändert `currentTicket` nicht,
+- speichert keine Prioritätsentscheidung,
+- `selectedPriority` bleibt `nil`,
+- ungültiger Aufruf aus einer anderen Phase wird ignoriert.
+
+Nach dem Wechsel zeigt `RootVolumeView` weiterhin nur den neutralen Platzhalter für die noch nicht implementierte Priorisierungsphase.
+
+### Tickettextqualität
+
+Alle zwölf Tickets wurden auf technische Umschreibungen wie `ae`, `oe`, `ue` geprüft und kontrolliert bereinigt.
+
+Der Report nennt unter anderem Korrekturen wie:
+
+- `koennen` → `können`,
+- `oeffnen` → `öffnen`,
+- `Buero-Netz` → `Büro-Netz`,
+- `regelmaessig` → `regelmäßig`,
+- `Arbeitsplaetze` → `Arbeitsplätze`,
+- `laesst` → `lässt`,
+- `Auftraege` → `Aufträge`,
+- `stuerzt` → `stürzt`,
+- `Verkaeufe` → `Verkäufe`,
+- `zuverlaessig` → `zuverlässig`,
+- `eingeschraenkt` → `eingeschränkt`.
+
+Die Liste im 006-Report ist ausdrücklich nur eine Auswahl. Fachliche Referenzwerte und Monsterzuordnung blieben unverändert:
+
+- `referencePriority` unverändert,
+- `referenceTeam` unverändert,
+- `monsterAssetId` unverändert,
+- vollständige 4×3-Team-Prioritäts-Verteilung unverändert.
+
+## Bewertung von F-06 / F-07 / AK-06 / AK-07
+
+### Implementierungsstand
+
+Laut Code-Review und Report sind umgesetzt:
+
+- F-06: Untersuchungsansicht mit Monster und allen geforderten Ticketinformationen,
+- F-07: „Weiter zur Priorisierung“,
+- AK-06: Daten stammen aus `currentTicket`; Referenzlösung wird nicht angezeigt,
+- AK-07: kontrollierter Phasenwechsel, gleicher Ticketindex, keine Prioritätsentscheidung.
+
+### Verifikationsstand
+
+Diese Kriterien werden im Projektlogbuch noch nicht als vollständig laufzeitverifiziert geführt.
 
 Begründung:
 
-F-14 verlangt vier **eigene Blender-Monster** als lokale RealityKit-kompatible 3D-Assets. Vier generische USDA-Kugeln, die im Modul-Chat erzeugt wurden, erfüllen diese fachliche Muss-Anforderung nicht.
+- kein Xcode-Build nach Modul 006 nachgewiesen,
+- kein Testlauf nach Modul 006 ausgeführt,
+- kein Simulatorlauf nach Modul 006 ausgeführt,
+- Monster-Sichtbarkeit und Layout wurden nicht real geprüft.
 
-Aktueller Stand:
+Daher gilt:
 
-- [x] neutrale Monster-IDs definiert,
-- [x] `monsterAssetId` im Ticketmodell ergänzt,
-- [x] alle zwölf Tickets besitzen eine gültige Zuordnung,
-- [x] keine feste 1:1-Zuordnung Monster → Team,
-- [x] keine feste 1:1-Zuordnung Monster → Priorität,
-- [x] lokale Ladepipeline implementiert,
-- [x] keine Netzwerkabhängigkeit in der Pipeline,
-- [ ] vier eigene Blender-Quelldateien vorhanden,
-- [ ] vier finale RealityKit-kompatible Monster-Exporte eingebunden,
-- [ ] alle vier finalen Monster im Simulator sichtbar geprüft,
-- [ ] Skalierung und Orientierung der finalen Assets geprüft,
-- [ ] Blickfokus/Pinch/Drag geprüft — gehört zusätzlich zu Modul 007.
+- **F-06/F-07: implementiert.**
+- **AK-06/AK-07: code- und testseitig vorbereitet, Laufzeitverifikation offen.**
 
-Modul 005 bleibt deshalb im Projektlogbuch **teilweise abgeschlossen**. Die technische Grundlage reicht aus, damit Modul 006 mit Platzhaltern weiterentwickelt werden kann. Die finale F-14/AK-14-Abnahme muss spätestens vor beziehungsweise in Modul 013 nach Einsetzen der echten Monster erfolgen.
+## Teststand
 
-## Ticket-Monster-Mapping
+Der 006-Report löst die Testzahl aus Modul 005 auf:
 
-| Ticket | Team | Priorität | Monster-ID |
-|---|---|---|---|
-| TT-001 | netzwerk | normal | monster01 |
-| TT-002 | netzwerk | wichtig | monster02 |
-| TT-003 | netzwerk | kritisch | monster03 |
-| TT-004 | konto | normal | monster04 |
-| TT-005 | konto | wichtig | monster01 |
-| TT-006 | konto | kritisch | monster02 |
-| TT-007 | software | normal | monster03 |
-| TT-008 | software | wichtig | monster04 |
-| TT-009 | software | kritisch | monster01 |
-| TT-010 | hardware | normal | monster02 |
-| TT-011 | hardware | wichtig | monster03 |
-| TT-012 | hardware | kritisch | monster04 |
+- tatsächlicher Stand vor Modul 006: 38 Testdeklarationen,
+- neue Tests in Modul 006: 7,
+- gemeldeter Quellstand nach Modul 006: 45 Testdeklarationen.
 
-Jedes Monster wird bei drei Tickets verwendet und kommt über mehrere Teams und alle drei Prioritätsstufen hinweg vor.
+Neue Tests:
+
+1. Phasenwechsel `.untersuchen → .priorisieren`
+2. Ticketindex bleibt unverändert
+3. `currentTicket` bleibt gleich
+4. `selectedPriority` bleibt `nil`
+5. ungültiger Phasenaufruf wird ignoriert
+6. `currentTicket` enthält vollständige Untersuchungsdaten
+7. alle Katalogtickets enthalten 1 bis 3 Symptome
+
+**Wichtig:** Die 45 Tests wurden im Modul-Chat nicht ausgeführt.
+
+## Neue Lokalisierungsschlüssel
+
+| Schlüssel | Deutscher Wert |
+|---|---|
+| `investigation.button.nextPhase` | `Weiter zur Priorisierung` |
+| `investigation.userImpact.label` | `Auswirkung` |
+| `investigation.symptoms.label` | `Symptome und Hinweise` |
+| `investigation.ticketNumber.label` | `Ticketnummer ` |
+| `investigation.loading.monster` | `Monster wird geladen …` |
+| `investigation.error.monsterLoad` | `Monster konnte nicht geladen werden.` |
+| `investigation.error.noTicket` | `Kein aktives Ticket.` |
 
 ## Schnittstellen-Register
 
@@ -144,41 +240,32 @@ Jedes Monster wird bei drei Tickets verwendet und kommt über mehrere Teams und 
 | 002 | `SupportTeam` | `Models/Ticket.swift` | Support-Team |
 | 002 | `Ticket` | `Models/Ticket.swift` | Ticketfachmodell |
 | 002 | `LocalTicketCatalog.allTickets` | `Data/LocalTicketCatalog.swift` | lokaler Ticketpool |
-| 003 | `GamePhase` | `Models/GamePhase.swift` | fünf Spielphasen |
+| 003 | `GamePhase` | `Models/GamePhase.swift` | Spielphasen |
 | 003 | `SessionModel` | `Models/SessionModel.swift` | zentrale Sitzungsquelle |
 | 003 | `SessionModel.startSession(using:)` | `Models/SessionModel.swift` | Sitzung starten |
 | 003 | `SessionModel.currentTicket` | `Models/SessionModel.swift` | aktuelles Ticket |
 | 003 | `SessionModel.currentPhase` | `Models/SessionModel.swift` | aktuelle Phase |
 | 004 | `StartView` | `Views/StartView.swift` | Startansicht |
-| 004 | `SessionModel` per Environment | App-/View-Baum | einheitlicher Zustand für Kind-Views |
-| 005 | `Ticket.monsterAssetId: String` | `Models/Ticket.swift` | neutrale Monsterzuordnung |
-| 005 | `AssetKeys.Monster.monster01...monster04` | `Support/AppConstants.swift` | vier stabile Monster-IDs |
-| 005 | `AssetKeys.Monster.allIDs` | `Support/AppConstants.swift` | Liste aller Monster-IDs |
-| 005 | `MonsterAssetProvider.loadMonster(assetID:)` | `Assets/MonsterAssetProvider.swift` | lokales asynchrones Laden |
+| 004 | `SessionModel` via Environment | App-/View-Baum | gemeinsame Zustandsquelle |
+| 005 | `Ticket.monsterAssetId` | `Models/Ticket.swift` | Monsterzuordnung |
+| 005 | `AssetKeys.Monster.allIDs` | `Support/AppConstants.swift` | Monster-ID-Liste |
+| 005 | `MonsterAssetProvider.loadMonster(assetID:)` | `Assets/MonsterAssetProvider.swift` | lokales Monsterladen |
 | 005 | `MonsterAssetProvider.LoadError` | `Assets/MonsterAssetProvider.swift` | typisierte Ladefehler |
+| 006 | `InvestigationView` | `Views/InvestigationView.swift` | Untersuchungsphase |
+| 006 | `SessionModel.beginPrioritizationPhase()` | `Models/SessionModel.swift` | kontrollierter Wechsel `.untersuchen → .priorisieren` |
 
-## DebugManager nach Modul 005
+## DebugManager nach Modul 006
 
-- keine neue Kategorie,
-- `spawning` wird im `MonsterAssetProvider` für Ladestart, Ladeerfolg und Ladefehler genutzt,
-- keine `print()`-Aufrufe,
-- keine vollständigen Tickettexte in Logs.
+Keine neue Kategorie.
 
-## Teststand
+Verwendet werden:
 
-Vor Modul 005 waren 27 Testdeklarationen dokumentiert.
+- `.lifecycle`: Erscheinen der Untersuchungsansicht,
+- `.input`: „Weiter zur Priorisierung“,
+- `.state`: erfolgreicher beziehungsweise ignorierter Phasenwechsel,
+- `.spawning`: bestehendes Monster-Laden.
 
-Der 005-Report ist bei der Anzahl neuer Tests widersprüchlich:
-
-- in der Dateitabelle steht „9 neue Modul-005-Tests“,
-- die detaillierte Liste enthält **11** nummerierte Tests,
-- die Gesamtzahl wird als `27 + 11 = 38` angegeben.
-
-Daher gilt bis zur realen Prüfung:
-
-- **gemeldete Testdeklarationen nach Modul 005: wahrscheinlich 38,**
-- **tatsächliche Zahl: in Xcode beziehungsweise im Quellcode zu bestätigen,**
-- **erfolgreicher Testlauf: nicht nachgewiesen.**
+Keine vollständigen Tickettexte werden geloggt.
 
 ## Entscheidungs-Log
 
@@ -187,44 +274,42 @@ Daher gilt bis zur realen Prüfung:
 | 2026-07-15 | Dokumentationsstruktur und Single-Stand-Prinzip verbindlich. | Historie liegt in Git. |
 | 2026-07-15 | Genau eine volumetrische `WindowGroup`. | F-05 ohne zweites Volume oder Immersive Space. |
 | 2026-08-05 | `SessionModel` ist einzige Quelle des aktuellen Spielzustands. | Konkurrenzzustände vermeiden. |
-| 2026-08-09 | `Ticket_TamerApp` besitzt genau eine `SessionModel`-Instanz und reicht sie per Environment weiter. | Einfache SwiftUI-Observation-Lösung. |
-| 2026-08-09 | Die SPEC-Lücke `monsterAssetId` wird durch ein Feld direkt in `Ticket` aufgelöst. | Entspricht der Architektur-Skizze und hält die Zuordnung einfach. |
-| 2026-08-09 | Monster-IDs bleiben neutral (`monster01`–`monster04`). | Keine visuelle oder semantische Lösungshilfe. |
-| 2026-08-09 | `MonsterAssetProvider` kapselt lokales Laden und gibt Fehler explizit weiter. | Wiederverwendbare, kleine Schnittstelle ohne Netzwerk oder DI-Komplexität. |
-| 2026-08-09 | Die USDA-Kugeln gelten ausschließlich als technische Platzhalter, nicht als Erfüllung der Blender-Mussanforderung. | F-14/AK-14 verlangen vier eigene Blender-Monster; die Anforderung wird nicht stillschweigend abgeschwächt. |
-| 2026-08-09 | Modul 006 darf auf der Pipeline mit Platzhaltern weiterarbeiten. | Untersuchungsansicht kann unabhängig vom finalen visuellen Asset erstellt werden; finale Asset-Abnahme bleibt offen. |
-| 2026-08-09 | Vollständige Gesteninteraktion bleibt Modul 007. | Verbindliche Modul-Landkarte. |
-| 2026-08-09 | Die Testzahl nach Modul 005 wird nicht als sicherer Wert übernommen. | Report nennt sowohl 9 als auch 11 neue Tests. |
+| 2026-08-09 | Genau eine `SessionModel`-Instanz wird über SwiftUI Environment geteilt. | Einfache SwiftUI-Observation-Lösung. |
+| 2026-08-09 | `monsterAssetId` ist direkt Teil von `Ticket`. | Entspricht der SPEC-Architekturskizze. |
+| 2026-08-09 | USDA-Kugeln bleiben reine technische Platzhalter. | Vier eigene Blender-Monster fehlen weiterhin. |
+| 2026-08-09 | `beginPrioritizationPhase()` wird als kleine, phasengebundene Modellmutation ergänzt. | Modul 006 benötigt nur den Übergang zur nächsten Phase; keine allgemeine State-Machine nötig. |
+| 2026-08-09 | Tickettexte werden vor ihrer ersten sichtbaren Nutzung auf korrekte deutsche Umlaute bereinigt. | UI-Sprache ist verbindlich Deutsch; Referenzwerte bleiben unangetastet. |
+| 2026-08-09 | F-06/F-07 werden als implementiert, AK-06/AK-07 aber noch nicht als laufzeitverifiziert geführt. | Build, Tests und Simulator wurden nicht ausgeführt. |
+| 2026-08-09 | Modul 007 bleibt der nächste Schritt. | Die verbindliche Modul-Landkarte ordnet räumliche Interaktionsgrundlagen Modul 007 zu; Modul 008 folgt erst danach. |
 
 ## Offene Punkte / Risiken
 
-### Vor oder zu Beginn von Modul 006
+### Vor oder zu Beginn von Modul 007
 
-- [ ] Aktuellen Branch und Commit prüfen.
-- [ ] Modul-005-Commit/Hash dokumentieren.
-- [ ] App lokal in Xcode bauen.
-- [ ] visionOS-Simulator starten.
-- [ ] tatsächliche Testzahl ermitteln und alle Tests ausführen.
-- [ ] AK-01 aus Modul 004 im Simulator nachholen.
-- [ ] prüfen, ob `MonsterAssetProvider` die vier USDA-Platzhalter tatsächlich laden kann.
-- [ ] mindestens ein Monster beziehungsweise idealerweise alle vier im zentralen Volume sichtbar prüfen.
+- [ ] aktuellen Branch und Commit prüfen,
+- [ ] Modul-006-Commit/Hash eintragen,
+- [ ] App lokal in Xcode bauen,
+- [ ] visionOS-Simulator starten,
+- [ ] alle 45 Testdeklarationen ausführen,
+- [ ] AK-01 aus Modul 004 nachprüfen,
+- [ ] AK-06/AK-07 im Simulator prüfen,
+- [ ] Monsterladen der vier USDA-Platzhalter real prüfen,
+- [ ] Monstergröße und Position in `InvestigationView` prüfen.
 
-### Vor finaler Abnahme von F-14 / AK-14
+### Modul 005 weiterhin offen
 
-- [ ] vier echte Blender-Quelldateien liefern,
-- [ ] Blender-Exportpipeline dokumentieren,
-- [ ] vier finale RealityKit-kompatible Exporte einbinden,
-- [ ] Urheberschaft/Lizenz dokumentieren,
-- [ ] Skalierung, Orientierung und Transform-Ursprung prüfen,
-- [ ] alle vier finalen Modelle im Simulator/Gerät darstellen,
-- [ ] Interaktion in Modul 007 prüfen.
+- [ ] vier eigene Blender-Quelldateien,
+- [ ] vier finale RealityKit-kompatible Exporte,
+- [ ] Export-/Lizenzdokumentation,
+- [ ] Skalierung/Orientierung finaler Assets,
+- [ ] Darstellung aller vier finalen Monster,
+- [ ] vollständige Gestenprüfung ab Modul 007.
 
-### Weitere Projektpunkte
+### Projektweite offene Punkte
 
-- [ ] Tickettexte mit `ae`, `oe`, `ue` vor sichtbarer Darstellung in Modul 006 prüfen und nur fachlich nötige Textkorrekturen kontrolliert durchführen.
-- [ ] Drei bekannte `.DS_Store`-Dateien später aus Git entfernen und über `.gitignore` ausschließen.
-- [ ] Audiodateien und Rechte für Modul 010 vorbereiten.
-- [ ] Apple-Vision-Pro-Zeitfenster für Modul 013 sichern.
+- [ ] drei bekannte `.DS_Store`-Dateien später kontrolliert bereinigen,
+- [ ] Audiodateien und Rechte für Modul 010 vorbereiten,
+- [ ] Apple-Vision-Pro-Zeitfenster für Modul 013 sichern,
 - [ ] F-17 erst nach Absicherung der Muss-Funktionen entscheiden.
 
 ## Chronik
@@ -247,12 +332,16 @@ Deutsche Startansicht, Ticketregler und Startaktion implementiert; zentrale `Ses
 
 ### Modul 005 — Monster-Asset-Pipeline
 
-`monsterAssetId`, vier neutrale Asset-IDs, Katalogzuordnung und `MonsterAssetProvider` wurden implementiert. Vier USDA-Kugeln bilden die Pipeline technisch ab. Die Mussanforderung nach vier eigenen Blender-Monstern ist jedoch noch offen; deshalb bleibt Modul 005 fachlich teilweise abgeschlossen.
+`monsterAssetId`, neutrale Asset-IDs, Katalogzuordnung und `MonsterAssetProvider` implementiert. Vier USDA-Kugeln bilden die Pipeline technisch ab; finale Blender-Monster fehlen.
+
+### Modul 006 — Untersuchungsphase
+
+`InvestigationView` zeigt das aktive Ticket und lädt das zugeordnete Monster über `MonsterAssetProvider`. `beginPrioritizationPhase()` wechselt kontrolliert zum selben Ticket in `.priorisieren`. Die Tickettexte wurden sprachlich bereinigt, ohne Referenzwerte oder Monsterzuordnung zu verändern. Der Quellstand enthält laut Report 45 Testdeklarationen, aber noch keinen ausgeführten Build-, Test- oder Simulatornachweis.
 
 ## Nächster Schritt
 
-`006-Eingangsprompt.md` in einen neuen Modul-Chat geben.
+`007-Eingangsprompt.md` in einen neuen Modul-Chat geben.
 
-Modul 006 implementiert ausschließlich die Untersuchungsphase: aktuelles Monster laden und anzeigen, Ticketkarte mit Ticketnummer, Titel, Kurzbeschreibung, User Impact und 1–3 Hinweisen darstellen sowie „Weiter zur Priorisierung“ anbinden.
+Modul 007 implementiert ausschließlich die wiederverwendbaren räumlichen Interaktionsgrundlagen für das Monster: Blickfokus, Pinch/Greifen, räumliches Bewegen, generische Zielbereiche, ungültiges Ablegen und Eingabesperre.
 
-Prioritätsziele, Drag-and-Drop, Teamstationen, Bewertung und Audio bleiben ausgeschlossen.
+Prioritätswerte und konkrete Prioritätsziele gehören weiterhin Modul 008; Teamstationen gehören Modul 009.

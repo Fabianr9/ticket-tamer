@@ -2,16 +2,15 @@
 
 > Aktuelle Landkarte des bestätigten Codes und der bekannten Projektbestandteile. Nach jedem Modul wird dieses Dokument vollständig neu erzeugt und unter `Dokumentation/05_Aktueller-Stand/Projekt-Stand.md` ersetzt. Die Code-Historie liegt ausschließlich in Git.
 
-**Stand:** nach Modul `007` — Räumliche Interaktionsgrundlagen  
+**Stand:** nach Modul `008` — Priorisierungsphase  
 **Eingearbeitet am:** 2026-08-09  
 **Branch laut Report:** `main`  
-**Commit vor Modul 007:** `243c56c feat: add docs`  
-**Modul-006-Commit:** `177e2b9 feat: Modul006`  
-**Modul-007-Commit:** offen  
-**Build nach Modul 007:** nicht nachgewiesen  
-**Simulatorstart nach Modul 007:** nicht nachgewiesen  
-**Testlauf nach Modul 007:** nicht nachgewiesen  
-**Testdeklarationen im Quellstand:** 64
+**Modul-007-Commit:** `e450114 feat: update docs module 007`  
+**Modul-008-Commit:** `200093b 008: Priorisierungsphase`  
+**Build nach Modul 008:** nicht nachgewiesen  
+**Simulatorstart nach Modul 008:** nicht nachgewiesen  
+**Testlauf nach Modul 008:** nicht nachgewiesen  
+**Testdeklarationen im Quellstand:** 86
 
 ## Technischer Gesamtstand
 
@@ -27,19 +26,20 @@ Der gemeldete Quellstand enthält:
 - Untersuchungsphase,
 - kontrollierten Übergang `.untersuchen → .priorisieren`,
 - generische RealityKit-Drag-/Drop-Grundlage,
-- generische Drop-Ziele,
-- gültig/ungültig-Auswertung,
-- Input-Lock,
-- DEBUG-only Interaktions-Harness.
+- **echte `PrioritizationView`** mit drei räumlichen Prioritätszielen,
+- deutsche Labels (Normal, Wichtig, Kritisch) als SwiftUI-Label-Attachments,
+- `SessionModel.savePriority(_:)` für atomische Prioritätsspeicherung + Lock,
+- Ziel-ID → `TicketPriority`-Mapping in `PriorityTargetMapping`,
+- Input-Lock nach gültigem Drop,
+- Monster-Rückkehr nach ungültigem Drop.
 
 Noch nicht vorhanden:
 
-- konkrete Prioritätsziele,
-- fachliche Prioritätsentscheidung,
-- Teamstationen,
-- Bewertung,
-- Audio,
-- automatischer Übergang nach gültiger Entscheidung.
+- Teamstationen / `TeamAssignmentView`,
+- Bewertung gegen `referencePriority`,
+- Audio (Erfolg/Fehler),
+- automatischer Übergang nach gültiger Entscheidung (Modul 010 / F-13),
+- Ergebnisansicht.
 
 ## Repository- und Dokumentationsstruktur
 
@@ -74,6 +74,7 @@ Ticket-Tamer/
 │  │  │  ├─ Debug/
 │  │  │  │  └─ DebugInteractionHarnessView.swift
 │  │  │  ├─ InvestigationView.swift
+│  │  │  ├─ PrioritizationView.swift           ← neu (Modul 008)
 │  │  │  ├─ RootVolumeView.swift
 │  │  │  └─ StartView.swift
 │  │  ├─ Assets.xcassets
@@ -120,7 +121,8 @@ Ticket-Tamer/
    │  ├─ 004-Report.md
    │  ├─ 005-Report.md
    │  ├─ 006-Report.md
-   │  └─ 007-Report.md
+   │  ├─ 007-Report.md
+   │  └─ 008-Report.md                         ← neu (Modul 008)
    └─ 05_Aktueller-Stand/
       ├─ Logbuch-Stand.md
       └─ Projekt-Stand.md
@@ -130,104 +132,111 @@ Ticket-Tamer/
 
 | Datei | Zweck | Status | Seit Modul |
 |---|---|---|---|
-| `App/Ticket_TamerApp.swift` | App-Einstieg, Scene, SessionModel-Besitz, Component-Registrierung | ergänzt in 007 | 001/004/007 |
-| `Views/RootVolumeView.swift` | Root-Routing; DEBUG-Harness in `.priorisieren` | ergänzt | 001/004/006/007 |
+| `App/Ticket_TamerApp.swift` | App-Einstieg, Scene, SessionModel-Besitz, Component-Registrierung | unverändert | 001/004/007 |
+| `Views/RootVolumeView.swift` | Root-Routing; `.priorisieren` zeigt jetzt `PrioritizationView()` | geändert | 001/004/006/007/008 |
 | `Views/StartView.swift` | Startansicht | unverändert | 004 |
 | `Views/InvestigationView.swift` | Untersuchungsphase | unverändert | 006 |
-| `Views/Debug/DebugInteractionHarnessView.swift` | DEBUG-only Interaktions-Testbereich | neu | 007 |
+| `Views/PrioritizationView.swift` | Räumliche Priorisierungsansicht (3 Ziele, Drag-/Drop, Labels) | neu | 008 |
+| `Views/Debug/DebugInteractionHarnessView.swift` | DEBUG-only Interaktions-Testbereich (nicht mehr im normalen Routing) | unverändert | 007 |
 | `Models/Ticket.swift` | Ticketmodell inkl. `monsterAssetId` | unverändert | 002/005 |
 | `Data/LocalTicketCatalog.swift` | zwölf lokale Tickets | unverändert | 002/005/006 |
 | `Models/GamePhase.swift` | Spielphasen | unverändert | 003 |
-| `Models/SessionModel.swift` | Sitzungszustand inkl. `lockInput()` / `unlockInput()` | ergänzt | 003/006/007 |
+| `Models/SessionModel.swift` | Sitzungszustand; `savePriority(_:)` ergänzt | ergänzt | 003/006/007/008 |
 | `Assets/MonsterAssetProvider.swift` | lokales Monsterladen | unverändert | 005 |
-| `Components/DropTargetComponent.swift` | generisches Drop-Ziel | neu | 007 |
-| `Services/MonsterInteractionConfigurator.swift` | Input-/Collision-/Hover-Konfiguration | neu | 007 |
-| `Services/DropEvaluator.swift` | positionsbasierte Drop-Auswertung | neu | 007 |
-| `Support/AppConstants.swift` | Constants inkl. `InteractionConstants` | ergänzt | 001/005/006/007 |
+| `Components/DropTargetComponent.swift` | generisches Drop-Ziel | unverändert | 007 |
+| `Services/MonsterInteractionConfigurator.swift` | Input-/Collision-/Hover-Konfiguration | unverändert | 007 |
+| `Services/DropEvaluator.swift` | positionsbasierte Drop-Auswertung | unverändert | 007 |
+| `Support/AppConstants.swift` | Constants; `PrioritizationConstants` ergänzt | ergänzt | 001/005/006/007/008 |
 | `Debug/DebugManager.swift` | kategorisiertes Logging | unverändert | 001 |
-| `Resources/Localizable.xcstrings` | deutsche UI-Strings | unverändert in 007 | 001/004/006 |
-| `Ticket_TamerTests/Ticket_TamerTests.swift` | Tests 001–007 | ergänzt auf 64 Testdeklarationen | 001–007 |
+| `Resources/Localizable.xcstrings` | deutsche UI-Strings | unverändert in 008 | 001/004/006 |
+| `Ticket_TamerTests/Ticket_TamerTests.swift` | Tests 001–008; `PrioritizationPhaseTests` ergänzt | ergänzt auf 86 | 001–008 |
 
-## Interaktionsgrundlage
+## Priorisierungsphase (Modul 008)
+
+### `PrioritizationView`
+
+Befindet sich in `Views/PrioritizationView.swift`. Enthält:
+
+- `PriorityTargetMapping` (internal) — Ziel-ID → `TicketPriority`-Mapping.
+- drei räumliche Prioritätsziele mit `DropTargetComponent`.
+- SwiftUI-Label-Attachments (Normal, Wichtig, Kritisch) via `TicketPriority.displayName`.
+- Monster geladen via `MonsterAssetProvider`, konfiguriert via `MonsterInteractionConfigurator(.dragDrop)`.
+- Drag/Drop via `DragGesture.targetedToAnyEntity()`.
+- Gültiger Drop → `model.savePriority(_:)`.
+- Ungültiger Drop → Monster kehrt zu `originTransform` zurück.
+- `onAppear`: `unlockInput()` nur wenn `selectedPriority == nil`.
+
+### Ziel-IDs und Positionen
+
+| Technische ID | Position (x, y, z) | Priorität | Sichtbares Label |
+|---|---|---|---|
+| `priority_normal` | (-0.32, 0.10, 0) | `.normal` | Normal |
+| `priority_wichtig` | (0.00, 0.10, 0) | `.wichtig` | Wichtig |
+| `priority_kritisch` | (0.32, 0.10, 0) | `.kritisch` | Kritisch |
+
+Monster-Startposition: (0.00, -0.12, 0) — unterhalb aller drei Ziele.  
+Zielabstand: 0.32 m > 2 × 0.15 m = 0.30 m (keine Überschneidung).
+
+### `SessionModel.savePriority(_:)`
+
+Vorbedingungen: `currentPhase == .priorisieren`, `selectedPriority == nil`, `!isInputLocked`.  
+Effekte: `selectedPriority = priority`, `isInputLocked = true`.  
+Unverändert: `score`, `selectedTeam`, `currentTicketIndex`, `currentPhase`.
+
+## Interaktionsgrundlage (unverändert seit Modul 007)
 
 ### `MonsterInteractionConfigurator`
 
-Verfügbare Modi laut Report:
-
-- `.dragDrop`
-- `.inspectionOnly`
-
-Für `.dragDrop` werden gemeldet:
-
-- `InputTargetComponent(allowedInputTypes: .indirect)`,
-- `CollisionComponent`,
-- `HoverEffectComponent`,
-- Translation über gezieltes `DragGesture`.
+Verfügbare Modi:
+- `.dragDrop`: `InputTargetComponent(.indirect)`, `CollisionComponent`, `HoverEffectComponent`.
+- `.inspectionOnly`: Alle Interaktionskomponenten entfernt.
 
 ### `DropTargetComponent`
 
-Fachlich neutraler Zielmarker:
-
-- `id`,
-- `radius`,
-- optionaler `debugName`.
+Fachlich neutraler Zielmarker: `id`, `radius`, optionaler `debugName`.
 
 ### `DropEvaluator`
 
 Zwei Schnittstellen:
+- `evaluate(entity:targets:)` — für Gesture-Handler.
+- `evaluate(entityPosition:targets:)` — unit-testbar ohne RealityKit-Render-Loop.
 
-- `evaluate(entity:targets:)`
-- `evaluate(entityPosition:targets:)`
-
-Semantik:
-
-- sphärische Distanzprüfung,
-- Weltkoordinaten,
-- Randpunkt gilt als Treffer,
-- bei mehreren Treffern gewinnt der nächste,
-- keine Bildschirmkoordinaten.
+Semantik: sphärische Distanzprüfung, Weltkoordinaten, bei mehreren Treffern gewinnt nächstes.
 
 ### Input-Lock
 
-`SessionModel` bietet:
-
-- `lockInput()`
-- `unlockInput()`
-
-`reset()` setzt `isInputLocked` weiterhin auf `false`.
+`SessionModel` bietet `lockInput()`, `unlockInput()`, `reset()` setzt `isInputLocked = false`.
 
 ## DEBUG-Harness
 
-`DebugInteractionHarnessView`:
-
-- nur `#if DEBUG`,
-- neutraler Zielbereich `testTargetA`,
-- aktuell in `.priorisieren`,
-- dient ausschließlich technischer Interaktionsprüfung,
-- soll in Modul 008 durch `PrioritizationView` ersetzt werden.
+`DebugInteractionHarnessView` (nur `#if DEBUG`):
+- bleibt als Development-Datei erhalten,
+- ist seit Modul 008 **nicht mehr** im normalen `.priorisieren`-Routing aktiv.
 
 ## Teststand
 
 | Bereich | Stand |
 |---|---|
-| Testdeklarationen vor 007 | 45 |
-| neue Tests | 19 |
-| **gesamt nach 007** | **64** |
+| Testdeklarationen vor 008 | 64 |
+| neue Tests (PrioritizationPhaseTests) | 22 |
+| **gesamt nach 008** | **86** |
 | ausgeführter Testlauf | offen |
 | Simulator-Gestenprüfung | offen |
 
-## F-10 / AK-10
+## F-08 / AK-08 / AK-10
 
 | Teil | Stand |
 |---|---|
-| Drag-/Drop-Grundlage | implementiert |
-| ungültiger Drop → kein Zustand | implementiert |
-| ungültiger Drop → Rückkehr | implementiert |
-| gültiger generischer Drop → Lock | implementiert |
+| Drei beschriftete Prioritätsziele | implementiert |
+| Monster-Drag-/Drop in `.priorisieren` | implementiert |
+| Gültiger Drop → Priorität speichern | implementiert |
+| Gültiger Drop → Lock | implementiert |
+| Ungültiger Drop → kein Zustandswechsel | implementiert |
+| Ungültiger Drop → Rückkehr | implementiert |
 | Mehrfachinteraktion während Lock | implementiert |
-| Prioritätsentscheidung speichern | offen bis 008 |
-| Teamentscheidung speichern | offen bis 009 |
 | Laufzeitprüfung im Simulator | offen |
+| Prioritätsentscheidung bewerten (F-10) | offen bis 010 |
+| Teamentscheidung speichern | offen bis 009 |
 
 ## Monster-Asset-Status
 
@@ -238,38 +247,26 @@ Semantik:
 | `monster03` | USDA-Kugel | fehlt |
 | `monster04` | USDA-Kugel | fehlt |
 
-## Für Modul 008 relevante Schnittstellen
+## Für Modul 009 relevante Schnittstellen
 
 | Schnittstelle | Zweck |
 |---|---|
-| `SessionModel.currentPhase` | `.priorisieren` erkennen |
-| `SessionModel.currentTicket` | Monster-ID des aktiven Tickets |
-| `SessionModel.selectedPriority` | spätere Prioritätsentscheidung |
-| `SessionModel.isInputLocked` | Eingabesperre |
-| `SessionModel.lockInput()` | gültigen Drop sperren |
-| `SessionModel.unlockInput()` | Eingabe für Phasenaufbau freigeben |
-| `MonsterAssetProvider.loadMonster(assetID:)` | Monster laden |
-| `MonsterInteractionConfigurator.configure(_:mode:)` | Monster als `.dragDrop` konfigurieren |
-| `DropTargetComponent` | drei Prioritätsziele markieren |
-| `DropEvaluator` | gültigen Drop bestimmen |
-| `TicketPriority` | `.normal`, `.wichtig`, `.kritisch` |
-| `TicketPriority.displayName` | deutsche Beschriftungen |
-
-## Noch nicht vorhanden
-
-- Methode zum Speichern einer Prioritätsentscheidung,
-- echte `PrioritizationView`,
-- drei konkrete Prioritätsziele,
-- Mapping Ziel-ID → `TicketPriority`,
-- automatische Weiterleitung zur Teamphase,
-- Punkte und Audio.
+| `SessionModel.savePriority(_:)` | Vorlage für `saveTeam(_:)` |
+| `SessionModel.selectedPriority` | gespeicherte Prioritätsentscheidung |
+| `SessionModel.isInputLocked` | Eingabesperre nach Entscheidung |
+| `SessionModel.lockInput()` / `unlockInput()` | Lock-Verwaltung |
+| `PrioritizationView` | Vorlage für `TeamAssignmentView` |
+| `PriorityTargetMapping` | Vorlage für Team-Ziel-Mapping |
+| `PrioritizationConstants` | Vorlage für Team-Layout-Constants |
+| `DropTargetComponent` | Wiederverwendung für Teamziele |
+| `DropEvaluator` | Wiederverwendung für Teamziele |
+| `MonsterInteractionConfigurator` | Wiederverwendung, Modus `.dragDrop` |
 
 ## Offene Punkte
 
-- Modul-007-Commit/Hash fehlt.
-- Build, Simulatorstart und Testausführung fehlen.
-- Gestenlaufzeitprüfung fehlt.
-- AK-01/AK-06/AK-07 Laufzeitnachweise fehlen.
+- Build, Simulatorstart und Testausführung nach Modul 008 fehlen.
+- Simulator-Gestenprüfung (AK-08: Normal, Wichtig, Kritisch, ungültiger Drop) fehlt.
+- AK-01/AK-06/AK-07 Laufzeitnachweise fehlen weiterhin.
 - finale Blender-Monster fehlen.
-- `.git/index.lock` war im Modul-Chat ein Git-Risiko.
 - `.DS_Store`-Bereinigung bleibt offen.
+- `Logbuch-Stand.md` muss manuell aktualisiert werden.

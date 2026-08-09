@@ -9,33 +9,55 @@ import RealityKit
 import RealityKitContent
 import SwiftUI
 
-/// Minimale Startoberflaeche innerhalb des zentralen Ticket-Tamer-Volumes.
+/// Wurzelansicht innerhalb des einzigen zentralen Ticket-Tamer-Volumes.
+///
+/// Schaltet phasenabhängig zwischen `StartView` (Phase `.start`) und einem neutralen
+/// Platzhalter für noch nicht implementierte Folgeschritte um.
+/// Kein zweites Fenster, kein zweites Volume, kein Immersive Space.
 struct RootVolumeView: View {
+
+    // MARK: - Environment
+
+    /// Einzige Zustandsquelle; wird von `Ticket_TamerApp` per `.environment()` bereitgestellt.
+    @Environment(SessionModel.self) private var model
 
     // MARK: - Body
 
     var body: some View {
+        switch model.currentPhase {
+        case .start:
+            StartView()
+        default:
+            // Neutraler Platzhalter für Phasen, die in späteren Modulen implementiert werden.
+            // Die vorhandene RealityKit-Standardszene bleibt als räumliches Element erhalten.
+            sessionPlaceholderView
+        }
+    }
+
+    // MARK: - Subviews
+
+    /// Einfacher, nicht-fachlicher Platzhalter nach dem Sitzungsstart.
+    ///
+    /// Zeigt die RealityKit-Standardszene und einen deutschen Hinweistext.
+    /// Keinerlei Untersuchungs-, Priorisierungs- oder Teamzuordnungslogik.
+    @ViewBuilder
+    private var sessionPlaceholderView: some View {
         VStack(spacing: LayoutConstants.rootSpacing) {
             Model3D(named: AssetKeys.defaultRealityKitScene, bundle: realityKitContentBundle)
                 .padding(.bottom, LayoutConstants.modelBottomPadding)
 
-            VStack(spacing: LayoutConstants.textSpacing) {
-                Text("app.title")
-                    .font(.largeTitle)
-                    .fontWeight(.semibold)
-
-                Text("app.modulePlaceholder")
-                    .font(.title3)
-                    .multilineTextAlignment(.center)
-            }
+            Text("root.sessionPlaceholder")
+                .font(.title3)
+                .multilineTextAlignment(.center)
         }
         .padding(LayoutConstants.rootPadding)
         .onAppear {
-            DebugManager.log(.lifecycle, "Zentrales Volume angezeigt")
+            DebugManager.log(.state, "Sitzungsplatzhalter sichtbar, Phase: \(model.currentPhase)")
         }
     }
 }
 
 #Preview(windowStyle: .volumetric) {
     RootVolumeView()
+        .environment(SessionModel())
 }

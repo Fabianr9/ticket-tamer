@@ -290,3 +290,55 @@ struct SessionModelTests {
         }
     }
 }
+
+// MARK: - Modul 004: Startansicht und Einstellungen
+
+/// Tests für den Zustandsfluss der Startansicht (SPEC F-01, AK-01).
+///
+/// Prüft die Modellseite der Startansicht: Initialphase, Phasenwechsel durch startSession
+/// und die korrekte Ticketanzahl nach dem Start. Die sichtbaren UI-Elemente (Regler,
+/// Schaltfläche, Zahlenwert) werden manuell im visionOS-Simulator geprüft (AK-01).
+@MainActor
+struct StartViewModelTests {
+
+    @Test("Initialphase nach Modellerzeugung ist .start")
+    func initialPhaseIsStart() {
+        let model = SessionModel()
+        #expect(model.currentPhase == .start)
+    }
+
+    @Test("startSession wechselt Phase auf .untersuchen")
+    func startSessionSetsPhaseToUntersuchen() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        #expect(model.currentPhase == .untersuchen)
+    }
+
+    @Test("Startaktion mit Standardwert 6 erzeugt genau 6 Sitzungstickets")
+    func startActionWithDefaultCountProducesSixSessionTickets() {
+        let model = SessionModel()
+        // Standardwert bleibt 6 — kein explizites setTicketCount nötig
+        #expect(model.selectedTicketCount == GameplayConstants.defaultTicketCount)
+        model.startSession(using: { $0 })
+        #expect(model.sessionTickets.count == 6)
+        #expect(model.currentTicket != nil)
+    }
+
+    @Test("Nach startSession ist currentPhase nicht mehr .start")
+    func afterStartSessionPhaseIsNotStart() {
+        let model = SessionModel()
+        #expect(model.currentPhase == .start)
+        model.startSession(using: { $0 })
+        #expect(model.currentPhase != .start)
+    }
+
+    @Test("Reset nach gestarteter Sitzung stellt Phase .start wieder her")
+    func resetAfterSessionRestoresStartPhase() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        #expect(model.currentPhase == .untersuchen)
+        model.reset()
+        #expect(model.currentPhase == .start)
+        #expect(model.selectedTicketCount == GameplayConstants.defaultTicketCount)
+    }
+}

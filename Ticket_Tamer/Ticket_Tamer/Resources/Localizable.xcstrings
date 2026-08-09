@@ -1,6 +1,54 @@
 {
   "sourceLanguage" : "de",
   "strings" : {
+    "root.sessionPlaceholder" : {
+      "comment" : "Neutraler Platzhalter nach dem Sitzungsstart, solange Folgemodule noch nicht implementiert sind.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sitzung läuft …"
+          }
+        }
+      }
+    },
+    "start.button.startGame" : {
+      "comment" : "Beschriftung der Startschaltflaeche auf der Startansicht (Modul 004, AK-01).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spiel starten"
+          }
+        }
+      }
+    },
+    "start.ticketCount.accessibility" : {
+      "comment" : "Barrierefreiheits-Label fuer den Ticketanzahl-Regler (Modul 004, AK-01).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regler für Ticketanzahl"
+          }
+        }
+      }
+    },
+    "start.ticketCount.label" : {
+      "comment" : "Sichtbare Beschriftung ueber dem Ticketanzahl-Regler (Modul 004, AK-01).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anzahl Tickets"
+          }
+        }
+      }
+    },
     "app.modulePlaceholder" : {
       "comment" : "Minimaler Platzhalter fuer Modul 001 im zentralen Volume.",
       "extractionState" : "manual",

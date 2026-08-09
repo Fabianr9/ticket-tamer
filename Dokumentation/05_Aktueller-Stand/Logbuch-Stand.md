@@ -2,23 +2,23 @@
 
 > Laufendes Gedächtnis und Steuerungsdokument des Projekts. Nach jedem eingearbeiteten Modul-Report wird diese Datei vollständig aktualisiert und als einziger aktueller `Logbuch-Stand.md` unter `Dokumentation/05_Aktueller-Stand/` ersetzt.
 
-**Stand:** nach Modul `008` — Priorisierungsphase  
+**Stand:** nach Modul `009` — Teamzuordnungsphase  
 **Eingearbeitet am:** 2026-08-09  
-**Branch laut 008-Report:** `main`  
-**Commit Modul 008:** `200093b 008: Priorisierungsphase`  
-**Nachträglicher Fix-Commit:** noch ausstehend  
-**Fix-Nachricht:** `008-fix: Kugeln sichtbar (Farbe + Opacity), Labels als ZStack-Overlay`  
-**Build nach Modul 008:** bestätigt  
-**Simulatorstart:** bestätigt  
-**Vollständiger Testlauf:** nicht nachgewiesen  
-**Testdeklarationen laut Quellstand:** 86  
-**Manuelle Gestenabnahme AK-08/AK-10:** offen
+**Branch laut 009-Report:** `main`  
+**Modul-008-Hauptcommit:** `200093b 008: Priorisierungsphase`  
+**Modul-008-Fix bestätigt:** `b716ed1 feat:Modul008`  
+**Dokumentationscommit danach:** `7b873b7 feat: update docs module 008`  
+**Modul-009-Commit:** noch nicht bekannt  
+**Build nach Modul 009:** nicht nachgewiesen  
+**Simulatorstart nach Modul 009:** nicht nachgewiesen  
+**Vollständiger Testlauf nach Modul 009:** nicht nachgewiesen  
+**Testdeklarationen laut Quellstand:** 110
 
 ## Verbindlicher Projektumfang
 
 Ticket Tamer ist ein visionOS-Trainingsspiel für Apple Vision Pro. Nutzende bearbeiten eine Sitzung mit 1 bis 12 lokal gespeicherten Support-Tickets. Jedes Ticket wird als Monster dargestellt, anhand einer deutschen Ticketkarte untersucht, per Blickfokus, Pinch und Drag priorisiert und anschließend einem Support-Team zugeordnet.
 
-Die Anwendung läuft linear in genau einem zentralen volumetrischen Fenster. Für eine richtige Priorität und eine richtige Teamzuordnung werden jeweils 100 Punkte vergeben. Falsche Entscheidungen geben 0 Punkte und verursachen keinen Punktabzug. Nach einer gültigen Entscheidung erfolgt ausschließlich akustisches Richtig-/Falsch-Feedback; die richtige Lösung wird nicht angezeigt. Am Ende erscheinen nur die Gesamtpunktzahl und „Erneut spielen“.
+Die Anwendung läuft linear in genau einem zentralen volumetrischen Fenster. Für eine richtige Priorität und eine richtige Teamzuordnung werden jeweils 100 Punkte vergeben. Falsche Entscheidungen geben 0 Punkte und verursachen keinen Punktabzug. Nach einer gültigen Entscheidung erfolgt ausschließlich akustisches Richtig-/Falsch-Feedback; die richtige Lösung wird nicht angezeigt. Nach ungefähr 1,5 Sekunden wird automatisch zum nächsten fachlichen Zustand gewechselt. Am Ende erscheinen nur die Gesamtpunktzahl und „Erneut spielen“.
 
 Zum Muss-Umfang gehören genau zwölf lokale Tickets, vier eigene Blender-Monster, zwei lokale Feedback-Sounds, ein vollständiger Sitzungsreset und ein stabiler Ablauf ohne Backend, Benutzerkonten, Datenbank, Cloud, persistente Spielhistorie, zweites Fenster beziehungsweise Volume, Immersive Space, Tutorial, Detailstatistiken oder alternative 2D-Auswahl für die Kernentscheidungen. Die Monsterreaktion nach einer Entscheidung ist ausschließlich eine Kann-Funktion.
 
@@ -29,23 +29,23 @@ Zum Muss-Umfang gehören genau zwölf lokale Tickets, vier eigene Blender-Monste
 | 001 | Projektgrundgerüst und zentrales Volume | technisch abgeschlossen | ursprünglicher Hash nicht abschließend rekonstruiert | F-05 strukturell teilweise |
 | 002 | Ticketdatenmodell und lokaler Katalog | implementiert | `2775041` | F-02, F-03 |
 | 003 | Sitzungsmodell und Zufallsauswahl | implementiert | `dd78700` | F-04 modellseitig; F-16 modellseitig teilweise |
-| 004 | Startansicht und Einstellungen | implementiert; frühere Laufzeitabnahme teilweise nachgeholt | `84bb767` | F-01 implementiert |
+| 004 | Startansicht und Einstellungen | implementiert | `84bb767` | F-01 implementiert |
 | 005 | Monster-Asset-Pipeline | teilweise abgeschlossen | `68b84f3` | Pipeline/Mapping implementiert; finale Blender-Assets offen |
-| 006 | Untersuchungsphase | implementiert; sichtbarer Simulatorstand inzwischen bestätigt | `177e2b9` | F-06/F-07 implementiert |
-| 007 | Räumliche Interaktionsgrundlagen | implementiert; Gestenabnahme offen | Hash im 008-Report nicht genannt | F-10 generisch implementiert |
-| 008 | Priorisierungsphase | implementiert; Gestenabnahme und Fix-Commit offen | `200093b` + Fix ausstehend | F-08 implementiert; AK-08 Laufzeitnachweis offen |
-| 009 | Teamzuordnungsphase | als Nächstes | – | F-09 |
-| 010 | Bewertung und Audiofeedback | offen | – | F-11, F-12, F-13 |
+| 006 | Untersuchungsphase | implementiert | `177e2b9` | F-06/F-07 implementiert |
+| 007 | Räumliche Interaktionsgrundlagen | implementiert; Laufzeitabnahme offen | Hash nicht im 009-Report genannt | F-10 generisch implementiert |
+| 008 | Priorisierungsphase | implementiert; Gestenabnahme offen | `200093b` + `b716ed1` | F-08 implementiert; AK-08 Laufzeitnachweis offen |
+| 009 | Teamzuordnungsphase | implementiert; Laufzeitabnahme offen | Hash offen | F-09 implementiert; AK-09 Laufzeitnachweis offen |
+| 010 | Bewertung und Audiofeedback | als Nächstes | – | F-11, F-12, F-13 |
 | 011 | Ergebnis und Neustart | offen | – | F-15, F-16 |
 | 012 | Optionale Monsterreaktion | offen, Kann-Modul | – | F-17 |
 | 013 | Integration und Gerätetest | offen | – | F-01 bis F-16 als Integrationstest |
 | 014 | Abschlussmodul: Doku & Cleanup | offen | – | Dokumentenkonsistenz und Abgabeprüfung |
 
-## Abschlussstand Module 001–007
+## Abschlussstand Module 001–008
 
 ### Modul 001
 
-Grundgerüst, genau ein zentrales Volume, DebugManager, Constants, Lokalisierung und Smoke-Test eingerichtet.
+Grundgerüst mit genau einem zentralen volumetrischen Fenster, DebugManager, Constants, Lokalisierung und Smoke-Test eingerichtet.
 
 ### Modul 002
 
@@ -61,7 +61,7 @@ Deutsche Startansicht mit Ticketregler und „Spiel starten“ implementiert; ei
 
 ### Modul 005
 
-`monsterAssetId`, vier neutrale Monster-IDs, Ticket-Mapping und `MonsterAssetProvider` implementiert. Vier USDA-Kugeln sind weiterhin technische Platzhalter; finale eigene Blender-Monster fehlen.
+`monsterAssetId`, vier neutrale Monster-IDs, Ticket-Mapping und `MonsterAssetProvider` implementiert. Die vier USDA-Kugeln sind weiterhin technische Platzhalter; finale eigene Blender-Monster fehlen.
 
 ### Modul 006
 
@@ -71,231 +71,269 @@ Deutsche Startansicht mit Ticketregler und „Spiel starten“ implementiert; ei
 
 Generische räumliche Interaktionsgrundlage mit `DropTargetComponent`, `MonsterInteractionConfigurator`, `DropEvaluator`, Input-Lock und DEBUG-Harness implementiert.
 
-## Eingearbeiteter Stand Modul 008
+### Modul 008
+
+`PrioritizationView`, drei Prioritätsziele und `SessionModel.savePriority(_:)` implementiert. Der nachträgliche Sichtbarkeits-Fix ist jetzt als Commit `b716ed1 feat:Modul008` bestätigt. Prioritätslabels werden als SwiftUI-Overlay dargestellt; die Zielkugeln sind mit höherer Opacity sichtbar.
+
+## Eingearbeiteter Stand Modul 009
 
 ### Ergebnis
 
-Modul 008 implementiert die echte Priorisierungsphase für `GamePhase.priorisieren`.
+Modul 009 implementiert die Teamzuordnungsphase für `GamePhase.teamZuordnen`.
 
 Neu beziehungsweise geändert wurden:
 
-- `Views/PrioritizationView.swift`,
-- `SessionModel.savePriority(_:)`,
-- echtes `.priorisieren`-Routing in `RootVolumeView`,
-- `PrioritizationConstants`,
-- `PriorityTargetMapping`,
-- 22 neue Tests in `PrioritizationPhaseTests`.
+- `Views/TeamAssignmentView.swift`,
+- `SessionModel.beginTeamAssignmentPhase()`,
+- `SessionModel.saveTeam(_:)`,
+- `TeamAssignmentConstants`,
+- echtes `.teamZuordnen`-Routing in `RootVolumeView`,
+- DEBUG-only Team-Zugang in `PrioritizationView`,
+- 24 neue Tests in `TeamAssignmentPhaseTests`.
 
-Das DEBUG-Harness aus Modul 007 bleibt als Development-Datei erhalten, ist aber nicht mehr Teil des normalen `.priorisieren`-Routings.
+### Vier Teamstationen
 
-### Drei Prioritätsziele
+Genau vier technische Zieldefinitionen sind vorhanden:
 
-Genau drei technische Ziele sind definiert:
+| technische ID | sichtbare Bezeichnung | gespeicherter Wert | Position |
+|---|---|---|---|
+| `team_netzwerk` | Netzwerk | `.netzwerk` | (-0.24, +0.16, 0) |
+| `team_konto` | Konto | `.konto` | (+0.24, +0.16, 0) |
+| `team_software` | Software | `.software` | (-0.24, -0.16, 0) |
+| `team_hardware` | Hardware | `.hardware` | (+0.24, -0.16, 0) |
 
-| Ziel-ID | sichtbare Bezeichnung | gespeicherter Wert |
-|---|---|---|
-| `priority_normal` | Normal | `.normal` |
-| `priority_wichtig` | Wichtig | `.wichtig` |
-| `priority_kritisch` | Kritisch | `.kritisch` |
+Die Stationen liegen laut Report in einem 2×2-Layout. Der minimale Abstand benachbarter Stationen beträgt 0,32 m und liegt damit knapp über dem doppelten gemeldeten Drop-Radius von 0,15 m.
 
-Das Mapping ist zentral in `PriorityTargetMapping` gekapselt.
+### TeamTargetMapping
 
-### Monsterinteraktion
+`TeamAssignmentView` kapselt die vier technischen Zieldefinitionen in einem zentralen Mapping.
 
-`PrioritizationView` verwendet die vorhandenen Modul-007-Schnittstellen:
+Die fachliche Zuordnung lautet:
 
-- `MonsterAssetProvider.loadMonster(assetID:)`,
-- `MonsterInteractionConfigurator.configure(_:mode: .dragDrop)`,
-- `DropEvaluator`,
-- `DropTargetComponent`.
+- `team_netzwerk` → `.netzwerk`
+- `team_konto` → `.konto`
+- `team_software` → `.software`
+- `team_hardware` → `.hardware`
 
-Es wurde keine zweite Drag-/Drop-Implementierung aufgebaut.
+Es wurde keine zweite Drag-/Drop-Infrastruktur aufgebaut.
 
-### Prioritätsspeicherung
+### `beginTeamAssignmentPhase()`
 
-Neue SessionModel-Methode:
+Neue SessionModel-Schnittstelle mit folgender berichteter Semantik:
 
-`savePriority(_ priority: TicketPriority)`
-
-Gemeldete Vorbedingungen:
+Vorbedingungen:
 
 - `currentPhase == .priorisieren`,
-- `selectedPriority == nil`,
-- `isInputLocked == false`.
+- `selectedPriority != nil`.
 
-Gemeldete Effekte:
+Effekte:
 
-- `selectedPriority = priority`,
-- `lockInput()`.
+- `currentPhase = .teamZuordnen`,
+- `isInputLocked = false`.
 
 Unverändert:
 
 - `score`,
-- `selectedTeam`,
 - `currentTicketIndex`,
-- `currentPhase`.
+- `selectedPriority`,
+- `selectedTeam` bleibt `nil`.
 
-Die Speicherung und der Lock bilden damit einen atomaren fachlichen Vorgang.
+No-Op:
+
+- falsche Phase,
+- keine gespeicherte Priorität.
+
+### Kein automatischer Übergang in Modul 009
+
+`beginTeamAssignmentPhase()` wird im normalen Release-Spielablauf noch nicht automatisch aufgerufen.
+
+Das ist beabsichtigt und hält F-13 bei Modul 010.
+
+Vor Modul 010 erfolgt der Development-Zugang ausschließlich über einen `#if DEBUG`-Button in `PrioritizationView`, der nach gespeicherter Priorität erscheint:
+
+`🔧 Team [DEV]`
+
+Dieser Button:
+
+- existiert nur im DEBUG-Build,
+- ist keine F-09-Benutzerfunktion,
+- ist im Release-Build nicht vorhanden,
+- dient nur zur manuellen Prüfung von `TeamAssignmentView`.
+
+### `saveTeam(_:)`
+
+Neue SessionModel-Schnittstelle:
+
+`saveTeam(_ team: SupportTeam)`
+
+Vorbedingungen:
+
+- `currentPhase == .teamZuordnen`,
+- `selectedTeam == nil`,
+- `isInputLocked == false`.
+
+Effekte:
+
+- `selectedTeam = team`,
+- `lockInput()` → `isInputLocked = true`.
+
+Unverändert:
+
+- `selectedPriority`,
+- `score`,
+- `currentTicketIndex`,
+- `currentPhase == .teamZuordnen`.
+
+No-Op:
+
+- falsche Phase,
+- Team bereits gesetzt,
+- Eingabe bereits gesperrt.
 
 ### Ungültiger Drop
 
-Bei ungültigem Drop:
+Bei ungültigem Teamdrop:
 
-- keine Priorität gespeichert,
+- kein Team wird gespeichert,
 - kein Input-Lock,
-- kein Score,
-- keine Phasenänderung,
-- kein Ticketwechsel,
+- Priorität bleibt erhalten,
+- Score bleibt unverändert,
+- Phase bleibt `.teamZuordnen`,
+- Ticketindex bleibt unverändert,
 - Monster kehrt zur Ausgangsposition zurück.
 
-### Kein automatischer Übergang
+### Kein Abschluss nach Teamdrop
 
-Nach gültiger Prioritätsentscheidung bleibt `currentPhase == .priorisieren`.
+Nach gültigem Teamdrop bleibt die Phase in Modul 009 `.teamZuordnen`.
 
-Das ist beabsichtigt: F-13 und der automatische Übergang nach ungefähr 1,5 Sekunden gehören verbindlich zu Modul 010.
+Nicht implementiert wurden:
 
-Es wurde kein zusätzlicher Nutzer-Button erfunden.
+- Bewertung,
+- Punkte,
+- Sound,
+- Anzeige der richtigen Lösung,
+- automatische 1,5-Sekunden-Weiterleitung,
+- automatischer Wechsel zum nächsten Ticket,
+- Ergebnisansicht.
 
-## Nachträgliche visuelle Korrektur
+Der weitere Ablauf wird in Modul 010 aufgebaut.
 
-Der erste Simulatorlauf deckte zwei reale UI-Probleme auf:
+## Wichtige Scope-Korrektur für Modul 010
 
-### Problem 1: Zielkugeln praktisch unsichtbar
+Die Empfehlung im 009-Report nennt als möglichen Punkt „Anzeige der richtigen Lösung“.
 
-Ursache laut Report:
+Das widerspricht dem verbindlichen Projektumfang.
 
-- Material-Alpha 0,15 war im Simulator zu transparent.
+**Verbindlich ist:**
 
-Korrektur:
+- richtig/falsch wird ausschließlich über einen von zwei lokalen Sounds zurückgemeldet,
+- die richtige Priorität beziehungsweise das richtige Team wird nicht angezeigt,
+- keine Lösungserklärung,
+- kein Text wie „Richtig wäre …“,
+- kein visuelles Lösungs-Overlay.
 
-- prioritätsspezifische Farben,
-- Opacity 0,55.
+Modul 010 darf daher die richtige Lösung **nicht** anzeigen.
 
-### Problem 2: Labels fehlten
-
-Ursache laut Report:
-
-- die verwendeten SwiftUI-Attachments erschienen im Simulator nicht zuverlässig.
-
-Korrektur:
-
-- Attachment-Code entfernt,
-- Labels als SwiftUI-`ZStack`-/`HStack`-Overlay dargestellt,
-- horizontale Zuordnung links / Mitte / rechts zu Normal / Wichtig / Kritisch.
-
-Die fachliche Drop-, Lock- und Mapping-Logik blieb unverändert.
-
-### Git-Status der Korrektur
-
-Der Fix ist im beschriebenen Arbeitsstand implementiert, aber noch nicht als Commit mit Hash bestätigt.
-
-Offener Commit:
-
-`008-fix: Kugeln sichtbar (Farbe + Opacity), Labels als ZStack-Overlay`
-
-Grund laut Report:
-
-- `.git/index.lock` während paralleler Xcode-Git-Aktivität.
-
-Der Projektstand darf daher den Fix nicht als bereits versioniert behandeln, bis der Commit tatsächlich vorliegt.
-
-## Bewertung F-08 / AK-08
+## Bewertung F-09 / AK-09
 
 ### Implementiert
 
-- drei Prioritätsziele,
-- drei deutsche Labels,
-- Monster in `.dragDrop`,
-- Mapping Ziel → `TicketPriority`,
-- genau einmalige Speicherung,
-- Lock nach gültigem Drop,
-- keine zweite Prioritätsentscheidung.
+- vier räumliche Teamstationen,
+- vier deutsche Labels,
+- Monster-Drag/-Drop über bestehende Interaktionsgrundlage,
+- Mapping Ziel → `SupportTeam`,
+- genau einmalige Teamspeicherung,
+- Input-Lock nach gültigem Drop,
+- zweiter Teamversuch wird ignoriert.
 
-### Laufzeitverifiziert
+### Noch nicht laufzeitverifiziert
 
-- App-Build bestätigt,
-- Simulatorstart bestätigt,
-- Startansicht sichtbar,
-- Untersuchungsansicht sichtbar,
-- Priorisierungsansicht sichtbar,
-- visuelle Probleme im ersten Lauf erkannt.
-
-### Noch offen
-
-- Monster real auf `Normal` ziehen und `.normal` bestätigen,
-- Monster real auf `Wichtig` ziehen und `.wichtig` bestätigen,
-- Monster real auf `Kritisch` ziehen und `.kritisch` bestätigen,
-- ungültigen Drop real prüfen,
-- Input-Lock nach gültigem Drop real prüfen,
-- erneutes Ziehen während Lock real prüfen.
+- `TeamAssignmentView` im Simulator sichtbar,
+- Netzwerk-Drop,
+- Konto-Drop,
+- Software-Drop,
+- Hardware-Drop,
+- Invalid-Drop,
+- Lock,
+- erneutes Ziehen während Lock,
+- Lesbarkeit aller Labels.
 
 Daher:
 
-- **F-08: implementiert.**
-- **AK-08: strukturell und modellseitig implementiert; vollständige manuelle Gestenabnahme offen.**
+- **F-09: implementiert.**
+- **AK-09: modell- und strukturseitig implementiert; vollständige manuelle Laufzeitabnahme offen.**
 
-## Bewertung AK-10 — Prioritätsanteil
+## Bewertung AK-10 nach Modul 009
 
-Implementiert:
+Prioritäts- und Teamanteil sind nun im Code vorhanden:
 
-- ungültiger Drop → kein Zustandswechsel,
-- ungültiger Drop → Rückkehr,
-- gültiger Drop → genau eine Priorität,
-- gültiger Drop → Input-Lock,
-- Mehrfachversuch → erste Entscheidung bleibt bestehen.
+- ungültiger Drop → keine fachliche Entscheidung,
+- gültiger Drop → genau eine Entscheidung,
+- Input-Lock nach gültigem Drop,
+- weitere Gesten während Lock werden ignoriert.
 
-Offen:
+Offen bleibt die vollständige manuelle Gesture-Kette im Simulator beziehungsweise später auf Gerät.
 
-- manuelle Laufzeitprüfung der Gesture-Kette.
+Damit:
 
-Der Teamanteil von AK-10 folgt in Modul 009.
+- **AK-10 fachlich implementiert,**
+- **AK-10 Laufzeitabnahme offen.**
 
 ## Teststand
 
 | Bereich | Stand |
 |---|---:|
-| Testdeklarationen vor Modul 008 | 64 |
-| neue `PrioritizationPhaseTests` | 22 |
-| **Testdeklarationen nach Modul 008** | **86** |
+| Testdeklarationen vor Modul 009 | 86 |
+| neue `TeamAssignmentPhaseTests` | 24 |
+| **Testdeklarationen nach Modul 009** | **110** |
 | vollständiger Testlauf | nicht nachgewiesen |
 
-Die Zahl 86 ist als Quellcode-/Deklarationsstand bestätigt, nicht als bestandener Testlauf.
+Die Zahl 110 ist als Quellcode-/Deklarationsstand berichtet, nicht als bestandener Testlauf.
 
 ## Schnittstellen-Register
 
 | Modul | Schnittstelle | Zweck |
 |---|---|---|
-| 003 | `SessionModel` | zentrale Sitzungsquelle |
 | 003 | `SessionModel.currentPhase` | aktive Phase |
 | 003 | `SessionModel.currentTicket` | aktuelles Ticket |
-| 003 | `SessionModel.selectedPriority` | gespeicherte Prioritätsentscheidung |
-| 003 | `SessionModel.selectedTeam` | spätere Teamentscheidung |
-| 003 | `SessionModel.score` | späterer Punktestand |
+| 003 | `SessionModel.currentTicketIndex` | Ticketindex |
+| 003 | `SessionModel.score` | Punktestand |
+| 003 | `SessionModel.selectedPriority` | Prioritätsentscheidung |
+| 003 | `SessionModel.selectedTeam` | Teamentscheidung |
 | 005 | `Ticket.monsterAssetId` | Monster-ID |
 | 005 | `MonsterAssetProvider.loadMonster(assetID:)` | lokales Monsterladen |
-| 006 | `SessionModel.beginPrioritizationPhase()` | Wechsel `.untersuchen → .priorisieren` |
+| 006 | `SessionModel.beginPrioritizationPhase()` | `.untersuchen → .priorisieren` |
 | 007 | `DropTargetComponent` | generisches Drop-Ziel |
-| 007 | `MonsterInteractionConfigurator.configure(_:mode:)` | Interaktionskonfiguration |
+| 007 | `MonsterInteractionConfigurator` | Interaktionskonfiguration |
 | 007 | `DropEvaluator` | Drop-Auswertung |
 | 007 | `SessionModel.lockInput()` | Input sperren |
 | 007 | `SessionModel.unlockInput()` | Input freigeben |
-| 008 | `SessionModel.savePriority(_:)` | Priorität genau einmal speichern + Lock |
-| 008 | `PriorityTargetMapping` | Ziel-ID ↔ Priorität |
-| 008 | `PrioritizationConstants` | Positionen der Prioritätsziele und des Monsters |
-| 008 | `PrioritizationView` | fachliche Priorisierungsansicht |
+| 008 | `SessionModel.savePriority(_:)` | Priorität genau einmal speichern |
+| 008 | `PriorityTargetMapping` | Prioritätsziel-Mapping |
+| 008 | `PrioritizationView` | Priorisierungsansicht |
+| 009 | `SessionModel.beginTeamAssignmentPhase()` | kontrollierter Wechsel zur Teamphase |
+| 009 | `SessionModel.saveTeam(_:)` | Team genau einmal speichern |
+| 009 | `TeamTargetMapping` | Teamziel-Mapping |
+| 009 | `TeamAssignmentView` | Teamzuordnungsansicht |
+| 009 | `TeamAssignmentConstants` | Teamstationspositionen |
 
-## DebugManager nach Modul 008
+## DebugManager nach Modul 009
 
 Keine neue Kategorie.
 
 Verwendet werden:
 
-- `.spawning`: Monster und Ziel-Entities,
-- `.input`: Drag-/Release-Ereignisse,
-- `.physics`: gültige/ungültige Drop-Auswertung,
-- `.state`: Priorität, Lock und Unlock-Entscheidung.
+- `.spawning`: Teamstationen und Monster,
+- `.input`: Drag-/Release-Ereignisse beziehungsweise Lock-Abweisung,
+- `.physics`: gültiger/ungültiger Drop und Ziel-ID,
+- `.state`: Phasenwechsel, Team gespeichert, Lock und DEBUG-Zugang.
 
-Referenzpriorität und richtige Lösung werden nicht geloggt.
+Nicht geloggt werden:
+
+- `referenceTeam`,
+- ob eine Entscheidung richtig oder falsch war.
+
+Diese Bewertung folgt Modul 010.
 
 ## Entscheidungs-Log
 
@@ -304,32 +342,39 @@ Referenzpriorität und richtige Lösung werden nicht geloggt.
 | 2026-07-15 | Dokumentationsstruktur und Single-Stand-Prinzip verbindlich. | Historie liegt in Git. |
 | 2026-07-15 | Genau eine volumetrische `WindowGroup`. | F-05. |
 | 2026-08-05 | `SessionModel` ist einzige Quelle des Sitzungszustands. | Konkurrenzzustände vermeiden. |
-| 2026-08-09 | Monster-IDs bleiben neutral; USDA-Dateien sind nur Platzhalter. | F-14 darf nicht abgeschwächt werden. |
-| 2026-08-09 | Modul 007 stellt generische Drop- und Lock-Grundlage bereit. | Fachliche Ziele bleiben Folge-Modulen vorbehalten. |
-| 2026-08-09 | Priorität wird über `savePriority(_:)` atomar mit Input-Lock gespeichert. | Genau-einmal-Semantik und `private(set)` bleiben kontrolliert. |
-| 2026-08-09 | Priorisierungsziel-Mapping liegt zentral in `PriorityTargetMapping`. | Keine verteilten ID-Strings. |
-| 2026-08-09 | Modul 008 führt keinen automatischen Wechsel zur Teamphase aus. | F-13 gehört Modul 010. |
-| 2026-08-09 | Sichtbare Prioritätslabels werden als SwiftUI-Overlay statt RealityView-Attachments dargestellt. | Simulator zeigte die Attachments nicht zuverlässig. |
-| 2026-08-09 | Der 008-Fix wird bis zum tatsächlichen Git-Commit als uncommitted Arbeitsstand geführt. | Hash fehlt und `.git/index.lock` blockierte den Commit. |
-| 2026-08-09 | Modul 009 darf eine kontrollierte `beginTeamAssignmentPhase()`-Methode bereitstellen, aber sie nicht automatisch auslösen. | Teamphase muss implementier- und testbar sein; der automatische zeitgesteuerte Übergang bleibt Modul 010. |
+| 2026-08-09 | USDA-Kugeln bleiben reine technische Platzhalter. | Finale Blender-Monster fehlen. |
+| 2026-08-09 | Generische Drag-/Drop-Logik wird aus Modul 007 wiederverwendet. | Keine zweite Interaktionsarchitektur. |
+| 2026-08-09 | `savePriority(_:)` speichert atomar und sperrt Input. | Genau-einmal-Semantik. |
+| 2026-08-09 | 008-Sichtbarkeits-Fix ist mit `b716ed1` bestätigt. | Der zuvor offene Fix ist nun versioniert. |
+| 2026-08-09 | `saveTeam(_:)` spiegelt das atomare Speichermuster der Priorität. | Einheitliche Entscheidungssemantik. |
+| 2026-08-09 | `beginTeamAssignmentPhase()` wird in Modul 009 nicht automatisch ausgelöst. | F-13 gehört Modul 010. |
+| 2026-08-09 | DEBUG-Teamzugang ist zulässig, aber keine Release-Nutzerfunktion. | Teamphase kann vor Modul 010 manuell geprüft werden. |
+| 2026-08-09 | Nach gültigem Teamdrop bleibt die Phase `.teamZuordnen`. | Bewertung und automatischer Folgeübergang fehlen noch. |
+| 2026-08-09 | Modul 010 darf die richtige Lösung nicht anzeigen. | Projektumfang schreibt ausschließlich Soundfeedback ohne Lösung/Erklärung vor. |
 
 ## Offene Punkte / Risiken
 
-### Vor oder zu Beginn von Modul 009
+### Vor oder zu Beginn von Modul 010
 
-- [ ] 008-Fix tatsächlich committen und Hash dokumentieren,
-- [ ] `.git/index.lock`-Problem prüfen/bereinigen,
-- [ ] vollständige Test-Suite mit 86 Tests ausführen,
-- [ ] Gestenprüfung AK-08 durchführen,
-- [ ] Invalid-Drop und Input-Lock im Simulator prüfen,
-- [ ] prüfen, ob die korrigierten Zielkugeln und Labels im aktuellen Commit sichtbar sind.
+- [ ] aktuellen Branch und Commit prüfen,
+- [ ] Modul-009-Commit/Hash dokumentieren,
+- [ ] App nach Modul 009 bauen,
+- [ ] Simulator starten,
+- [ ] vollständige Suite mit 110 Tests ausführen,
+- [ ] AK-08-Gesten nachprüfen,
+- [ ] AK-09-Gesten prüfen,
+- [ ] AK-10 vollständig in der Prioritäts- und Teamphase prüfen,
+- [ ] DEBUG-Teamzugang prüfen,
+- [ ] sicherstellen, dass der 008-Fix weiterhin sichtbar ist.
 
-### Für Modul 009
+### Audio für Modul 010
 
-- [ ] `saveTeam(_:)` nach demselben atomaren Muster wie `savePriority(_:)` ergänzen,
-- [ ] vier Teamstationen implementieren,
-- [ ] kontrollierten Übergang in `.teamZuordnen` bereitstellen, ohne F-13 vorwegzunehmen,
-- [ ] DEBUG-/Development-Weg für manuelle Teamansicht-Prüfung festlegen, solange Modul 010 den normalen automatischen Übergang noch nicht ausführt.
+- [ ] vorhandene lokale Audiodateien inventarisieren,
+- [ ] genau einen Richtig-Sound und einen Falsch-Sound bereitstellen,
+- [ ] Dateiformat, Rechte/Urheberschaft und Bundle-Zugehörigkeit dokumentieren,
+- [ ] Lautstärke und Abspielbarkeit im visionOS-Simulator prüfen.
+
+Wenn noch keine Dateien vorhanden sind, darf Modul 010 keine fremden Internet-Audios stillschweigend herunterladen oder lizenzrechtlich unklare Sounds einbinden.
 
 ### Modul 005 weiterhin offen
 
@@ -341,24 +386,33 @@ Referenzpriorität und richtige Lösung werden nicht geloggt.
 ### Projektweit
 
 - [ ] `.DS_Store`-Bereinigung,
-- [ ] zwei lokale Audioassets für Modul 010,
 - [ ] Apple-Vision-Pro-Zeitfenster für Modul 013,
 - [ ] F-17 erst nach Muss-Funktionen entscheiden.
 
 ## Chronik
 
-### Modul 001–007
+### Module 001–008
 
-Grundgerüst, Ticketdaten, Sitzungsmodell, Startansicht, Monster-Pipeline, Untersuchungsphase und generische räumliche Interaktion wurden schrittweise eingerichtet.
+Grundgerüst, Ticketdaten, Sitzung, Startansicht, Monster-Pipeline, Untersuchungsphase, generische Interaktion und Priorisierung wurden schrittweise implementiert.
 
-### Modul 008 — Priorisierungsphase
+### Modul 009 — Teamzuordnungsphase
 
-`PrioritizationView` mit drei beschrifteten räumlichen Zielen wurde implementiert. `savePriority(_:)` speichert die Priorität genau einmal und sperrt die Eingabe. Build und Simulatorstart sind erstmals in diesem Modul ausdrücklich bestätigt. Der erste Simulatorlauf deckte zwei Darstellungsprobleme auf; Kugeltransparenz und Labeldarstellung wurden anschließend korrigiert. Die Korrektur ist noch nicht mit einem Git-Hash bestätigt. 86 Testdeklarationen sind vorhanden, ein vollständiger Testlauf und die manuelle Gestenabnahme stehen noch aus.
+`TeamAssignmentView` ergänzt vier räumliche Teamstationen in einem 2×2-Layout. `beginTeamAssignmentPhase()` erlaubt kontrollierten Eintritt in die Teamphase; `saveTeam(_:)` speichert genau eine Teamentscheidung und sperrt den Input. Ein DEBUG-only Button ermöglicht die manuelle Teamphasenprüfung, solange Modul 010 den automatischen Übergang noch nicht implementiert. Der Quellstand enthält 110 Testdeklarationen, aber Build, Testlauf und Simulatorabnahme nach Modul 009 sind noch offen.
 
 ## Nächster Schritt
 
-`009-Eingangsprompt.md` in einen neuen Modul-Chat geben.
+`010-Eingangsprompt.md` in einen neuen Modul-Chat geben.
 
-Modul 009 implementiert ausschließlich die Teamzuordnungsphase mit vier beschrifteten Stationen `Netzwerk`, `Konto`, `Software`, `Hardware`, Wiederverwendung der Drag-/Drop-Grundlage und genau einmaligem Speichern von `selectedTeam`.
+Modul 010 implementiert ausschließlich:
 
-Bewertung, Punkte, Sounds und automatischer 1,5-Sekunden-Übergang bleiben Modul 010 vorbehalten.
+- Bewertung der gespeicherten Prioritätsentscheidung,
+- Bewertung der gespeicherten Teamentscheidung,
+- +100 Punkte je richtiger Teilentscheidung, 0 bei falsch, kein Abzug,
+- zwei lokale Sounds: richtig / falsch,
+- keine Anzeige der richtigen Lösung,
+- Input bleibt während Feedback gesperrt,
+- automatischer Übergang nach ungefähr 1,5 Sekunden:
+  - nach Prioritätsfeedback → `.teamZuordnen`,
+  - nach Teamfeedback → nächstes Ticket in `.untersuchen` oder nach letztem Ticket `.ergebnis`.
+
+Die Ergebnisansicht selbst und „Erneut spielen“ bleiben Modul 011.

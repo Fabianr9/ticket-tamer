@@ -5,6 +5,7 @@
 //  Created by Fabian Raczkowski on 15.07.26.
 //
 
+import RealityKit
 import SwiftUI
 
 /// App-Einstieg fuer Ticket Tamer mit genau einer zentralen volumetrischen Szene.
@@ -34,7 +35,7 @@ struct Ticket_TamerApp: App {
 
     // MARK: - Scene
 
-    var body: some Scene {
+    var body: some SwiftUI.Scene {
         WindowGroup {
             RootVolumeView()
                 // Macht sessionModel fuer alle Kind-Views per @Environment(SessionModel.self) verfuegbar.

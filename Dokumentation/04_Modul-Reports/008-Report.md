@@ -7,11 +7,13 @@
 
 Modul 008 implementiert die fachliche Priorisierungsphase für `GamePhase.priorisieren`. Es wurden drei klar beschriftete räumliche Prioritätsziele (Normal, Wichtig, Kritisch) als neue `PrioritizationView` gebaut und das DEBUG-Harness-Routing in `RootVolumeView` durch diese echte Ansicht ersetzt. `SessionModel` erhielt die Methode `savePriority(_:)`, die Priorität und Input-Lock atomisch und genau einmal speichert. `DropEvaluator` und `MonsterInteractionConfigurator` wurden unverändert wiederverwendet. 22 neue Unit-Tests wurden ergänzt; die 64 bestehenden Testdeklarationen bleiben erhalten (86 gesamt).
 
+Nach einem Simulatorlauf wurde die Ansicht angepasst: Die Zielkugeln waren mit `alpha = 0.15` praktisch unsichtbar, und die SwiftUI-Attachment-Labels erschienen im Simulator nicht. Beide Punkte wurden in einem Fixkommit behoben (siehe Abschnitt „Nachträgliche Korrektur").
+
 ## Dateien
 
 | Datei (mit Ordner) | Art | Zweck |
 |---|---|---|
-| `Views/PrioritizationView.swift` | neu | Fachliche Priorisierungsansicht mit drei Zielen, Drag-/Drop-Integration, Label-Attachments |
+| `Views/PrioritizationView.swift` | neu + korrigiert | Fachliche Priorisierungsansicht mit drei Zielen, Drag-/Drop-Integration, Labels als ZStack-Overlay |
 | `Models/SessionModel.swift` | ergänzt | Methode `savePriority(_:)` für atomische Prioritätsspeicherung + Lock |
 | `Views/RootVolumeView.swift` | geändert | `case .priorisieren` zeigt jetzt `PrioritizationView()` statt DEBUG-Harness |
 | `Support/AppConstants.swift` | ergänzt | `PrioritizationConstants`: Zielpositionen, Monster-Startposition, Label-Offset |
@@ -29,7 +31,7 @@ Modul 008 implementiert die fachliche Priorisierungsphase für `GamePhase.priori
 - `SessionModel.savePriority(_ priority: TicketPriority)` — Speichert Priorität genau einmal in `.priorisieren`, setzt danach `isInputLocked = true`. No-Op bei falscher Phase, bereits gesetzter Priorität oder bereits gesperrtem Input.
 - `SessionModel.selectedPriority: TicketPriority?` (bestehend, `private(set)`) — Enthält nach gültigem Drop den gespeicherten Wert; bleibt `nil` bei ungültigem Drop oder fehlendem Drop.
 - `PriorityTargetMapping` (neu, `internal`) — Enum mit `allTargets: [TargetDefinition]` und `priority(for:)`. Für Modul 010 (Bewertung) direkt nutzbar.
-- `PrioritizationConstants` (neu, `internal`) — `targetPositionNormal/Wichtig/Kritisch`, `monsterStartPosition`, `labelYOffset`.
+- `PrioritizationConstants` (neu, `internal`) — `targetPositionNormal/Wichtig/Kritisch`, `monsterStartPosition`. (`labelYOffset` ist nach Entfernung der Attachment-Lösung nicht mehr aktiv genutzt, bleibt aber als Constante erhalten.)
 
 ## Ziel-IDs und Mapping
 
@@ -69,7 +71,7 @@ Unverändert nach Aufruf: `score`, `selectedTeam`, `currentTicketIndex`, `curren
 
 | Kategorie | Wo |
 |---|---|
-| `.spawning` | Monster laden, Ziel-Entities und Label-Attachments erzeugen |
+| `.spawning` | Monster laden, Ziel-Entities erzeugen |
 | `.input` | Drag/Release — gesperrt oder weitergeleitet |
 | `.physics` | DropEvaluator-Ergebnis (gültig/ungültig, Ziel-ID) |
 | `.state` | Priorität gespeichert, Lock-Änderung, onAppear-Unlock-Entscheidung |
@@ -80,12 +82,16 @@ Keine neue Kategorie — bestehende reichen.
 
 | Prüfung | Stand |
 |---|---|
-| App-Build nach Modul 008 | nicht nachgewiesen (Xcode nicht verfügbar) |
+| App-Build nach Modul 008 | bestätigt (Simulator läuft) |
 | Vollständige Test-Suite (86 Tests) | nicht nachgewiesen |
-| Simulatorstart | nicht nachgewiesen |
-| Manuelle Gestenprüfung (AK-08) | offen |
-
-Alle Prüfungen ehrlich als offen markiert. Sobald Xcode verfügbar ist: `xcodebuild test -scheme Ticket_Tamer -destination 'platform=visionOS Simulator,name=Apple Vision Pro'`.
+| Simulatorstart | bestätigt |
+| Start- und Untersuchungsansicht sichtbar | bestätigt (Screenshots) |
+| Priorisierungsansicht erscheint | bestätigt (Screenshots) |
+| Zielkugeln sichtbar (vor Fix) | nicht erfüllt — alpha 0.15 zu transparent |
+| Labels sichtbar (vor Fix) | nicht erfüllt — Attachments erschienen nicht |
+| Zielkugeln sichtbar (nach Fix) | implementiert — grün/orange/rot, opacity 0.55 |
+| Labels sichtbar (nach Fix) | implementiert — ZStack-Overlay HStack |
+| Manuelle Gestenprüfung AK-08 | offen |
 
 ## Status AK-08
 
@@ -122,16 +128,29 @@ Alle Prüfungen ehrlich als offen markiert. Sobald Xcode verfügbar ist: `xcodeb
 
 Alle vier Monster-IDs (`monster01`–`monster04`) verwenden weiterhin USDA-Kugelplatzhalter. Finale Blender-Modelle fehlen — unverändert zu Modul 007.
 
+## Nachträgliche Korrektur (008-fix)
+
+Nach Simulatorprüfung wurden zwei visuelle Probleme festgestellt und behoben:
+
+**Problem 1 — Zielkugeln unsichtbar:** `SimpleMaterial` mit `white.withAlphaComponent(0.15)` war im Simulator praktisch nicht erkennbar.
+**Lösung:** Kugeln erhalten jetzt prioritätsspezifische Farben (grün / orange / rot) mit `alpha = 0.55`.
+
+**Problem 2 — Labels fehlen:** SwiftUI-Attachments (`RealityView { _, _ in } attachments: { ... }`) erschienen im Simulator nicht. Der Attachment-Mechanismus ist in visionOS-Simulatoren unter bestimmten Bedingungen unzuverlässig.
+**Lösung:** Attachment-Code vollständig entfernt. Labels werden jetzt als `ZStack`-Overlay über der `RealityView` gerendert — ein einfaches `HStack` mit drei farbcodierten Badges (Normal / Wichtig / Kritisch). Die visuelle Zuordnung Label ↔ Kugel ist durch die horizontale Anordnung (links / Mitte / rechts) gegeben.
+
+Alle Funktionslogik (Drop, Lock, Mapping, Rückkehr) bleibt unverändert. Die 22 Tests laufen weiterhin gegen dieselben Modell-APIs.
+
+**Fix-Commit:** `008-fix: Kugeln sichtbar (Farbe + Opacity), Labels als ZStack-Overlay` (ausstehend — git index.lock durch Xcode blockiert, manuell nachzuholen).
+
 ## Offene Risiken
 
-- `.git/index.lock`-Warnungen beim Commit (harmlos, da Commit erfolgreich war — temporäre Lock-Dateien aus parallelen Prozessen).
-- Xcode-Compilierbarkeit muss nach dem Öffnen des Projekts geprüft werden (visionOS-API `glassBackgroundEffect()`, `RealityView`-Attachment-Signaturen).
-- `RealityView`-Closures mit Attachments: Die verwendete Schreibweise `{ _, _ in }` für `(inout RealityViewContent, RealityViewAttachments) async -> Void` entspricht dem Swift-Standard — falls der Compiler eine benannte Form bevorzugt, einfach `{ content, attachments in }` verwenden.
+- `.git/index.lock`-Konflikte beim Commit aus der Sandbox, wenn Xcode gleichzeitig läuft — manuell committen sobald Xcode keine Git-Operation offen hat.
+- Manuelle Gestenprüfung (AK-08: Drag auf Normal / Wichtig / Kritisch, ungültiger Drop, Lock) steht noch aus.
 
 ## Git
 
-- Commit: `008: Priorisierungsphase`
-- Hash: `200093b`
+- Commit 1: `008: Priorisierungsphase` — Hash: `200093b`
+- Commit 2: `008-fix: Kugeln sichtbar (Farbe + Opacity), Labels als ZStack-Overlay` — Hash: ausstehend
 
 ## Stand aktualisiert
 

@@ -37,8 +37,6 @@ enum PriorityTargetMapping {
 
     /// Gibt die `TicketPriority` für eine technische Ziel-ID zurück, oder `nil` bei
     /// unbekannter ID.
-    ///
-    /// Einzige Stelle im Code, an der Ziel-ID auf fachlichen Wert übersetzt wird.
     static func priority(for targetID: String) -> TicketPriority? {
         allTargets.first { $0.id == targetID }?.priority
     }
@@ -52,15 +50,10 @@ enum PriorityTargetMapping {
 /// beschriftete Prioritätsziele (Normal, Wichtig, Kritisch). Das Monster ist per
 /// Blickfokus, Pinch und Drag interaktiv.
 ///
-/// **Gültiger Drop:** `SessionModel.savePriority(_:)` speichert die Priorität genau einmal
-/// und setzt den Input-Lock. Weitere Gesten werden ignoriert.
-///
-/// **Ungültiger Drop:** Monster kehrt mit Animation zur Ausgangsposition zurück.
-/// Kein Zustandswechsel, kein Lock.
-///
-/// **Keine automatische Phasenweiterleitung** — das gehört Modul 010 (F-13).
-/// **Keine Bewertung** gegen `referencePriority` — das gehört Modul 010.
-/// **Keine Teamstationen** — das gehört Modul 009.
+/// - Gültiger Drop: `SessionModel.savePriority(_:)` speichert die Priorität genau einmal.
+/// - Ungültiger Drop: Monster kehrt zur Ausgangsposition zurück, kein Zustandswechsel.
+/// - Keine automatische Phasenweiterleitung (Modul 010 / F-13).
+/// - Keine Bewertung gegen `referencePriority` (Modul 010).
 @MainActor
 struct PrioritizationView: View {
 
@@ -70,53 +63,47 @@ struct PrioritizationView: View {
 
     // MARK: - Scene State
 
-    /// Geladene Monster-Entity oder `nil` bei Ladefehler.
     @State private var monsterEntity: Entity? = nil
-
-    /// Ziel-Entities, parallel zu `PriorityTargetMapping.allTargets` indiziert.
     @State private var targetEntities: [Entity] = []
-
-    /// Ausgangstransformation des Monsters — einmalig nach dem Laden gesetzt.
-    /// Dient der Rücksetzung nach ungültigem Drop; driftet nicht.
     @State private var originTransform: Transform? = nil
-
-    /// Fehlermeldung bei nicht ladbarem Monster oder fehlendem Ticket.
     @State private var loadError: String? = nil
 
     // MARK: - Body
 
     var body: some View {
-        RealityView { _, _ in
-            // Szene wird via update: aufgebaut, nachdem Entities asynchron bereit sind.
-        } update: { content, attachments in
-            addEntitiesIfNeeded(to: content, attachments: attachments)
-        } attachments: {
-            Attachment(id: "label_priority_normal") {
-                priorityLabel(TicketPriority.normal.displayName)
+        ZStack(alignment: .top) {
+            // 3D-Szene
+            RealityView { _ in
+                // Szene wird via update: aufgebaut, nachdem Entities asynchron bereit sind.
+            } update: { content in
+                addEntitiesIfNeeded(to: content)
             }
-            Attachment(id: "label_priority_wichtig") {
-                priorityLabel(TicketPriority.wichtig.displayName)
+            .gesture(
+                DragGesture()
+                    .targetedToAnyEntity()
+                    .onChanged { value in handleDragChanged(value: value) }
+                    .onEnded { value in handleDragEnded(value: value) }
+            )
+
+            // Deutsche Labels für die drei Prioritätsziele.
+            // Als ZStack-Overlay — zuverlässig ohne Attachment-API.
+            // Visuell mit den drei Zielkugeln ausgerichtet (links / Mitte / rechts).
+            HStack(spacing: 12) {
+                ForEach(PriorityTargetMapping.allTargets, id: \.id) { target in
+                    priorityLabel(target.priority.displayName, priority: target.priority)
+                }
             }
-            Attachment(id: "label_priority_kritisch") {
-                priorityLabel(TicketPriority.kritisch.displayName)
-            }
-        }
-        .gesture(
-            DragGesture()
-                .targetedToAnyEntity()
-                .onChanged { value in handleDragChanged(value: value) }
-                .onEnded { value in handleDragEnded(value: value) }
-        )
-        .overlay(alignment: .top) {
+            .padding(.top, 20)
+            .padding(.horizontal, 20)
+
+            // Fehlermeldung bei Ladefehlern (kein Crash, kein Auto-Wechsel).
             if let error = loadError {
-                // Klare lokale Fehlerdarstellung bei Ladefehlern (kein Crash, kein Auto-Wechsel).
                 Text(error)
                     .font(.caption)
                     .foregroundStyle(.red)
-                    .padding(8)
-                    .background(.ultraThinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .padding(.top, 12)
+                    .padding(10)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
+                    .padding(.top, 80)
             }
         }
         .task {
@@ -124,11 +111,10 @@ struct PrioritizationView: View {
         }
         .onAppear {
             // Eingabe nur freigeben, wenn noch keine Entscheidung getroffen wurde.
-            // Verhindert unkontrolliertes Unlock nach View-Refresh bei bereits gespeicherter
-            // Priorität (AK-10: Lock nach gültigem Drop muss stabil bleiben).
+            // Kein Unlock nach View-Refresh bei bereits gespeicherter Priorität (AK-10).
             if model.selectedPriority == nil {
                 model.unlockInput()
-                DebugManager.log(.state, "PrioritizationView erschienen, Input freigegeben fuer neue Entscheidung")
+                DebugManager.log(.state, "PrioritizationView erschienen, Input freigegeben")
             } else {
                 DebugManager.log(.state, "PrioritizationView erschienen, Prioritaet bereits gespeichert: \(model.selectedPriority!.rawValue)")
             }
@@ -138,20 +124,30 @@ struct PrioritizationView: View {
     // MARK: - Label-Subview
 
     /// Sichtbares deutsches Label für ein Prioritätsziel.
-    private func priorityLabel(_ text: String) -> some View {
+    @ViewBuilder
+    private func priorityLabel(_ text: String, priority: TicketPriority) -> some View {
         Text(text)
             .font(.title2)
             .fontWeight(.semibold)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .glassBackgroundEffect()
+            .foregroundStyle(.white)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 10)
+            .background(labelColor(for: priority).opacity(0.7), in: RoundedRectangle(cornerRadius: 12))
+            .frame(maxWidth: .infinity)
+    }
+
+    /// Hintergrundfarbe je Priorität — visuell unterscheidbar, semantisch passend.
+    private func labelColor(for priority: TicketPriority) -> Color {
+        switch priority {
+        case .normal:   return .green
+        case .wichtig:  return .orange
+        case .kritisch: return .red
+        }
     }
 
     // MARK: - Szenenaufbau
 
     /// Erzeugt die drei Prioritätsziele und lädt das Monster asynchron.
-    ///
-    /// Wird einmalig nach dem Erscheinen der View via `.task` gerufen.
     private func setupScene() async {
         // Drei Prioritätsziele aufbauen.
         for targetDef in PriorityTargetMapping.allTargets {
@@ -165,10 +161,11 @@ struct PrioritizationView: View {
                     debugName: targetDef.priority.displayName
                 )
             )
-            // Sichtbarer Trefferbereich als halbtransparente Kugel.
+
+            // Sichtbare Zielkugel mit Prioritätsfarbe.
             let mesh = MeshResource.generateSphere(radius: InteractionConstants.dropTargetRadius)
             var material = SimpleMaterial()
-            material.color = .init(tint: .white.withAlphaComponent(0.15))
+            material.color = .init(tint: uiColor(for: targetDef.priority).withAlphaComponent(0.55))
             let indicator = ModelEntity(mesh: mesh, materials: [material])
             entity.addChild(indicator)
 
@@ -187,40 +184,31 @@ struct PrioritizationView: View {
             let entity = try await MonsterAssetProvider.loadMonster(assetID: ticket.monsterAssetId)
             entity.scale = SIMD3(repeating: LayoutConstants.monsterScale)
             entity.position = PrioritizationConstants.monsterStartPosition
-            // Ausgangstransformation einmalig festhalten — driftet nicht bei Drops.
             originTransform = entity.transform
-            // Volles Drag-/Drop-Gameplay: InputTarget + Collision + Hover.
             MonsterInteractionConfigurator.configure(entity, mode: .dragDrop)
             monsterEntity = entity
-            DebugManager.log(
-                .spawning,
-                "Monster bereit: \(ticket.monsterAssetId), Position: \(PrioritizationConstants.monsterStartPosition), Modus: dragDrop"
-            )
+            DebugManager.log(.spawning, "Monster bereit: \(ticket.monsterAssetId), Modus: dragDrop")
         } catch {
             DebugManager.log(.spawning, "Monster-Load fehlgeschlagen: \(error.localizedDescription)")
             loadError = "Monster konnte nicht geladen werden."
         }
     }
 
+    /// UIColor-Pendant für SimpleMaterial (je Priorität).
+    private func uiColor(for priority: TicketPriority) -> UIColor {
+        switch priority {
+        case .normal:   return .systemGreen
+        case .wichtig:  return .systemOrange
+        case .kritisch: return .systemRed
+        }
+    }
+
     // MARK: - RealityView-Update
 
-    /// Fügt Entities und Label-Attachments zur Szene hinzu, sobald sie bereit sind.
-    private func addEntitiesIfNeeded(to content: RealityViewContent, attachments: RealityViewAttachments) {
-        // Prioritätsziele und ihre Labels.
-        for (index, entity) in targetEntities.enumerated() where entity.scene == nil {
+    private func addEntitiesIfNeeded(to content: RealityViewContent) {
+        for entity in targetEntities where entity.scene == nil {
             content.add(entity)
-
-            // Label-Attachment oberhalb des Ziels verankern.
-            let targetDef = PriorityTargetMapping.allTargets[index]
-            let labelKey = "label_\(targetDef.id)"
-            if let labelEntity = attachments.entity(for: labelKey) {
-                labelEntity.position = SIMD3(0, PrioritizationConstants.labelYOffset, 0)
-                entity.addChild(labelEntity)
-                DebugManager.log(.spawning, "Label-Attachment verankert: \(labelKey)")
-            }
         }
-
-        // Monster.
         if let monster = monsterEntity, monster.scene == nil {
             content.add(monster)
         }
@@ -228,7 +216,6 @@ struct PrioritizationView: View {
 
     // MARK: - Gesture-Handler
 
-    /// Verschiebt das Monster während des Drags (nur wenn nicht gesperrt).
     private func handleDragChanged(value: EntityTargetValue<DragGesture.Value>) {
         guard !model.isInputLocked else {
             DebugManager.log(.input, "Drag ignoriert: Input gesperrt (AK-10)")
@@ -244,45 +231,33 @@ struct PrioritizationView: View {
         )
     }
 
-    /// Wertet den Drop aus:
-    /// - Gültiger Drop → Ziel-ID auf `TicketPriority` mappen → `savePriority` → Lock.
-    /// - Ungültiger Drop → Monster kehrt zur Ausgangsposition zurück, kein Zustandswechsel.
     private func handleDragEnded(value: EntityTargetValue<DragGesture.Value>) {
-        // Guard: Mehrfachauswertung nach gültigem Drop verhindern (AK-10).
         guard !model.isInputLocked else {
             DebugManager.log(.input, "Release ignoriert: Input bereits gesperrt (AK-10)")
             return
         }
         guard let entity = monsterEntity, value.entity === entity else { return }
 
-        // Zielbereiche aus geladenen Entities und ihren DropTargetComponents sammeln.
         let targets: [(entity: Entity, component: DropTargetComponent)] = targetEntities.compactMap { e in
             guard let comp = e.components[DropTargetComponent.self] else { return nil }
             return (entity: e, component: comp)
         }
 
         if let hitID = DropEvaluator.evaluate(entity: entity, targets: targets) {
-            DebugManager.log(.physics, "Gültiger Drop: Ziel=\(hitID)")
-
-            // Ziel-ID auf TicketPriority mappen.
+            DebugManager.log(.physics, "Gueltiger Drop: Ziel=\(hitID)")
             if let priority = PriorityTargetMapping.priority(for: hitID) {
-                // Genau einmal speichern und sperren (AK-08 / AK-10).
                 model.savePriority(priority)
                 DebugManager.log(.state, "Prioritaet gespeichert: \(priority.rawValue), isInputLocked=\(model.isInputLocked)")
             } else {
-                // Sollte nie eintreten — Ziel-ID nicht im Mapping (defensive).
-                DebugManager.log(.physics, "Unbekannte Ziel-ID — kein Mapping moeglich: \(hitID)")
+                DebugManager.log(.physics, "Unbekannte Ziel-ID: \(hitID)")
                 returnMonsterToOrigin(entity: entity)
             }
         } else {
-            // Ungültiger Drop: Monster zurücksetzen, kein Zustandswechsel (AK-10).
             returnMonsterToOrigin(entity: entity)
-            DebugManager.log(.physics, "Ungültiger Drop: Monster kehrt zurueck")
-            DebugManager.log(.state, "selectedPriority=\(model.selectedPriority.map(\.rawValue) ?? "nil"), isInputLocked=\(model.isInputLocked) (unveraendert)")
+            DebugManager.log(.physics, "Ungueltiger Drop: Monster kehrt zurueck")
         }
     }
 
-    /// Setzt das Monster mit einer Animation zur einmalig erfassten Ausgangsposition zurück.
     private func returnMonsterToOrigin(entity: Entity) {
         guard let origin = originTransform else { return }
         entity.move(

@@ -2,9 +2,19 @@ import Foundation
 
 // MARK: - Local Ticket Catalog
 
-/// Vollständiger statischer Ticketpool für Modul 002.
+/// Vollständiger statischer Ticketpool für Modul 002 (erweitert in Modul 005 um monsterAssetId).
 enum LocalTicketCatalog {
     /// Genau zwölf lokal definierte Tickets ohne Netzwerk-, Datei- oder API-Zugriff.
+    ///
+    /// Modul 005 (F-14 / AK-14): Jedes Ticket trägt einen neutralen Monster-Bezeichner.
+    /// Die Verteilung ist bewusst so gewählt, dass kein Monster eindeutig einem Team
+    /// oder einer Priorität zugeordnet werden kann.
+    ///
+    /// Verteilungsübersicht:
+    /// - monster01: netzwerk/normal, konto/wichtig, software/kritisch
+    /// - monster02: netzwerk/wichtig, konto/kritisch, hardware/normal
+    /// - monster03: netzwerk/kritisch, software/normal, hardware/wichtig
+    /// - monster04: konto/normal, software/wichtig, hardware/kritisch
     static let allTickets: [Ticket] = [
         Ticket(
             id: "ticket-001",
@@ -18,7 +28,8 @@ enum LocalTicketCatalog {
                 "Das Problem tritt nur im Buero-Netz auf."
             ],
             referencePriority: .normal,
-            referenceTeam: .netzwerk
+            referenceTeam: .netzwerk,
+            monsterAssetId: AssetKeys.Monster.monster01
         ),
         Ticket(
             id: "ticket-002",
@@ -31,7 +42,8 @@ enum LocalTicketCatalog {
                 "Lokale Internetverbindung bleibt verfuegbar."
             ],
             referencePriority: .wichtig,
-            referenceTeam: .netzwerk
+            referenceTeam: .netzwerk,
+            monsterAssetId: AssetKeys.Monster.monster02
         ),
         Ticket(
             id: "ticket-003",
@@ -45,7 +57,8 @@ enum LocalTicketCatalog {
                 "Andere Standorte melden keine Stoerung."
             ],
             referencePriority: .kritisch,
-            referenceTeam: .netzwerk
+            referenceTeam: .netzwerk,
+            monsterAssetId: AssetKeys.Monster.monster03
         ),
         Ticket(
             id: "ticket-004",
@@ -58,7 +71,8 @@ enum LocalTicketCatalog {
                 "Andere Profileinstellungen werden gespeichert."
             ],
             referencePriority: .normal,
-            referenceTeam: .konto
+            referenceTeam: .konto,
+            monsterAssetId: AssetKeys.Monster.monster04
         ),
         Ticket(
             id: "ticket-005",
@@ -72,7 +86,8 @@ enum LocalTicketCatalog {
                 "Ein Ersatzgeraet ist bereits registriert."
             ],
             referencePriority: .wichtig,
-            referenceTeam: .konto
+            referenceTeam: .konto,
+            monsterAssetId: AssetKeys.Monster.monster01
         ),
         Ticket(
             id: "ticket-006",
@@ -86,7 +101,8 @@ enum LocalTicketCatalog {
                 "Mehrere geplante Deployments warten auf Freigabe."
             ],
             referencePriority: .kritisch,
-            referenceTeam: .konto
+            referenceTeam: .konto,
+            monsterAssetId: AssetKeys.Monster.monster02
         ),
         Ticket(
             id: "ticket-007",
@@ -99,7 +115,8 @@ enum LocalTicketCatalog {
                 "Die Anzeige in der Anwendung ist korrekt."
             ],
             referencePriority: .normal,
-            referenceTeam: .software
+            referenceTeam: .software,
+            monsterAssetId: AssetKeys.Monster.monster03
         ),
         Ticket(
             id: "ticket-008",
@@ -113,7 +130,8 @@ enum LocalTicketCatalog {
                 "Bestandsdaten lassen sich anzeigen."
             ],
             referencePriority: .wichtig,
-            referenceTeam: .software
+            referenceTeam: .software,
+            monsterAssetId: AssetKeys.Monster.monster04
         ),
         Ticket(
             id: "ticket-009",
@@ -127,7 +145,8 @@ enum LocalTicketCatalog {
                 "Der Fehler begann nach dem letzten Update."
             ],
             referencePriority: .kritisch,
-            referenceTeam: .software
+            referenceTeam: .software,
+            monsterAssetId: AssetKeys.Monster.monster01
         ),
         Ticket(
             id: "ticket-010",
@@ -140,7 +159,8 @@ enum LocalTicketCatalog {
                 "Anderes Kabel wurde bereits getestet."
             ],
             referencePriority: .normal,
-            referenceTeam: .hardware
+            referenceTeam: .hardware,
+            monsterAssetId: AssetKeys.Monster.monster02
         ),
         Ticket(
             id: "ticket-011",
@@ -154,7 +174,8 @@ enum LocalTicketCatalog {
                 "Andere Drucker im Lager funktionieren."
             ],
             referencePriority: .wichtig,
-            referenceTeam: .hardware
+            referenceTeam: .hardware,
+            monsterAssetId: AssetKeys.Monster.monster03
         ),
         Ticket(
             id: "ticket-012",
@@ -168,7 +189,8 @@ enum LocalTicketCatalog {
                 "Ersatzarbeitsplaetze sind nicht ausreichend vorhanden."
             ],
             referencePriority: .kritisch,
-            referenceTeam: .hardware
+            referenceTeam: .hardware,
+            monsterAssetId: AssetKeys.Monster.monster04
         )
     ]
 }

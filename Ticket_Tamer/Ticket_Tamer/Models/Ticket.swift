@@ -72,4 +72,14 @@ struct Ticket: Identifiable, Equatable {
 
     /// Eindeutiges fachliches Referenzteam für die spätere Bewertung.
     let referenceTeam: SupportTeam
+
+    // MARK: - Modul 005: Monster-Asset-Pipeline (F-14 / AK-14)
+
+    /// Neutraler Asset-Bezeichner des zugeordneten Monsters (z. B. "monster01").
+    ///
+    /// Verweist auf einen der vier Schlüssel in `AssetKeys.Monster`.
+    /// Die Zuordnung ist modellunabhängig: kein Monster steht eindeutig für ein Team
+    /// oder eine Priorität, sodass das Modell keinen Rückschluss auf die Lösung erlaubt.
+    /// Entspricht dem in der SPEC-Architekturskizze vorgesehenen Feld `monsterAssetId`.
+    let monsterAssetId: String
 }

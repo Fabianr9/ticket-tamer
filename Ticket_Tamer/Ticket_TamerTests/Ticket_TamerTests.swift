@@ -342,3 +342,130 @@ struct StartViewModelTests {
         #expect(model.selectedTicketCount == GameplayConstants.defaultTicketCount)
     }
 }
+
+// MARK: - Modul 005: Monster-Asset-Pipeline
+
+/// Tests für die Monster-Asset-Pipeline (SPEC F-14 / AK-14).
+///
+/// Prüft Asset-IDs, Eindeutigkeit, Katalogzuordnung und das Fehlen einer
+/// festen 1:1-Korrelation zwischen Monster, Team und Priorität.
+/// RealityKit-Ladetests (Entity-Load) erfordern den Simulator und sind manuell zu prüfen.
+struct MonsterAssetPipelineTests {
+
+    // MARK: - Asset-Schlüssel
+
+    @Test("Genau vier Monster-Asset-IDs sind definiert")
+    func exactlyFourMonsterIDsDefined() {
+        #expect(AssetKeys.Monster.allIDs.count == 4)
+    }
+
+    @Test("Alle vier Monster-IDs sind eindeutig")
+    func allMonsterIDsAreUnique() {
+        let ids = AssetKeys.Monster.allIDs
+        #expect(Set(ids).count == ids.count)
+    }
+
+    @Test("Monster-IDs enthalten keine team- oder prioritätsbezogenen Begriffe")
+    func monsterIDsAreNeutral() {
+        let forbiddenTerms = ["netzwerk", "konto", "software", "hardware",
+                              "normal", "wichtig", "kritisch",
+                              "network", "critical", "account"]
+        for id in AssetKeys.Monster.allIDs {
+            let lowered = id.lowercased()
+            for term in forbiddenTerms {
+                #expect(!lowered.contains(term), "ID '\(id)' enthält verbotenen Begriff '\(term)'")
+            }
+        }
+    }
+
+    // MARK: - Ticketkatalog und Zuordnung
+
+    @Test("Alle zwölf Tickets besitzen eine nicht-leere monsterAssetId")
+    func allTicketsHaveNonEmptyMonsterAssetId() {
+        for ticket in LocalTicketCatalog.allTickets {
+            #expect(!ticket.monsterAssetId.isEmpty, "Ticket \(ticket.id) hat leere monsterAssetId")
+        }
+    }
+
+    @Test("Jede im Katalog verwendete Monster-ID ist bekannt")
+    func allCatalogMonsterIDsAreKnown() {
+        let knownIDs = Set(AssetKeys.Monster.allIDs)
+        for ticket in LocalTicketCatalog.allTickets {
+            #expect(
+                knownIDs.contains(ticket.monsterAssetId),
+                "Ticket \(ticket.id) verwendet unbekannte ID '\(ticket.monsterAssetId)'"
+            )
+        }
+    }
+
+    @Test("Alle vier Monster-IDs kommen im Katalog tatsächlich vor")
+    func allFourMonsterIDsAppearInCatalog() {
+        let usedIDs = Set(LocalTicketCatalog.allTickets.map(\.monsterAssetId))
+        for id in AssetKeys.Monster.allIDs {
+            #expect(usedIDs.contains(id), "Monster-ID '\(id)' erscheint in keinem Ticket")
+        }
+    }
+
+    // MARK: - Keine 1:1-Korrelation (F-14 / AK-14)
+
+    @Test("Kein Monster ist eindeutig einem einzigen Team zugeordnet")
+    func noMonsterIsExclusiveToOneTeam() {
+        let tickets = LocalTicketCatalog.allTickets
+        for monsterID in AssetKeys.Monster.allIDs {
+            let teamsForMonster = Set(
+                tickets.filter { $0.monsterAssetId == monsterID }.map(\.referenceTeam)
+            )
+            #expect(
+                teamsForMonster.count > 1,
+                "Monster '\(monsterID)' erscheint nur bei Team(s): \(teamsForMonster.map(\.rawValue))"
+            )
+        }
+    }
+
+    @Test("Kein Monster ist eindeutig einer einzigen Priorität zugeordnet")
+    func noMonsterIsExclusiveToOnePriority() {
+        let tickets = LocalTicketCatalog.allTickets
+        for monsterID in AssetKeys.Monster.allIDs {
+            let prioritiesForMonster = Set(
+                tickets.filter { $0.monsterAssetId == monsterID }.map(\.referencePriority)
+            )
+            #expect(
+                prioritiesForMonster.count > 1,
+                "Monster '\(monsterID)' erscheint nur bei Prioritaet(en): \(prioritiesForMonster.map(\.rawValue))"
+            )
+        }
+    }
+
+    @Test("Jedes Monster kommt bei mindestens zwei verschiedenen Teams vor")
+    func eachMonsterAppearsWithMultipleTeams() {
+        let tickets = LocalTicketCatalog.allTickets
+        for monsterID in AssetKeys.Monster.allIDs {
+            let teams = Set(tickets.filter { $0.monsterAssetId == monsterID }.map(\.referenceTeam))
+            #expect(teams.count >= 2)
+        }
+    }
+
+    @Test("Jedes Monster kommt bei mindestens zwei verschiedenen Prioritäten vor")
+    func eachMonsterAppearsWithMultiplePriorities() {
+        let tickets = LocalTicketCatalog.allTickets
+        for monsterID in AssetKeys.Monster.allIDs {
+            let priorities = Set(tickets.filter { $0.monsterAssetId == monsterID }.map(\.referencePriority))
+            #expect(priorities.count >= 2)
+        }
+    }
+
+    // MARK: - Vollständigkeit
+
+    @Test("MonsterAssetProvider-Fehler: unbekannte ID wird abgewiesen")
+    @MainActor
+    func unknownAssetIDThrows() async {
+        do {
+            _ = try await MonsterAssetProvider.loadMonster(assetID: "monsterXX")
+            #expect(Bool(false), "Erwartet einen Fehler fuer unbekannte ID")
+        } catch MonsterAssetProvider.LoadError.unknownAssetID(let id) {
+            #expect(id == "monsterXX")
+        } catch {
+            #expect(Bool(false), "Unerwarteter Fehlertyp: \(error)")
+        }
+    }
+}

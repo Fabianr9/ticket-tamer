@@ -58,4 +58,30 @@ enum AssetKeys {
 
     /// Name der im Default-RealityKitContent-Package vorhandenen Szene.
     static let defaultRealityKitScene = "Scene"
+
+    // MARK: - Modul 005: Monster-Assets (F-14 / AK-14)
+
+    /// Zentralisierte, neutrale Bezeichner fuer die vier lokalen Monster-Assets.
+    ///
+    /// Namen sind absichtlich neutral: kein Name codiert Team oder Prioritaet,
+    /// sodass das angezeigte Modell keinen Rueckschluss auf die korrekte Loesung erlaubt.
+    enum Monster {
+
+        /// Erster Monster-Bezeichner.
+        static let monster01 = "monster01"
+
+        /// Zweiter Monster-Bezeichner.
+        static let monster02 = "monster02"
+
+        /// Dritter Monster-Bezeichner.
+        static let monster03 = "monster03"
+
+        /// Vierter Monster-Bezeichner.
+        static let monster04 = "monster04"
+
+        /// Alle vier gueltigen Monster-Bezeichner als geordnetes Array.
+        ///
+        /// Wird fuer Tests und Validierung verwendet.
+        static let allIDs: [String] = [monster01, monster02, monster03, monster04]
+    }
 }

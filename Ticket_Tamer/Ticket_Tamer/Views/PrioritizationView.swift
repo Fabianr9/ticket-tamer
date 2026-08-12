@@ -313,8 +313,18 @@ struct PrioritizationView: View {
         // Planare Bewegung: X/Y folgen der Geste, Z bleibt auf der Starttiefe.
         // Siehe PlanarDrag zur Begründung — die frühere Übernahme der absoluten
         // Zeigerposition verursachte Tiefensprung, Zurückwandern und zu kurze X-Wege.
+        //
+        // Die Grenzen halten die Modellhülle samt Sicherheitsabstand innerhalb des Volumes.
+        // Ohne sie konnte das Monster beim Ziehen zu den Prioritätsfeldern über die obere
+        // Volume-Kante hinauslaufen und wurde dort beschnitten.
         entity.setPosition(
-            PlanarDrag.position(from: start, translation: value.gestureValue.translation),
+            PlanarDrag.position(
+                from: start,
+                translation: value.gestureValue.translation,
+                limits: PlanarDrag.playAreaLimits(
+                    forEntityOfSize: LayoutConstants.monsterDragDropTargetSize
+                )
+            ),
             relativeTo: nil
         )
     }

@@ -304,7 +304,13 @@ struct TeamAssignmentView: View {
         // schrieb die Handtiefe direkt in die Entity: Sprung nach vorne beim Greifen,
         // Stehenbleiben auf Handtiefe beim Loslassen, kaum horizontaler Weg.
         entity.setPosition(
-            PlanarDrag.position(from: start, translation: value.gestureValue.translation),
+            PlanarDrag.position(
+                from: start,
+                translation: value.gestureValue.translation,
+                limits: PlanarDrag.playAreaLimits(
+                    forEntityOfSize: LayoutConstants.monsterDragDropTargetSize
+                )
+            ),
             relativeTo: nil
         )
     }

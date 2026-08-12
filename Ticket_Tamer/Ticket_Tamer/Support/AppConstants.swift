@@ -16,7 +16,13 @@ enum LayoutConstants {
     static let centralVolumeWidth = 0.8
 
     /// Hoehe des zentralen Volumes in Metern.
-    static let centralVolumeHeight = 0.6
+    ///
+    /// Von 0.6 auf 0.8 erhoeht (Layout-Fix Priorisierungsphase): bei 0.6 m reichte der
+    /// Bereich oberhalb der Prioritaetsfelder nicht aus. Wird das Monster (0.13 m) zu einem
+    /// Feld gezogen, lag seine Oberkante ueber der Volume-Grenze und wurde beschnitten.
+    /// Die Volume-Grenze ist die aeusserste Clipping-Kante der RealityView — sie bestimmt,
+    /// wie weit nach oben ueberhaupt gezogen werden kann.
+    static let centralVolumeHeight = 0.8
 
     /// Tiefe des zentralen Volumes in Metern.
     static let centralVolumeDepth = 0.4
@@ -168,13 +174,24 @@ enum LayoutConstants {
     /// Greifsphaere das Modell sicher umschliesst.
     static let monsterDragDropTargetSize: Float = 0.13
 
+    /// Sichtbarer Sicherheitsabstand zwischen Modellhuelle und Volume-Grenze (Meter).
+    ///
+    /// Die Zieh-Bewegung wird so begrenzt, dass zwischen der Aussenkante des Monsters und
+    /// der Clipping-Kante des Volumes immer mindestens dieser Abstand bleibt. Damit ist
+    /// Beschneiden konstruktiv ausgeschlossen — unabhaengig davon, wie weit gezogen wird.
+    static let playAreaSafetyMargin: Float = 0.03
+
     // MARK: - Ziel-Labels (Priorisierung / Teamzuordnung)
 
     /// Abstand zwischen den Ziel-Labels in der Kopfzeile.
     static let targetLabelRowSpacing = 8.0
 
     /// Aussenabstand der Label-Zeile nach oben.
-    static let targetLabelTopPadding = 16.0
+    ///
+    /// Bewusst grosszuegig: die Zeile sass zuvor direkt am oberen Rand, sodass das Monster
+    /// beim Ziehen bis fast an die Volume-Grenze musste. Tiefer gesetzt verkuerzt sich die
+    /// noetige Zieh-Strecke und ueber den Labels bleibt sichtbarer Rand.
+    static let targetLabelTopPadding = 120.0
 
     /// Seitlicher Aussenabstand der Label-Zeile.
     static let targetLabelRowHorizontalPadding = 16.0

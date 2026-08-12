@@ -1077,6 +1077,59 @@ struct PrioritizationPhaseTests {
         )
     }
 
+    // MARK: - Spielfläche und Clipping
+
+    /// Kernregression zum Beschneiden am oberen Rand: egal wie weit gezogen wird, die
+    /// Modellhülle muss mit Sicherheitsabstand innerhalb des Volumes bleiben.
+    @Test("Ziehen kann das Monster nie über die Volume-Grenzen hinaus bewegen")
+    func draggingNeverLeavesTheVolume() {
+        let size = LayoutConstants.monsterDragDropTargetSize
+        let limits = PlanarDrag.playAreaLimits(forEntityOfSize: size)
+        let start = PrioritizationConstants.monsterStartPosition
+        let half = SIMD3<Float>(
+            Float(LayoutConstants.centralVolumeWidth / 2),
+            Float(LayoutConstants.centralVolumeHeight / 2),
+            Float(LayoutConstants.centralVolumeDepth / 2)
+        )
+
+        // Absichtlich weit über jedes sinnvolle Maß hinaus gezogen.
+        let extremes: [CGSize] = [
+            CGSize(width: 0, height: -5000),
+            CGSize(width: 0, height: 5000),
+            CGSize(width: -5000, height: -5000),
+            CGSize(width: 5000, height: 5000),
+        ]
+
+        for move in extremes {
+            let p = PlanarDrag.position(from: start, translation: move, limits: limits)
+            #expect(abs(p.x) + size / 2 <= half.x, "Modell ragt seitlich heraus bei \(move)")
+            #expect(abs(p.y) + size / 2 <= half.y, "Modell ragt oben/unten heraus bei \(move)")
+            #expect(p.z == start.z, "Z hat sich bei \(move) verändert")
+        }
+    }
+
+    /// Die Grenzen dürfen die Ziele nicht unerreichbar machen.
+    @Test("Alle Zielspalten und die Mindestanhebung liegen innerhalb der Spielfläche")
+    func targetsRemainReachableWithinPlayArea() {
+        let limits = PlanarDrag.playAreaLimits(
+            forEntityOfSize: LayoutConstants.monsterDragDropTargetSize
+        )
+        let start = PrioritizationConstants.monsterStartPosition
+
+        #expect(abs(start.x) <= limits.x)
+        #expect(abs(start.y) <= limits.y)
+
+        for target in PriorityTargetMapping.allTargets {
+            #expect(
+                abs(target.position.x) <= limits.x,
+                "Spalte \(target.id) liegt außerhalb der Spielfläche"
+            )
+        }
+
+        // Die für einen gültigen Drop nötige Höhe muss erreichbar bleiben.
+        #expect(start.y + PrioritizationConstants.minimumDropLift <= limits.y)
+    }
+
     @Test("Ablage ohne ausreichende Aufwärtsbewegung ist ungültig")
     func dropWithoutLiftIsInvalid() {
         let origin = PrioritizationConstants.monsterStartPosition

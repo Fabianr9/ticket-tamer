@@ -40,21 +40,68 @@ import simd
 /// - **Z bleibt unverändert** auf dem Wert vom Gestenbeginn.
 enum PlanarDrag {
 
-    /// Neue Position auf der Tiefenebene von `start`.
+    /// Neue Position auf der Tiefenebene von `start`, begrenzt auf die Spielfläche.
     ///
     /// - Parameters:
     ///   - start: Position der Entity zu Beginn der Zieh-Geste (Weltkoordinaten).
     ///   - translation: 2D-Translation der Geste in Punkten.
-    /// - Returns: Position mit angepasstem X und Y bei **unveränderter Z-Tiefe**.
-    static func position(from start: SIMD3<Float>, translation: CGSize) -> SIMD3<Float> {
+    ///   - limits: Maximaler Betrag je Achse für den **Mittelpunkt** der Entity, gemessen
+    ///     vom Volume-Mittelpunkt. Siehe `playAreaLimits(forEntityOfSize:)`.
+    /// - Returns: Position mit angepasstem X und Y bei **unveränderter Z-Tiefe**,
+    ///   geklemmt auf `limits`.
+    static func position(
+        from start: SIMD3<Float>,
+        translation: CGSize,
+        limits: SIMD3<Float> = SIMD3<Float>(repeating: .greatestFiniteMagnitude)
+    ) -> SIMD3<Float> {
         let pointsPerMeter = LayoutConstants.pointsPerMeter
 
-        return SIMD3<Float>(
+        let moved = SIMD3<Float>(
             start.x + Float(translation.width / pointsPerMeter),
             // Minus: SwiftUI-Y wächst nach unten, RealityKit-Y nach oben.
             start.y - Float(translation.height / pointsPerMeter),
             // Tiefe bleibt konstant — kein Sprung nach vorne, kein Wandern nach hinten.
             start.z
         )
+
+        return SIMD3<Float>(
+            clamp(moved.x, to: limits.x),
+            clamp(moved.y, to: limits.y),
+            // Z wird nicht geklemmt: der Wert stammt unverändert aus `start` und liegt
+            // damit per Definition bereits innerhalb der Spielfläche.
+            moved.z
+        )
+    }
+
+    // MARK: - Spielfläche
+
+    /// Maximaler Betrag je Achse für den Mittelpunkt einer Entity der Kantenlänge `size`.
+    ///
+    /// Ergibt sich aus der halben Volume-Kante abzüglich der halben Modellgröße und
+    /// `LayoutConstants.playAreaSafetyMargin`. Dadurch bleibt zwischen Modellhülle und
+    /// Clipping-Kante des Volumes immer sichtbarer Rand — das Monster kann konstruktiv
+    /// nicht mehr angeschnitten werden, egal wie weit gezogen wird.
+    ///
+    /// - Parameter size: Größte Kantenlänge der Entity in Metern.
+    static func playAreaLimits(forEntityOfSize size: Float) -> SIMD3<Float> {
+        let halfVolume = SIMD3<Float>(
+            Float(LayoutConstants.centralVolumeWidth / 2),
+            Float(LayoutConstants.centralVolumeHeight / 2),
+            Float(LayoutConstants.centralVolumeDepth / 2)
+        )
+        let inset = size / 2 + LayoutConstants.playAreaSafetyMargin
+
+        return SIMD3<Float>(
+            max(halfVolume.x - inset, 0),
+            max(halfVolume.y - inset, 0),
+            max(halfVolume.z - inset, 0)
+        )
+    }
+
+    // MARK: - Hilfsfunktion
+
+    /// Begrenzt `value` symmetrisch auf `[-limit, limit]`.
+    private static func clamp(_ value: Float, to limit: Float) -> Float {
+        min(max(value, -limit), limit)
     }
 }

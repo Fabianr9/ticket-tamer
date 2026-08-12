@@ -80,10 +80,21 @@ struct TeamAssignmentView: View {
     var body: some View {
         ZStack(alignment: .top) {
             // 3D-Szene
+            // update: liest monsterEntity und targetEntities direkt — notwendig damit
+            // RealityKit den Closure nach @State-Änderungen erneut ausführt (AK-09 Fix).
             RealityView { _ in
                 // Szene wird via update: aufgebaut, nachdem Entities asynchron bereit sind.
             } update: { content in
-                addEntitiesIfNeeded(to: content)
+                // Direkte Reads stellen SwiftUI-Dependency-Tracking sicher.
+                let currentMonster  = monsterEntity
+                let currentTargets  = targetEntities
+
+                for entity in currentTargets where entity.scene == nil {
+                    content.add(entity)
+                }
+                if let monster = currentMonster, monster.scene == nil {
+                    content.add(monster)
+                }
             }
             .gesture(
                 DragGesture()
@@ -109,6 +120,13 @@ struct TeamAssignmentView: View {
             .padding(.top, 16)
             .padding(.bottom, 16)
             .padding(.horizontal, 16)
+
+            // Ladeindikator — liest monsterEntity im Body (SwiftUI-Dependency-Tracking).
+            if monsterEntity == nil && loadError == nil {
+                ProgressView()
+                    .controlSize(.large)
+                    .padding(.top, 100)
+            }
 
             // Fehlermeldung bei Ladefehlern (kein Crash, kein Auto-Wechsel).
             if let error = loadError {
@@ -245,17 +263,6 @@ struct TeamAssignmentView: View {
         case .konto:     return .systemPurple
         case .software:  return .systemTeal
         case .hardware:  return .systemIndigo
-        }
-    }
-
-    // MARK: - RealityView-Update
-
-    private func addEntitiesIfNeeded(to content: RealityViewContent) {
-        for entity in targetEntities where entity.scene == nil {
-            content.add(entity)
-        }
-        if let monster = monsterEntity, monster.scene == nil {
-            content.add(monster)
         }
     }
 

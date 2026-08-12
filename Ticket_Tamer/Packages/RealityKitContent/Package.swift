@@ -27,6 +27,13 @@ let package = Package(
         .target(
             name: "RealityKitContent",
             dependencies: [],
+            resources: [
+                // rkassets wird von Reality Composer Pro kompiliert (auto-detected + explicit).
+                .process("RealityKitContent.rkassets"),
+                // USDC-Rohdaten — direkt kopiert, kein Reality Composer Pro Compile-Schritt.
+                // Ermöglicht URL-basiertes Laden als Fallback für Blender-Exporte.
+                .copy("MonsterAssets"),
+            ],
             swiftSettings: [
                 .enableUpcomingFeature("MemberImportVisibility")
             ]),

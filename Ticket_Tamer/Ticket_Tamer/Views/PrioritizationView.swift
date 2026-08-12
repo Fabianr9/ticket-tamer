@@ -80,10 +80,21 @@ struct PrioritizationView: View {
     var body: some View {
         ZStack(alignment: .top) {
             // 3D-Szene
+            // update: liest monsterEntity und targetEntities direkt — notwendig damit
+            // RealityKit den Closure nach @State-Änderungen erneut ausführt (AK-08 Fix).
             RealityView { _ in
                 // Szene wird via update: aufgebaut, nachdem Entities asynchron bereit sind.
             } update: { content in
-                addEntitiesIfNeeded(to: content)
+                // Direkte Reads stellen SwiftUI-Dependency-Tracking sicher.
+                let currentMonster  = monsterEntity
+                let currentTargets  = targetEntities
+
+                for entity in currentTargets where entity.scene == nil {
+                    content.add(entity)
+                }
+                if let monster = currentMonster, monster.scene == nil {
+                    content.add(monster)
+                }
             }
             .gesture(
                 DragGesture()
@@ -121,6 +132,13 @@ struct PrioritizationView: View {
                 }
             }
             #endif
+
+            // Ladeindikator — liest monsterEntity im Body (SwiftUI-Dependency-Tracking).
+            if monsterEntity == nil && loadError == nil {
+                ProgressView()
+                    .controlSize(.large)
+                    .padding(.top, 100)
+            }
 
             // Fehlermeldung bei Ladefehlern (kein Crash, kein Auto-Wechsel).
             if let error = loadError {
@@ -252,17 +270,6 @@ struct PrioritizationView: View {
         case .normal:   return .systemGreen
         case .wichtig:  return .systemOrange
         case .kritisch: return .systemRed
-        }
-    }
-
-    // MARK: - RealityView-Update
-
-    private func addEntitiesIfNeeded(to content: RealityViewContent) {
-        for entity in targetEntities where entity.scene == nil {
-            content.add(entity)
-        }
-        if let monster = monsterEntity, monster.scene == nil {
-            content.add(monster)
         }
     }
 

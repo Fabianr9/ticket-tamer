@@ -3,19 +3,11 @@
     defaultPrim = "Root"
     metersPerUnit = 1
     upAxis = "Y"
-    doc = "Platzhalter-Asset fuer Monster 02. Wird durch das fertige Blender-Export-USDZ ersetzt."
+    doc = "Monster 02 — Blender-Export Monster_2_green. Asset-Fix Modul 013."
 )
 
-def Xform "Root"
+def Xform "Root" (
+    references = @Monster_2_green.usdc@
+)
 {
-    def Sphere "MonsterMesh" (
-        active = true
-    )
-    {
-        double radius = 0.06
-        quatf xformOp:orient = (1, 0, 0, 0)
-        float3 xformOp:scale = (1, 1, 1)
-        float3 xformOp:translate = (0, 0, 0)
-        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
-    }
 }

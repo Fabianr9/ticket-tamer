@@ -68,6 +68,13 @@ struct TeamAssignmentView: View {
     @State private var originTransform: Transform? = nil
     @State private var loadError: String? = nil
 
+    // MARK: - Modul 010: Feedback-Zustand
+
+    /// Verhindert mehrfachen Task-Start bei View-Refresh nach gespeichertem Team.
+    @State private var feedbackTaskStarted: Bool = false
+    /// Lokale Audio-Kapselung — kein globaler Service-Locator.
+    @State private var audioService = AudioService()
+
     // MARK: - Body
 
     var body: some View {
@@ -124,7 +131,33 @@ struct TeamAssignmentView: View {
             if model.selectedTeam != nil {
                 DebugManager.log(.state, "TeamAssignmentView erschienen, Team bereits gespeichert: \(model.selectedTeam!.rawValue)")
             } else {
+                feedbackTaskStarted = false
                 DebugManager.log(.state, "TeamAssignmentView erschienen, Phase: \(model.currentPhase)")
+            }
+        }
+        // MARK: Modul 010 — Teamfeedback und automatischer Übergang (F-11 / F-12 / F-13)
+        .onChange(of: model.selectedTeam) { _, newTeam in
+            guard newTeam != nil, !feedbackTaskStarted else { return }
+            feedbackTaskStarted = true
+            Task { @MainActor in
+                // 1. Genau einmal bewerten.
+                guard let isCorrect = model.evaluateTeam() else {
+                    DebugManager.log(.state, "Teambewertung war No-Op — Task beendet")
+                    return
+                }
+                // 2. Genau einen Sound abspielen.
+                audioService.play(isCorrect ? .correct : .incorrect)
+                // 3. Eingabe bleibt gesperrt; Szene steht (kein visuelles Feedback-Label).
+                // 4. Warten.
+                try? await Task.sleep(for: .seconds(FeedbackConstants.feedbackTransitionDelay))
+                // 5. Guard: Phase darf sich nicht unerwartet geändert haben.
+                guard model.currentPhase == .teamZuordnen else {
+                    DebugManager.log(.state, "Team-Task: Phase hat sich geaendert, kein Uebergang")
+                    return
+                }
+                // 6. Ticket abschließen: nächstes Ticket oder Ergebnis.
+                model.completeTicketAfterTeamFeedback()
+                DebugManager.log(.state, "Team-Feedbacktask abgeschlossen → \(model.currentPhase)")
             }
         }
     }

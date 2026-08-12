@@ -2,16 +2,18 @@
 
 > Aktuelle Landkarte des bestätigten Codes und der bekannten Projektbestandteile. Nach jedem Modul wird dieses Dokument vollständig neu erzeugt und unter `Dokumentation/05_Aktueller-Stand/Projekt-Stand.md` ersetzt. Die Code-Historie liegt ausschließlich in Git.
 
-**Stand:** nach Modul `009` — Teamzuordnungsphase  
-**Eingearbeitet am:** 2026-08-09  
+**Stand:** nach Modul `010` — Bewertung und Audiofeedback  
+**Eingearbeitet am:** 2026-08-12  
 **Branch laut Report:** `main`  
 **008-Hauptcommit:** `200093b`  
 **008-Fix:** `b716ed1 feat:Modul008`  
-**Docs-Commit danach:** `7b873b7 feat: update docs module 008`  
-**009-Commit:** offen  
-**Build nach 009:** offen  
-**Simulator nach 009:** offen  
-**Testdeklarationen:** 110  
+**Docs-Commit nach 008:** `7b873b7 feat: update docs module 008`  
+**009-Commit:** `0c38caf feat:Modul009`  
+**Docs-Commit nach 009:** `2a9b58c feat: update docs module 009`  
+**010-Commit:** offen (nach `git commit`)  
+**Build nach 010:** offen  
+**Simulator nach 010:** offen  
+**Testdeklarationen:** 140  
 **Vollständiger Testlauf:** offen
 
 ## Technischer Gesamtstand
@@ -30,16 +32,20 @@ Der gemeldete Quellstand enthält:
 - Teamzuordnungsphase,
 - genau-einmal-Speicherung von Priorität,
 - genau-einmal-Speicherung von Team,
-- Input-Lock nach gültigen Entscheidungen.
+- Input-Lock nach gültigen Entscheidungen,
+- Bewertungslogik (+100 / +0, keine negativen Punkte),
+- genau-einmal-Bewertungssemantik (Flags),
+- lokale Richtig-/Falsch-Sounds (Platzhalter),
+- automatischer 1,5-Sekunden-Übergang nach Prioritäts- und Teamfeedback,
+- automatischer Wechsel zum nächsten Ticket nach Teamfeedback,
+- Phase `.ergebnis` nach letztem Ticket.
 
 Noch nicht vorhanden:
 
-- Bewertungslogik,
-- Punktevergabe,
-- lokale Richtig-/Falsch-Sounds,
-- automatischer 1,5-Sekunden-Übergang,
-- automatischer Wechsel zum nächsten Ticket,
-- fertige Ergebnisansicht,
+- fertige Ergebnisansicht (Modul 011),
+- „Erneut spielen" (Modul 011),
+- finale Sound-Dateien (Platzhalter aktiv),
+- optionale Monsterreaktion (Modul 012),
 - finale Blender-Monster.
 
 ## Relevanter Dateibaum
@@ -62,24 +68,27 @@ Ticket_Tamer/
 │  │  ├─ SessionModel.swift
 │  │  └─ Ticket.swift
 │  ├─ Resources/
-│  │  └─ Localizable.xcstrings
+│  │  ├─ Localizable.xcstrings
+│  │  ├─ correct.wav          ← NEU (Modul 010, Platzhalter)
+│  │  └─ incorrect.wav        ← NEU (Modul 010, Platzhalter)
 │  ├─ Services/
+│  │  ├─ AudioService.swift   ← NEU (Modul 010)
 │  │  ├─ DropEvaluator.swift
 │  │  └─ MonsterInteractionConfigurator.swift
 │  ├─ Support/
-│  │  └─ AppConstants.swift
+│  │  └─ AppConstants.swift   ← ergänzt (FeedbackConstants)
 │  ├─ Views/
 │  │  ├─ Debug/
 │  │  │  └─ DebugInteractionHarnessView.swift
 │  │  ├─ InvestigationView.swift
-│  │  ├─ PrioritizationView.swift
+│  │  ├─ PrioritizationView.swift   ← ergänzt (Feedback-Flow)
 │  │  ├─ RootVolumeView.swift
 │  │  ├─ StartView.swift
-│  │  └─ TeamAssignmentView.swift
+│  │  └─ TeamAssignmentView.swift   ← ergänzt (Feedback-Flow)
 │  ├─ Assets.xcassets
 │  └─ Info.plist
 ├─ Ticket_TamerTests/
-│  └─ Ticket_TamerTests.swift
+│  └─ Ticket_TamerTests.swift      ← ergänzt (+30 Tests)
 └─ Packages/
    └─ RealityKitContent/
       └─ Sources/RealityKitContent/RealityKitContent.rkassets/
@@ -105,114 +114,55 @@ RootVolumeView
 ├─ .teamZuordnen
 │  └─ TeamAssignmentView
 └─ .ergebnis
-   └─ derzeit neutraler Platzhalter
+   └─ derzeit neutraler Platzhalter (Modul 011)
 ```
 
-## Teamzuordnung
+## Vollständiger Spielablauf nach Modul 010
 
-### `TeamAssignmentView`
+```text
+StartView
+  → startSession() → .untersuchen
 
-Enthält:
+InvestigationView
+  → beginPrioritizationPhase() → .priorisieren
 
-- aktuelles Monster,
-- vier Teamstationen,
-- Labels Netzwerk/Konto/Software/Hardware,
-- Drag-/Drop-Integration über Modul 007,
-- Mapping über `TeamTargetMapping`.
+PrioritizationView
+  → savePriority() setzt selectedPriority + sperrt Input
+  → evaluatePriority() → ±100
+  → audioService.play(.correct / .incorrect)
+  → Task.sleep(1.5s)
+  → beginTeamAssignmentPhase() → .teamZuordnen
 
-### Ziel-Mapping
+TeamAssignmentView
+  → saveTeam() setzt selectedTeam + sperrt Input
+  → evaluateTeam() → ±100
+  → audioService.play(.correct / .incorrect)
+  → Task.sleep(1.5s)
+  → completeTicketAfterTeamFeedback()
+       ├─ weiteres Ticket → .untersuchen (neues Ticket)
+       └─ letztes Ticket → .ergebnis
+```
 
-| Ziel-ID | SupportTeam |
+## SessionModel-Schnittstellen nach Modul 010
+
+### Neu in Modul 010
+
+| Schnittstelle | Zweck |
 |---|---|
-| `team_netzwerk` | `.netzwerk` |
-| `team_konto` | `.konto` |
-| `team_software` | `.software` |
-| `team_hardware` | `.hardware` |
+| `evaluatePriority() -> Bool?` | Bewertet Prioritätsentscheidung genau einmal; true=richtig, false=falsch, nil=No-Op |
+| `evaluateTeam() -> Bool?` | Bewertet Teamentscheidung genau einmal; analog |
+| `completeTicketAfterTeamFeedback()` | Schließt Ticket ab: nächstes Ticket oder `.ergebnis` |
 
-### Layout
+### Bewertungsflags (intern, private)
 
-2×2:
-
-- Netzwerk links oben,
-- Konto rechts oben,
-- Software links unten,
-- Hardware rechts unten.
-
-## SessionModel-Schnittstellen nach Modul 009
-
-### `beginTeamAssignmentPhase()`
-
-Vorbedingungen:
-
-- Phase `.priorisieren`,
-- `selectedPriority != nil`.
-
-Effekt:
-
-- Phase `.teamZuordnen`,
-- Input entsperrt.
-
-Unverändert:
-
-- Score,
-- Ticketindex,
-- Priorität,
-- Team bleibt nil.
-
-Wird in Modul 009 im normalen Release-Flow nicht automatisch aufgerufen.
-
-### `saveTeam(_:)`
-
-Vorbedingungen:
-
-- Phase `.teamZuordnen`,
-- `selectedTeam == nil`,
-- Input nicht gesperrt.
-
-Effekt:
-
-- Team speichern,
-- Input sperren.
-
-Unverändert:
-
-- Priorität,
-- Score,
-- Index,
-- Phase.
-
-## Development-Zugang
-
-Vor Modul 010 existiert in `PrioritizationView` ein `#if DEBUG`-Button:
-
-`🔧 Team [DEV]`
-
-Er erscheint nach gespeicherter Priorität und ruft `beginTeamAssignmentPhase()` auf.
-
-Er ist keine Release-Funktion.
-
-## Build-/Verifikationsstand
-
-| Prüfung | Stand |
+| Flag | Zweck |
 |---|---|
-| 008-Build | gemeldet bestätigt |
-| 008-Simulatorstart | gemeldet bestätigt |
-| 008-Fix committed | ja, `b716ed1` |
-| 009-Build | offen |
-| 009-Simulatorstart | offen |
-| vollständige 110 Tests | offen |
-| AK-08 Gesten | offen |
-| AK-09 Gesten | offen |
-| AK-10 komplette Laufzeit | offen |
+| `priorityEvaluated` | Verhindert doppelte Prioritätspunkte |
+| `teamEvaluated` | Verhindert doppelte Teampunkte |
 
-## Teststand
+Beide Flags: `false` in `startSession()`, `reset()` und `completeTicketAfterTeamFeedback()`.
 
-- 86 Testdeklarationen vor Modul 009,
-- 24 neue `TeamAssignmentPhaseTests`,
-- 110 Testdeklarationen nach Modul 009,
-- kein vollständiger Testlauf nachgewiesen.
-
-## Schnittstellen für Modul 010
+### Bestehende Schnittstellen (unverändert)
 
 | Schnittstelle | Zweck |
 |---|---|
@@ -223,61 +173,84 @@ Er ist keine Release-Funktion.
 | `SessionModel.score` | Punktestand |
 | `SessionModel.currentTicket` | Referenzdaten des aktuellen Tickets |
 | `SessionModel.currentTicketIndex` | Fortschritt |
-| `SessionModel.sessionTickets` | Sitzungslänge |
+| `SessionModel.sessionTickets` | Sitzungslänge und Ticketliste |
 | `SessionModel.isInputLocked` | Feedback-Lock |
 | `SessionModel.beginTeamAssignmentPhase()` | nach Prioritätsfeedback in Teamphase |
-| `SessionModel.advanceToNextTicket()` | bestehende Indexfortschaltung; für vollständigen Flow allein wahrscheinlich nicht ausreichend |
 | `SessionModel.lockInput()` / `unlockInput()` | Eingabesperre |
 | `savePriority(_:)` | speichert Priorität |
 | `saveTeam(_:)` | speichert Team |
 
-## Für Modul 010 fehlende Zustandslogik
+## AudioService
 
-Wahrscheinlich nötig ist eine kleine, kontrollierte Schnittstelle für den Abschluss eines Tickets nach Teamfeedback.
+| Eigenschaft | Wert |
+|---|---|
+| API | AVFoundation / `AVAudioPlayer` |
+| Richtig-Sound | `correct.wav` (880 Hz Sinus, 0,5 s, Platzhalter) |
+| Falsch-Sound | `incorrect.wav` (220 Hz Sinus, 0,5 s, Platzhalter) |
+| Fehlerbehandlung | Log via `.audio`, kein Crash |
+| Instanzhaltung | `@State` in Views, kein globaler Locator |
 
-Sie muss:
+## FeedbackConstants
 
-- erkennen, ob noch ein weiteres Sitzungsticket existiert,
-- bei weiterem Ticket Index erhöhen,
-- `selectedPriority` und `selectedTeam` für das neue Ticket löschen,
-- `isInputLocked = false`,
-- Phase `.untersuchen`,
-- Score behalten,
-- bei letztem Ticket Phase `.ergebnis` setzen,
-- keinen Sitzungsreset durchführen.
+| Konstante | Wert |
+|---|---|
+| `feedbackTransitionDelay` | `1.5` (Sekunden) |
+| `correctSoundName` | `"correct"` |
+| `incorrectSoundName` | `"incorrect"` |
+| `soundExtension` | `"wav"` |
+| `correctDecisionScore` | `100` |
 
-Die genaue Methode ist anhand des realen `SessionModel` zu entwerfen.
+## Scoringsemantik
 
-## Audio-Status
-
-Im aktuellen bestätigten Stand sind noch keine zwei finalen lokalen Feedback-Sounds dokumentiert.
-
-Modul 010 muss real inventarisieren:
-
-- vorhandene WAV/M4A/CAF/MP3-Dateien,
-- Rechte/Urheberschaft,
-- Bundle-Zugehörigkeit,
-- Abspielbarkeit.
-
-Keine externen Downloads ohne klare Herkunft und Freigabe.
+- Richtige Priorität: +100
+- Falsche Priorität: +0 (kein Abzug)
+- Richtiges Team: +100
+- Falsches Team: +0
+- Pro Ticket maximal: 200
+- 12 Tickets maximal: 2400
+- Score kumuliert über alle Tickets
+- Reset auf 0 nur durch vollständigen `reset()`
 
 ## Wichtige Scope-Regel
 
-**Die richtige Lösung darf nicht angezeigt werden.**
+**Die richtige Lösung wird nicht angezeigt.**
 
-Nicht zulässig in Modul 010:
+Nicht vorhanden in Modul 010 und nicht erlaubt:
 
-- „Richtig wäre Kritisch“,
-- „Richtiges Team: Netzwerk“,
-- Lösungs-Overlay,
-- Text-Erklärung,
-- sichtbares Anzeigen der Referenzwerte.
+- kein „Richtig wäre Kritisch"
+- kein „Richtiges Team: Netzwerk"
+- kein Lösungs-Overlay
+- kein sichtbares Richtig/Falsch-Label
+- keine farbliche Markierung des richtigen Ziels
 
-Feedback besteht aus:
+Feedback besteht aus: Score intern, lokalem Sound, automatischem Übergang.
 
-- Punkten intern,
-- einem lokalen Richtig- oder Falsch-Sound,
-- anschließendem automatischen Übergang.
+## Development-Zugang
+
+Der `🔧 Team [DEV]`-Button in `PrioritizationView` bleibt als `#if DEBUG`-Hilfsmittel bestehen. Er erscheint nie im Release-Build.
+
+## Build-/Verifikationsstand
+
+| Prüfung | Stand |
+|---|---|
+| 008-Build | gemeldet bestätigt |
+| 008-Simulatorstart | gemeldet bestätigt |
+| 008-Fix committed | ja, `b716ed1` |
+| 009-Build | offen |
+| 009-Simulatorstart | offen |
+| 010-Build | offen |
+| 010-Simulatorstart | offen |
+| vollständige 140 Tests | offen |
+| AK-08 Gesten | offen |
+| AK-09 Gesten | offen |
+| AK-10 komplette Laufzeit | offen |
+
+## Teststand
+
+- 110 Testdeklarationen vor Modul 010
+- 30 neue `ScoringAndFeedbackTests`
+- **140 Testdeklarationen nach Modul 010**
+- kein vollständiger Testlauf nachgewiesen
 
 ## Monster-Asset-Status
 
@@ -288,11 +261,24 @@ Feedback besteht aus:
 | monster03 | USDA-Platzhalter | fehlt |
 | monster04 | USDA-Platzhalter | fehlt |
 
+## Schnittstellen für Modul 011
+
+| Schnittstelle | Zweck |
+|---|---|
+| `SessionModel.score` | Gesamtpunktestand für Ergebnisansicht |
+| `SessionModel.sessionTickets` | Vollständige Ticketliste für Statistik |
+| `SessionModel.currentTicketIndex` | Letzter Index (= Anzahl gespielter Tickets - 1) |
+| `GamePhase.ergebnis` | Wird nach letztem Teamfeedback gesetzt |
+| `SessionModel.reset()` | Für „Erneut spielen" in Modul 011 |
+
 ## Offene Punkte
 
-- Modul-009-Commit/Hash fehlt.
-- Build/Test/Simulator nach 009 fehlen.
+- 010-Commit/Hash fehlt noch.
+- Build/Test/Simulator nach 010 fehlen.
 - AK-08/AK-09/AK-10 Gestenprüfung fehlt.
-- zwei lokale Feedback-Sounds sind noch nicht bestätigt.
-- finale Blender-Monster fehlen.
+- Finale Sound-Dateien fehlen (Platzhalter aktiv).
+- Finale Blender-Monster fehlen.
 - `.DS_Store`-Bereinigung bleibt offen.
+- Ergebnisansicht und „Erneut spielen" folgen Modul 011.
+- Optionale Monsterreaktion folgt Modul 012.
+- echte Vision-Pro-Gesamtprüfung folgt Modul 013.

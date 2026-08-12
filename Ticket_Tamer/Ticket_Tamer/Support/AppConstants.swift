@@ -149,6 +149,33 @@ enum TeamAssignmentConstants {
     static let targetPositionHardware  = SIMD3<Float>( 0.24, -0.16, 0)
 }
 
+/// Zeitwerte für das Audiofeedback und den automatischen Phasenübergang (Modul 010 — F-13).
+enum FeedbackConstants {
+
+    // MARK: - Feedbackdauer
+
+    /// Dauer des Audiofeedbacks, nach der automatisch die nächste Phase eingeleitet wird.
+    ///
+    /// Zentrale Konstante — keine Magic Numbers in Views oder Services.
+    static let feedbackTransitionDelay: Double = 1.5
+
+    // MARK: - Sound-Ressourcen-IDs
+
+    /// Dateiname (ohne Endung) des Richtig-Sounds im App-Bundle.
+    static let correctSoundName = "correct"
+
+    /// Dateiname (ohne Endung) des Falsch-Sounds im App-Bundle.
+    static let incorrectSoundName = "incorrect"
+
+    /// Bundle-Ressourcenformat der Feedback-Sounds.
+    static let soundExtension = "wav"
+
+    // MARK: - Punkte
+
+    /// Punkte für eine richtige Teilentscheidung (F-11).
+    static let correctDecisionScore = 100
+}
+
 /// Zentralisierte Schluessel fuer bereits vorhandene lokale Ressourcen.
 enum AssetKeys {
 

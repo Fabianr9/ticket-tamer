@@ -1235,3 +1235,403 @@ struct TeamAssignmentPhaseTests {
         }
     }
 }
+
+// MARK: - Modul 010: Bewertung und Audiofeedback
+
+/// Tests für Scoring, genau-einmal-Semantik, Zustandsübergänge und AudioService-Mapping
+/// (SPEC F-11 / F-12 / F-13 / AK-08 / AK-09 / AK-10).
+///
+/// Audio-Playback und der reale 1,5-Sekunden-Übergang werden zusätzlich manuell
+/// im Simulator geprüft.
+@MainActor
+struct ScoringAndFeedbackTests {
+
+    // MARK: - Hilfsmethode: Erstes Ticket mit bekannter Priorität und Team
+
+    /// Gibt ein Ticket zurück, dessen referencePriority und referenceTeam bekannt sind.
+    /// Verwendet den Katalog deterministisch (keine Shuffle-Abhängigkeit).
+    private func firstCatalogTicket() -> Ticket {
+        LocalTicketCatalog.allTickets[0]
+    }
+
+    /// Bringt das Modell in die Priorisierungsphase mit dem ersten Katalogticket.
+    private func modelInPrioPhase() -> SessionModel {
+        let model = SessionModel()
+        model.setTicketCount(1)
+        model.startSession(using: { $0 })
+        model.beginPrioritizationPhase()
+        return model
+    }
+
+    /// Bringt das Modell in die Teamphase mit dem ersten Katalogticket.
+    private func modelInTeamPhase(priority: TicketPriority? = nil) -> SessionModel {
+        let model = SessionModel()
+        model.setTicketCount(1)
+        model.startSession(using: { $0 })
+        model.beginPrioritizationPhase()
+        let ticket = model.currentTicket!
+        let prio = priority ?? ticket.referencePriority
+        model.savePriority(prio)
+        model.beginTeamAssignmentPhase()
+        return model
+    }
+
+    // MARK: - 1–5: Prioritätsbewertung
+
+    @Test("Richtige Priorität ergibt +100 Punkte")
+    func correctPriorityGivesOneHundredPoints() {
+        let model = modelInPrioPhase()
+        let ticket = model.currentTicket!
+        model.savePriority(ticket.referencePriority)
+        let result = model.evaluatePriority()
+        #expect(result == true)
+        #expect(model.score == 100)
+    }
+
+    @Test("Falsche Priorität ergibt 0 Punkte (kein Abzug)")
+    func wrongPriorityGivesZeroPoints() {
+        let model = modelInPrioPhase()
+        let ticket = model.currentTicket!
+        // Wähle bewusst eine falsche Priorität
+        let wrongPriority = TicketPriority.allCases.first { $0 != ticket.referencePriority }!
+        model.savePriority(wrongPriority)
+        let result = model.evaluatePriority()
+        #expect(result == false)
+        #expect(model.score == 0)
+    }
+
+    @Test("Zweite Prioritätsbewertung gibt keine weiteren Punkte (genau-einmal)")
+    func secondPriorityEvaluationGivesNoPoints() {
+        let model = modelInPrioPhase()
+        let ticket = model.currentTicket!
+        model.savePriority(ticket.referencePriority)
+        model.evaluatePriority()
+        let scoreBefore = model.score
+        let secondResult = model.evaluatePriority()
+        #expect(secondResult == nil)
+        #expect(model.score == scoreBefore)
+    }
+
+    @Test("Prioritätsbewertung ohne gespeicherte Priorität ist No-Op")
+    func priorityEvaluationWithoutSavedPriorityIsNoOp() {
+        let model = modelInPrioPhase()
+        // Kein savePriority — selectedPriority ist nil
+        let result = model.evaluatePriority()
+        #expect(result == nil)
+        #expect(model.score == 0)
+    }
+
+    @Test("Prioritätsbewertung in falscher Phase ist No-Op")
+    func priorityEvaluationInWrongPhaseIsNoOp() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        // Phase: .untersuchen — keine Bewertung möglich
+        let result = model.evaluatePriority()
+        #expect(result == nil)
+        #expect(model.score == 0)
+    }
+
+    // MARK: - 6–10: Teambewertung
+
+    @Test("Richtiges Team ergibt +100 Punkte")
+    func correctTeamGivesOneHundredPoints() {
+        let model = modelInTeamPhase()
+        let ticket = model.currentTicket!
+        model.saveTeam(ticket.referenceTeam)
+        let result = model.evaluateTeam()
+        #expect(result == true)
+        #expect(model.score >= 100)
+    }
+
+    @Test("Falsches Team ergibt 0 Punkte (kein Abzug)")
+    func wrongTeamGivesZeroPoints() {
+        let model = modelInTeamPhase()
+        let ticket = model.currentTicket!
+        let wrongTeam = SupportTeam.allCases.first { $0 != ticket.referenceTeam }!
+        model.saveTeam(wrongTeam)
+        let scoreBefore = model.score
+        let result = model.evaluateTeam()
+        #expect(result == false)
+        #expect(model.score == scoreBefore)
+    }
+
+    @Test("Zweite Teambewertung gibt keine weiteren Punkte (genau-einmal)")
+    func secondTeamEvaluationGivesNoPoints() {
+        let model = modelInTeamPhase()
+        let ticket = model.currentTicket!
+        model.saveTeam(ticket.referenceTeam)
+        model.evaluateTeam()
+        let scoreBefore = model.score
+        let secondResult = model.evaluateTeam()
+        #expect(secondResult == nil)
+        #expect(model.score == scoreBefore)
+    }
+
+    @Test("Teambewertung ohne gespeichertes Team ist No-Op")
+    func teamEvaluationWithoutSavedTeamIsNoOp() {
+        let model = modelInTeamPhase()
+        // Kein saveTeam
+        let result = model.evaluateTeam()
+        #expect(result == nil)
+        #expect(model.score == 0)
+    }
+
+    @Test("Teambewertung in falscher Phase ist No-Op")
+    func teamEvaluationInWrongPhaseIsNoOp() {
+        let model = SessionModel()
+        model.startSession(using: { $0 })
+        // Phase: .untersuchen
+        let result = model.evaluateTeam()
+        #expect(result == nil)
+        #expect(model.score == 0)
+    }
+
+    // MARK: - 11–15: Kombinationsszenarien
+
+    @Test("Beide richtig → 200 Punkte pro Ticket")
+    func bothCorrectGivesTwoHundredPoints() {
+        let model = modelInPrioPhase()
+        let ticket = model.currentTicket!
+        model.savePriority(ticket.referencePriority)
+        model.evaluatePriority()
+        model.beginTeamAssignmentPhase()
+        model.saveTeam(ticket.referenceTeam)
+        model.evaluateTeam()
+        #expect(model.score == 200)
+    }
+
+    @Test("Priorität richtig, Team falsch → 100 Punkte")
+    func correctPriorityWrongTeamGivesOneHundred() {
+        let model = modelInPrioPhase()
+        let ticket = model.currentTicket!
+        model.savePriority(ticket.referencePriority)
+        model.evaluatePriority()
+        model.beginTeamAssignmentPhase()
+        let wrongTeam = SupportTeam.allCases.first { $0 != ticket.referenceTeam }!
+        model.saveTeam(wrongTeam)
+        model.evaluateTeam()
+        #expect(model.score == 100)
+    }
+
+    @Test("Priorität falsch, Team richtig → 100 Punkte")
+    func wrongPriorityCorrectTeamGivesOneHundred() {
+        let model = modelInPrioPhase()
+        let ticket = model.currentTicket!
+        let wrongPriority = TicketPriority.allCases.first { $0 != ticket.referencePriority }!
+        model.savePriority(wrongPriority)
+        model.evaluatePriority()
+        model.beginTeamAssignmentPhase()
+        model.saveTeam(ticket.referenceTeam)
+        model.evaluateTeam()
+        #expect(model.score == 100)
+    }
+
+    @Test("Beide falsch → 0 Punkte")
+    func bothWrongGivesZeroPoints() {
+        let model = modelInPrioPhase()
+        let ticket = model.currentTicket!
+        let wrongPriority = TicketPriority.allCases.first { $0 != ticket.referencePriority }!
+        model.savePriority(wrongPriority)
+        model.evaluatePriority()
+        model.beginTeamAssignmentPhase()
+        let wrongTeam = SupportTeam.allCases.first { $0 != ticket.referenceTeam }!
+        model.saveTeam(wrongTeam)
+        model.evaluateTeam()
+        #expect(model.score == 0)
+    }
+
+    @Test("Score ist niemals negativ")
+    func scoreIsNeverNegative() {
+        let model = modelInPrioPhase()
+        let ticket = model.currentTicket!
+        let wrongPriority = TicketPriority.allCases.first { $0 != ticket.referencePriority }!
+        model.savePriority(wrongPriority)
+        model.evaluatePriority()
+        model.beginTeamAssignmentPhase()
+        let wrongTeam = SupportTeam.allCases.first { $0 != ticket.referenceTeam }!
+        model.saveTeam(wrongTeam)
+        model.evaluateTeam()
+        #expect(model.score >= 0)
+    }
+
+    // MARK: - 16–25: Zustandsübergänge und Flow
+
+    @Test("Nach Prioritätsfeedback wechselt Phase zu .teamZuordnen")
+    func afterPriorityFeedbackPhaseIsTeamZuordnen() {
+        let model = modelInPrioPhase()
+        model.savePriority(model.currentTicket!.referencePriority)
+        model.evaluatePriority()
+        model.beginTeamAssignmentPhase()
+        #expect(model.currentPhase == .teamZuordnen)
+    }
+
+    @Test("Gespeicherte Priorität bleibt nach Wechsel zu Teamphase erhalten")
+    func selectedPriorityIsPreservedAfterTeamPhaseTransition() {
+        let model = modelInPrioPhase()
+        let ticket = model.currentTicket!
+        model.savePriority(ticket.referencePriority)
+        model.evaluatePriority()
+        model.beginTeamAssignmentPhase()
+        #expect(model.selectedPriority == ticket.referencePriority)
+    }
+
+    @Test("Teamphase beginnt mit entsperrtem Input")
+    func teamPhaseStartsWithUnlockedInput() {
+        let model = modelInTeamPhase()
+        #expect(model.isInputLocked == false)
+    }
+
+    @Test("Teamfeedback mit weiterem Ticket → Index +1")
+    func teamFeedbackWithNextTicketAdvancesIndex() {
+        let model = SessionModel()
+        model.setTicketCount(3)
+        model.startSession(using: { $0 })
+        model.beginPrioritizationPhase()
+        model.savePriority(model.currentTicket!.referencePriority)
+        model.evaluatePriority()
+        model.beginTeamAssignmentPhase()
+        model.saveTeam(model.currentTicket!.referenceTeam)
+        model.evaluateTeam()
+        let indexBefore = model.currentTicketIndex
+        model.completeTicketAfterTeamFeedback()
+        #expect(model.currentTicketIndex == indexBefore + 1)
+    }
+
+    @Test("Neues Ticket startet in .untersuchen")
+    func newTicketStartsInUntersuchenPhase() {
+        let model = SessionModel()
+        model.setTicketCount(2)
+        model.startSession(using: { $0 })
+        model.beginPrioritizationPhase()
+        model.savePriority(model.currentTicket!.referencePriority)
+        model.evaluatePriority()
+        model.beginTeamAssignmentPhase()
+        model.saveTeam(model.currentTicket!.referenceTeam)
+        model.evaluateTeam()
+        model.completeTicketAfterTeamFeedback()
+        #expect(model.currentPhase == .untersuchen)
+    }
+
+    @Test("Neue Ticket-Entscheidungen sind nil nach Ticket-Abschluss")
+    func newTicketDecisionsAreNilAfterCompletion() {
+        let model = SessionModel()
+        model.setTicketCount(2)
+        model.startSession(using: { $0 })
+        model.beginPrioritizationPhase()
+        model.savePriority(model.currentTicket!.referencePriority)
+        model.evaluatePriority()
+        model.beginTeamAssignmentPhase()
+        model.saveTeam(model.currentTicket!.referenceTeam)
+        model.evaluateTeam()
+        model.completeTicketAfterTeamFeedback()
+        #expect(model.selectedPriority == nil)
+        #expect(model.selectedTeam == nil)
+    }
+
+    @Test("Score bleibt beim Ticket-Wechsel erhalten")
+    func scoreIsPreservedAcrossTickets() {
+        let model = SessionModel()
+        model.setTicketCount(2)
+        model.startSession(using: { $0 })
+        model.beginPrioritizationPhase()
+        model.savePriority(model.currentTicket!.referencePriority)
+        model.evaluatePriority()
+        model.beginTeamAssignmentPhase()
+        model.saveTeam(model.currentTicket!.referenceTeam)
+        model.evaluateTeam()
+        let scoreAfterFirst = model.score
+        model.completeTicketAfterTeamFeedback()
+        #expect(model.score == scoreAfterFirst)
+    }
+
+    @Test("Letztes Ticket → Phase .ergebnis")
+    func lastTicketTransitionsToErgebnis() {
+        let model = SessionModel()
+        model.setTicketCount(1)
+        model.startSession(using: { $0 })
+        model.beginPrioritizationPhase()
+        model.savePriority(model.currentTicket!.referencePriority)
+        model.evaluatePriority()
+        model.beginTeamAssignmentPhase()
+        model.saveTeam(model.currentTicket!.referenceTeam)
+        model.evaluateTeam()
+        model.completeTicketAfterTeamFeedback()
+        #expect(model.currentPhase == .ergebnis)
+    }
+
+    @Test("Kein Indexüberlauf am letzten Ticket")
+    func noIndexOverflowAtLastTicket() {
+        let model = SessionModel()
+        model.setTicketCount(1)
+        model.startSession(using: { $0 })
+        let lastIndex = model.currentTicketIndex
+        model.beginPrioritizationPhase()
+        model.savePriority(model.currentTicket!.referencePriority)
+        model.evaluatePriority()
+        model.beginTeamAssignmentPhase()
+        model.saveTeam(model.currentTicket!.referenceTeam)
+        model.evaluateTeam()
+        model.completeTicketAfterTeamFeedback()
+        #expect(model.currentTicketIndex == lastIndex)
+    }
+
+    @Test("Reset löscht Bewertungsflags und Score")
+    func resetClearsEvaluationFlagsAndScore() {
+        let model = modelInPrioPhase()
+        model.savePriority(model.currentTicket!.referencePriority)
+        model.evaluatePriority()
+        #expect(model.score > 0)
+        model.reset()
+        #expect(model.score == 0)
+        // Nach Reset: Neubewertung aus falscher Phase → No-Op (Flags wurden gelöscht)
+        let result = model.evaluatePriority()
+        #expect(result == nil)
+        #expect(model.score == 0)
+    }
+
+    // MARK: - 26–27: Genau-einmal-Task-Semantik (Modell-Ebene)
+
+    @Test("Mehrfacher Bewertungsaufruf für Priorität gibt keine doppelten Punkte")
+    func multipleEvaluatePriorityCallsGiveNoDuplicatePoints() {
+        let model = modelInPrioPhase()
+        model.savePriority(model.currentTicket!.referencePriority)
+        model.evaluatePriority()
+        model.evaluatePriority()
+        model.evaluatePriority()
+        #expect(model.score == 100)
+    }
+
+    @Test("Mehrfacher Bewertungsaufruf für Team gibt keine doppelten Punkte")
+    func multipleEvaluateTeamCallsGiveNoDuplicatePoints() {
+        let model = modelInTeamPhase()
+        model.saveTeam(model.currentTicket!.referenceTeam)
+        model.evaluateTeam()
+        model.evaluateTeam()
+        model.evaluateTeam()
+        // Score ist mindestens 100 (Priorität könnte schon vergeben worden sein),
+        // aber ein zweiter/dritter evaluateTeam() darf nicht mehr addieren.
+        let scoreAfterFirst = model.score
+        let resultSecond = model.evaluateTeam()
+        #expect(resultSecond == nil)
+        #expect(model.score == scoreAfterFirst)
+    }
+
+    // MARK: - 28–30: AudioService-Mapping
+
+    @Test("FeedbackConstants.correctSoundName ist nicht leer und lokal benannt")
+    func correctSoundNameIsNonEmptyAndLocal() {
+        #expect(!FeedbackConstants.correctSoundName.isEmpty)
+        #expect(!FeedbackConstants.correctSoundName.hasPrefix("http"))
+    }
+
+    @Test("FeedbackConstants.incorrectSoundName ist nicht leer und lokal benannt")
+    func incorrectSoundNameIsNonEmptyAndLocal() {
+        #expect(!FeedbackConstants.incorrectSoundName.isEmpty)
+        #expect(!FeedbackConstants.incorrectSoundName.hasPrefix("http"))
+    }
+
+    @Test("Beide Sound-Namen sind eindeutig (kein Alias)")
+    func soundNamesAreDistinct() {
+        #expect(FeedbackConstants.correctSoundName != FeedbackConstants.incorrectSoundName)
+    }
+}

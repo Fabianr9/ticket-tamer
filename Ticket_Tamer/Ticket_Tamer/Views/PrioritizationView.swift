@@ -68,6 +68,13 @@ struct PrioritizationView: View {
     @State private var originTransform: Transform? = nil
     @State private var loadError: String? = nil
 
+    // MARK: - Modul 010: Feedback-Zustand
+
+    /// Verhindert mehrfachen Task-Start bei View-Refresh nach gespeicherter Priorität.
+    @State private var feedbackTaskStarted: Bool = false
+    /// Lokale Audio-Kapselung — kein globaler Service-Locator.
+    @State private var audioService = AudioService()
+
     // MARK: - Body
 
     var body: some View {
@@ -133,9 +140,35 @@ struct PrioritizationView: View {
             // Kein Unlock nach View-Refresh bei bereits gespeicherter Priorität (AK-10).
             if model.selectedPriority == nil {
                 model.unlockInput()
+                feedbackTaskStarted = false
                 DebugManager.log(.state, "PrioritizationView erschienen, Input freigegeben")
             } else {
                 DebugManager.log(.state, "PrioritizationView erschienen, Prioritaet bereits gespeichert: \(model.selectedPriority!.rawValue)")
+            }
+        }
+        // MARK: Modul 010 — Prioritätsfeedback und automatischer Übergang (F-11 / F-12 / F-13)
+        .onChange(of: model.selectedPriority) { _, newPriority in
+            guard newPriority != nil, !feedbackTaskStarted else { return }
+            feedbackTaskStarted = true
+            Task { @MainActor in
+                // 1. Genau einmal bewerten.
+                guard let isCorrect = model.evaluatePriority() else {
+                    DebugManager.log(.state, "Prioritaetsbewertung war No-Op — Task beendet")
+                    return
+                }
+                // 2. Genau einen Sound abspielen.
+                audioService.play(isCorrect ? .correct : .incorrect)
+                // 3. Eingabe bleibt gesperrt; Szene steht (kein visuelles Feedback-Label).
+                // 4. Warten.
+                try? await Task.sleep(for: .seconds(FeedbackConstants.feedbackTransitionDelay))
+                // 5. Guard: Phase darf sich nicht unerwartet geändert haben.
+                guard model.currentPhase == .priorisieren else {
+                    DebugManager.log(.state, "Prioritaets-Task: Phase hat sich geaendert, kein Uebergang")
+                    return
+                }
+                // 6. In Teamphase wechseln.
+                model.beginTeamAssignmentPhase()
+                DebugManager.log(.state, "Prioritaets-Feedbacktask abgeschlossen → teamZuordnen")
             }
         }
     }

@@ -111,6 +111,8 @@ final class SessionModel {
         selectedPriority = nil
         selectedTeam = nil
         isInputLocked = false
+        priorityEvaluated = false
+        teamEvaluated = false
         DebugManager.log(.state, "Sitzung gestartet: \(count) Ticket(s), Phase: untersuchen")
     }
 
@@ -297,6 +299,152 @@ final class SessionModel {
         DebugManager.log(.state, "Team gespeichert: \(team.rawValue), isInputLocked=true")
     }
 
+    // MARK: - Bewertungsflags (Modul 010 — F-11 / genau-einmal-Semantik)
+
+    /// Gibt an, ob die Prioritätsentscheidung des aktuellen Tickets bereits bewertet wurde.
+    ///
+    /// Verhindert doppelte Punktevergabe bei mehrfachem View-Refresh, mehrfachem Task-Start
+    /// oder erneutem Aufruf der Bewertungsmethode.
+    private var priorityEvaluated: Bool = false
+
+    /// Gibt an, ob die Teamentscheidung des aktuellen Tickets bereits bewertet wurde.
+    private var teamEvaluated: Bool = false
+
+    // MARK: - Bewertung (Modul 010 — F-11)
+
+    /// Bewertet die gespeicherte Prioritätsentscheidung genau einmal.
+    ///
+    /// Vorbedingungen (alle müssen erfüllt sein, sonst No-Op → nil):
+    /// - `currentPhase == .priorisieren`
+    /// - `selectedPriority != nil`
+    /// - `currentTicket != nil`
+    /// - Priorität wurde für dieses Ticket noch nicht bewertet.
+    ///
+    /// Effekte bei Erfolg:
+    /// - Richtig: `score += 100`, `priorityEvaluated = true`.
+    /// - Falsch: keine Scoreänderung, `priorityEvaluated = true`.
+    ///
+    /// Kein negativer Punkt. Referenzwert darf diesen Scope nie als sichtbarer Text verlassen.
+    ///
+    /// - Returns: `true` wenn richtig, `false` wenn falsch, `nil` wenn No-Op.
+    @discardableResult
+    func evaluatePriority() -> Bool? {
+        guard currentPhase == .priorisieren else {
+            DebugManager.log(.state, "evaluatePriority ignoriert: Phase ist \(currentPhase), erwartet .priorisieren")
+            return nil
+        }
+        guard let priority = selectedPriority else {
+            DebugManager.log(.state, "evaluatePriority ignoriert: keine Prioritaet gespeichert")
+            return nil
+        }
+        guard let ticket = currentTicket else {
+            DebugManager.log(.state, "evaluatePriority ignoriert: kein aktives Ticket")
+            return nil
+        }
+        guard !priorityEvaluated else {
+            DebugManager.log(.state, "evaluatePriority ignoriert: bereits bewertet (genau-einmal-Semantik)")
+            return nil
+        }
+
+        let isCorrect = (priority == ticket.referencePriority)
+        if isCorrect {
+            score += FeedbackConstants.correctDecisionScore
+            DebugManager.log(.state, "Prioritaet korrekt → +\(FeedbackConstants.correctDecisionScore), Score: \(score)")
+        } else {
+            DebugManager.log(.state, "Prioritaet falsch → +0, Score: \(score)")
+        }
+        priorityEvaluated = true
+        return isCorrect
+    }
+
+    /// Bewertet die gespeicherte Teamentscheidung genau einmal.
+    ///
+    /// Vorbedingungen (alle müssen erfüllt sein, sonst No-Op → nil):
+    /// - `currentPhase == .teamZuordnen`
+    /// - `selectedTeam != nil`
+    /// - `currentTicket != nil`
+    /// - Team wurde für dieses Ticket noch nicht bewertet.
+    ///
+    /// Effekte bei Erfolg:
+    /// - Richtig: `score += 100`, `teamEvaluated = true`.
+    /// - Falsch: keine Scoreänderung, `teamEvaluated = true`.
+    ///
+    /// - Returns: `true` wenn richtig, `false` wenn falsch, `nil` wenn No-Op.
+    @discardableResult
+    func evaluateTeam() -> Bool? {
+        guard currentPhase == .teamZuordnen else {
+            DebugManager.log(.state, "evaluateTeam ignoriert: Phase ist \(currentPhase), erwartet .teamZuordnen")
+            return nil
+        }
+        guard let team = selectedTeam else {
+            DebugManager.log(.state, "evaluateTeam ignoriert: kein Team gespeichert")
+            return nil
+        }
+        guard let ticket = currentTicket else {
+            DebugManager.log(.state, "evaluateTeam ignoriert: kein aktives Ticket")
+            return nil
+        }
+        guard !teamEvaluated else {
+            DebugManager.log(.state, "evaluateTeam ignoriert: bereits bewertet (genau-einmal-Semantik)")
+            return nil
+        }
+
+        let isCorrect = (team == ticket.referenceTeam)
+        if isCorrect {
+            score += FeedbackConstants.correctDecisionScore
+            DebugManager.log(.state, "Team korrekt → +\(FeedbackConstants.correctDecisionScore), Score: \(score)")
+        } else {
+            DebugManager.log(.state, "Team falsch → +0, Score: \(score)")
+        }
+        teamEvaluated = true
+        return isCorrect
+    }
+
+    // MARK: - Ticket-Abschluss (Modul 010 — F-13)
+
+    /// Schließt das aktuelle Ticket nach dem Teamfeedback ab und wechselt kontrolliert
+    /// zum nächsten Ticket oder in die Ergebnisphase.
+    ///
+    /// Vorbedingung: `currentPhase == .teamZuordnen`.
+    /// Verstöße sind No-Op — kein Absturz, kein Zustandsbruch.
+    ///
+    /// Bei weiterem Ticket:
+    /// - `currentTicketIndex += 1`
+    /// - `selectedPriority = nil`, `selectedTeam = nil`
+    /// - Bewertungsflags zurückgesetzt
+    /// - `isInputLocked = false`
+    /// - `currentPhase = .untersuchen`
+    /// - `score` bleibt erhalten.
+    ///
+    /// Beim letzten Ticket:
+    /// - `currentPhase = .ergebnis`
+    /// - `isInputLocked = false`
+    /// - `score` bleibt erhalten (für Modul 011).
+    /// - Kein vollständiger Session-Reset.
+    func completeTicketAfterTeamFeedback() {
+        guard currentPhase == .teamZuordnen else {
+            DebugManager.log(.state, "completeTicketAfterTeamFeedback ignoriert: Phase ist \(currentPhase), erwartet .teamZuordnen")
+            return
+        }
+
+        let hasNextTicket = currentTicketIndex < sessionTickets.count - 1
+        if hasNextTicket {
+            currentTicketIndex += 1
+            selectedPriority = nil
+            selectedTeam = nil
+            priorityEvaluated = false
+            teamEvaluated = false
+            isInputLocked = false
+            currentPhase = .untersuchen
+            DebugManager.log(.state, "Ticket abgeschlossen → weiter zu Index \(currentTicketIndex), Phase: untersuchen, Score: \(score)")
+        } else {
+            // Letztes Ticket: kein Indexüberlauf, Phase → Ergebnis.
+            isInputLocked = false
+            currentPhase = .ergebnis
+            DebugManager.log(.state, "Letztes Ticket abgeschlossen → Phase: ergebnis, Score: \(score)")
+        }
+    }
+
     // MARK: - Reset
 
     /// Setzt den gesamten Modellzustand auf die definierten Startwerte zurück (SPEC F-16, AK-16 Modellanteil).
@@ -317,6 +465,8 @@ final class SessionModel {
         selectedPriority = nil
         selectedTeam = nil
         isInputLocked = false
+        priorityEvaluated = false
+        teamEvaluated = false
         DebugManager.log(.state, "Sitzungsmodell zurueckgesetzt auf Startwerte")
     }
 }

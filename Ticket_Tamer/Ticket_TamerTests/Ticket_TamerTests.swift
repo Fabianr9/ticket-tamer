@@ -959,19 +959,102 @@ struct PrioritizationPhaseTests {
         #expect(PriorityTargetMapping.priority(for: "") == nil)
     }
 
-    @Test("Zielabstände sind größer als 2 × dropTargetRadius (keine Überschneidung)")
-    func targetPositionsDoNotOverlap() {
+    // MARK: - Spaltenmodell der Priorisierungsphase
+
+    /// Die drei Prioritätsziele werden über `DropEvaluator.evaluateColumn` ausgewertet:
+    /// entscheidend ist allein die X-Abweichung. Sie müssen daher auf einer Höhe liegen
+    /// und sich in X eindeutig unterscheiden.
+    @Test("Prioritätsziele bilden eine Reihe mit eindeutigen X-Werten")
+    func priorityTargetsFormOneRow() {
         let targets = PriorityTargetMapping.allTargets
-        let radius = InteractionConstants.dropTargetRadius
-        for i in targets.indices {
-            for j in targets.indices where j > i {
-                let dist = simd_distance(targets[i].position, targets[j].position)
-                #expect(
-                    dist > 2 * radius,
-                    "Ziele '\(targets[i].id)' und '\(targets[j].id)' überschneiden sich (Abstand \(dist) ≤ \(2*radius))"
-                )
-            }
+        let xs = targets.map(\.position.x)
+        #expect(Set(xs).count == targets.count, "X-Werte sind nicht eindeutig")
+
+        for target in targets {
+            #expect(target.position.y == PrioritizationConstants.targetPositionWichtig.y)
+            #expect(target.position.z == PrioritizationConstants.targetPositionWichtig.z)
         }
+
+        // Entscheidungsgrenze liegt mittig zwischen benachbarten Spalten.
+        let sorted = xs.sorted()
+        for i in 1..<sorted.count {
+            let spacing = sorted[i] - sorted[i - 1]
+            #expect(
+                abs(spacing - PrioritizationConstants.targetColumnSpacing) < 0.0001,
+                "Spaltenabstand \(spacing) weicht von targetColumnSpacing ab"
+            )
+        }
+    }
+
+    /// Kern der Regression: zuvor war nur „Wichtig" erreichbar, weil die äußeren Ziele
+    /// 0.38 m entfernt lagen und die Radiusprüfung 0.23 m Drag-Strecke verlangt hätte.
+    @Test("Alle drei Prioritäten sind per Spaltenauswertung erreichbar")
+    func everyPriorityIsReachable() {
+        let origin = PrioritizationConstants.monsterStartPosition
+        let lift = PrioritizationConstants.minimumDropLift
+        let spacing = PrioritizationConstants.targetColumnSpacing
+        let targets = PriorityTargetMapping.allTargets.map {
+            DropEvaluator.TargetDescriptor(
+                id: $0.id,
+                position: $0.position,
+                radius: InteractionConstants.dropTargetRadius
+            )
+        }
+
+        // Knapp jenseits der jeweiligen Entscheidungsgrenze abgelegt, minimal angehoben.
+        let cases: [(x: Float, expected: String)] = [
+            (-spacing, "priority_normal"),
+            (-spacing * 0.6, "priority_normal"),
+            (0, "priority_wichtig"),
+            (spacing * 0.4, "priority_wichtig"),
+            (spacing * 0.6, "priority_kritisch"),
+            (spacing, "priority_kritisch"),
+        ]
+
+        for testCase in cases {
+            let dropped = SIMD3<Float>(testCase.x, origin.y + lift, origin.z)
+            let result = DropEvaluator.evaluateColumn(
+                entityPosition: dropped,
+                origin: origin,
+                targets: targets,
+                minimumLift: lift
+            )
+            #expect(result == testCase.expected, "x=\(testCase.x) ergab \(result ?? "nil")")
+        }
+    }
+
+    @Test("Ablage ohne ausreichende Aufwärtsbewegung ist ungültig")
+    func dropWithoutLiftIsInvalid() {
+        let origin = PrioritizationConstants.monsterStartPosition
+        let lift = PrioritizationConstants.minimumDropLift
+        let targets = PriorityTargetMapping.allTargets.map {
+            DropEvaluator.TargetDescriptor(
+                id: $0.id,
+                position: $0.position,
+                radius: InteractionConstants.dropTargetRadius
+            )
+        }
+
+        // Direkt an der Ausgangsposition losgelassen.
+        #expect(
+            DropEvaluator.evaluateColumn(
+                entityPosition: origin,
+                origin: origin,
+                targets: targets,
+                minimumLift: lift
+            ) == nil
+        )
+
+        // Nach unten gezogen und losgelassen.
+        let below = SIMD3<Float>(origin.x, origin.y - 0.1, origin.z)
+        #expect(
+            DropEvaluator.evaluateColumn(
+                entityPosition: below,
+                origin: origin,
+                targets: targets,
+                minimumLift: lift
+            ) == nil
+        )
     }
 
     @Test("PrioritizationConstants: monsterStartPosition ist erreichbar (y < targetPositionNormal.y)")
@@ -979,6 +1062,61 @@ struct PrioritizationPhaseTests {
         let monsterY = PrioritizationConstants.monsterStartPosition.y
         let targetY  = PrioritizationConstants.targetPositionNormal.y
         #expect(monsterY < targetY)
+    }
+
+    // MARK: - Layout-Fix: Trefferbereiche ohne sichtbare Geometrie
+
+    /// Regressionstest zum „orangenen Halbkreis": der Trefferradius ist eine großzügige
+    /// Toleranz und darf nie als Anzeigegröße dienen. In der Priorisierungsansicht gibt es
+    /// inzwischen gar keine sichtbare Zielgeometrie mehr — in der Teamansicht ist der
+    /// Sichtradius strikt kleiner als der Trefferradius.
+    @Test("Sichtradius der Zielkugel ist kleiner als der Trefferradius")
+    func visualRadiusIsSmallerThanHitRadius() {
+        #expect(InteractionConstants.dropTargetVisualRadius > 0)
+        #expect(InteractionConstants.dropTargetVisualRadius < InteractionConstants.dropTargetRadius)
+    }
+
+    @Test("Prioritätsziele liegen innerhalb des zentralen Volumes")
+    func priorityTargetsStayInsideVolume() {
+        let half = SIMD3<Float>(
+            Float(LayoutConstants.centralVolumeWidth / 2),
+            Float(LayoutConstants.centralVolumeHeight / 2),
+            Float(LayoutConstants.centralVolumeDepth / 2)
+        )
+        for target in PriorityTargetMapping.allTargets {
+            let p = target.position
+            #expect(abs(p.x) <= half.x, "\(target.id) liegt seitlich außerhalb des Volumes")
+            #expect(abs(p.y) <= half.y, "\(target.id) liegt oben/unten außerhalb des Volumes")
+            #expect(abs(p.z) <= half.z, "\(target.id) liegt in der Tiefe außerhalb des Volumes")
+        }
+    }
+
+    /// Das Monster soll deutlich sichtbar stehen und nicht im Boden versinken:
+    /// Modellmitte oberhalb des unteren Volume-Drittels, Modell vollständig im Volume.
+    @Test("Monster-Startposition liegt zentriert und vollständig im Volume")
+    func monsterStartPositionIsCenteredAndFullyVisible() {
+        let start = PrioritizationConstants.monsterStartPosition
+        let halfModel = LayoutConstants.monsterDragDropTargetSize / 2
+        let halfVolumeY = Float(LayoutConstants.centralVolumeHeight / 2)
+
+        #expect(start.x == 0, "Monster ist nicht horizontal zentriert")
+        #expect(abs(start.y) + halfModel <= halfVolumeY, "Monster ragt oben/unten aus dem Volume")
+        #expect(start.y > -halfVolumeY / 3, "Monster steht zu tief in der Szene")
+    }
+
+    /// AK-10: das Monster darf zu Beginn in keinem Zielbereich liegen, sonst würde
+    /// ein Drop ohne echte Bewegung bereits als gültig gewertet.
+    @Test("Monster-Startposition liegt außerhalb aller Prioritätsziele")
+    func monsterStartPositionIsOutsideEveryTarget() {
+        let start = PrioritizationConstants.monsterStartPosition
+        let targets = PriorityTargetMapping.allTargets.map {
+            DropEvaluator.TargetDescriptor(
+                id: $0.id,
+                position: $0.position,
+                radius: InteractionConstants.dropTargetRadius
+            )
+        }
+        #expect(DropEvaluator.evaluate(entityPosition: start, targets: targets) == nil)
     }
 }
 

@@ -54,6 +54,60 @@ enum DropEvaluator {
         return bestID
     }
 
+    // MARK: - Spaltenbasierte Auswertung (Ziele in einer horizontalen Reihe)
+
+    /// Wählt unter Zielen, die in einer Reihe nebeneinander liegen, dasjenige mit der
+    /// geringsten **X-Abweichung** — sofern die Entity gegenüber `origin` weit genug
+    /// angehoben wurde.
+    ///
+    /// **Warum zusätzlich zur radiusbasierten Prüfung:**
+    /// `evaluate(entityPosition:targets:)` verlangt, dass die Entity innerhalb eines
+    /// absoluten Radius um einen absoluten Meterwert landet. Wie weit sich eine Entity per
+    /// Drag überhaupt bewegen lässt, hängt aber von der tatsächlichen Fenster- und
+    /// Volumegröße ab und ist im Voraus nicht bekannt. Liegt ein Ziel außerhalb der
+    /// erreichbaren Fläche, kann es mit einer Radiusprüfung nie getroffen werden.
+    ///
+    /// Genau das war der Fehler in der Priorisierungsphase: das mittlere Ziel lag 0.21 m von
+    /// der Ausgangsposition entfernt und war ab 0.06 m Bewegung erreichbar, die äußeren
+    /// Ziele lagen 0.38 m entfernt und hätten 0.23 m Bewegung erfordert. Deshalb ließ sich
+    /// ausschließlich „Wichtig" zuweisen.
+    ///
+    /// Die Spaltenaufteilung ist gegenüber dieser Unbekannten robust: die erreichbare Fläche
+    /// wird implizit unter allen Zielen aufgeteilt, die Entscheidungsgrenze liegt jeweils
+    /// genau mittig zwischen zwei benachbarten Zielen. Alle Ziele sind damit gleichwertig —
+    /// gleiche Trefferqualität, gleiche Validierung, gleiche Zustandsaktualisierung.
+    ///
+    /// - Parameters:
+    ///   - entityPosition: Weltposition der abgelegten Entity.
+    ///   - origin: Ausgangsposition der Entity zu Beginn der Phase.
+    ///   - targets: Ziele der Reihe. `radius` wird hier bewusst nicht ausgewertet.
+    ///   - minimumLift: Mindesthöhe über `origin.y`, ab der eine Ablage als gewollt gilt.
+    /// - Returns: ID des gewählten Ziels, oder `nil` wenn die Entity nicht weit genug
+    ///   angehoben wurde. `nil` bedeutet ungültige Ablage (F-10 / AK-10): kein
+    ///   Zustandswechsel, Rückkehr zur Ausgangsposition.
+    static func evaluateColumn(
+        entityPosition: SIMD3<Float>,
+        origin: SIMD3<Float>,
+        targets: [TargetDescriptor],
+        minimumLift: Float
+    ) -> String? {
+        // Ungültige Ablage: die Entity wurde nicht spürbar in Richtung der Zielreihe bewegt.
+        guard entityPosition.y - origin.y >= minimumLift else { return nil }
+
+        var bestID: String?
+        var bestDistance = Float.infinity
+
+        for target in targets {
+            let distance = abs(entityPosition.x - target.position.x)
+            if distance < bestDistance {
+                bestDistance = distance
+                bestID = target.id
+            }
+        }
+
+        return bestID
+    }
+
     // MARK: - Entity-Convenience (für Gesture-Handler)
 
     /// Prüft, ob `entity` in einem der als `DropTargetComponent` markierten Ziele liegt.

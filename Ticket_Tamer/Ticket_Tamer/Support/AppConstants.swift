@@ -156,6 +156,47 @@ enum LayoutConstants {
     /// Untere Schwelle, ab der ein `visualBounds`-Ergebnis als brauchbar gilt.
     static let monsterMinimumUsableExtent: Float = 0.0001
 
+    // MARK: - Monster in den Drag-Drop-Phasen
+
+    /// Groesste Kantenlaenge des eingepassten Monsters in Prioritaets- und Teamphase (Meter).
+    ///
+    /// Ersetzt den festen Faktor `monsterScaleDragDrop`: die vier Blender-Exporte haben
+    /// unterschiedliche Rohmasse, ein konstanter Faktor ergibt daher je Asset eine andere
+    /// physische Groesse. Ueber `visualBounds` gemessen ist die Groesse assetunabhaengig.
+    ///
+    /// Bewusst kleiner als `InteractionConstants.monsterCollisionRadius × 2`, damit die
+    /// Greifsphaere das Modell sicher umschliesst.
+    static let monsterDragDropTargetSize: Float = 0.13
+
+    // MARK: - Ziel-Labels (Priorisierung / Teamzuordnung)
+
+    /// Abstand zwischen den Ziel-Labels in der Kopfzeile.
+    static let targetLabelRowSpacing = 8.0
+
+    /// Aussenabstand der Label-Zeile nach oben.
+    static let targetLabelTopPadding = 16.0
+
+    /// Seitlicher Aussenabstand der Label-Zeile.
+    static let targetLabelRowHorizontalPadding = 16.0
+
+    /// Horizontaler Innenabstand eines Ziel-Labels.
+    static let targetLabelHorizontalPadding = 14.0
+
+    /// Vertikaler Innenabstand eines Ziel-Labels.
+    static let targetLabelVerticalPadding = 8.0
+
+    /// Eckenradius eines Ziel-Labels.
+    static let targetLabelCornerRadius = 12.0
+
+    /// Deckkraft der Label-Hintergrundflaeche.
+    static let targetLabelBackgroundOpacity = 0.75
+
+    /// Untere Schriftskalierung eines Ziel-Labels.
+    ///
+    /// Zusammen mit `lineLimit(1)` verhindert dies die Silbentrennung
+    /// („Nor-mal", „Wich-tig", „Kri-tisch") bei schmalen Spalten.
+    static let targetLabelMinimumScaleFactor = 0.6
+
     /// Skalierungsfaktor fuer den Monster-Entity in den Drag-Drop-Phasen (Priorisierung / Team).
     ///
     /// Kleiner als `monsterScale`, damit der Entity vollständig im Volume sichtbar bleibt
@@ -193,7 +234,19 @@ enum InteractionConstants {
     // MARK: - Drop-Zielbereich
 
     /// Standard-Trefferradius eines generischen Drop-Ziels in Metern.
+    ///
+    /// Rein logischer Toleranzradius für `DropEvaluator` — bewusst großzügig, damit
+    /// Ablegen per Blick und Pinch zuverlässig gelingt. **Nicht** für sichtbare Geometrie
+    /// verwenden.
     static let dropTargetRadius: Float = 0.15
+
+    /// Radius der **sichtbaren** Zielkugel in Metern.
+    ///
+    /// Deutlich kleiner als `dropTargetRadius`. Zuvor wurde der Trefferradius direkt als
+    /// Mesh-Radius verwendet: 0.15 m ergibt Kugeln von 30 cm Durchmesser, die einander und
+    /// die Volume-Grenzen schneiden. Sichtbar war davon nur ein angeschnittener Bogen —
+    /// der „orangene Halbkreis". Trefferlogik und Zielabstände bleiben unverändert.
+    static let dropTargetVisualRadius: Float = 0.05
 
     // MARK: - Rückkehr-Animation
 
@@ -206,29 +259,57 @@ enum PrioritizationConstants {
 
     // MARK: - Monster-Startposition
 
-    /// Startposition des Monsters — unterhalb der drei Ziele, von allen drei erreichbar.
-    static let monsterStartPosition = SIMD3<Float>(0, -0.12, 0)
+    /// Startposition des Monsters — horizontal zentriert, knapp unterhalb der Volume-Mitte.
+    ///
+    /// Y bewusst nahe 0 statt im unteren Drittel: tiefer wirkte das Modell im Passthrough,
+    /// als versinke es in Tisch oder Boden. Bei einer Modellgröße von
+    /// `monsterDragDropTargetSize` (0.13 m) bleibt oben wie unten reichlich Luft
+    /// (Modell reicht von y ≈ -0.085 bis 0.045 bei Volume-Grenzen ±0.3).
+    ///
+    /// Leicht nach vorne versetzt (+Z), damit das Modell klar vor der Zielebene steht.
+    /// Abstand zu allen drei Zielen > `InteractionConstants.dropTargetRadius`, das Monster
+    /// liegt also zu Beginn in keinem Zielbereich (AK-10).
+    static let monsterStartPosition = SIMD3<Float>(0, -0.02, 0.06)
 
     // MARK: - Label-Offset
 
     /// Y-Offset des SwiftUI-Label-Attachments relativ zur Zielentity (oberhalb der Zielkugel).
     static let labelYOffset: Float = 0.20
 
+    // MARK: - Ablage-Schwellen (Spaltenmodell)
+
+    /// Mindest-Aufwärtsbewegung gegenüber der Startposition, ab der eine Ablage als
+    /// gewollt gilt (Meter).
+    ///
+    /// Unterhalb dieser Schwelle wertet `DropEvaluator.evaluateColumn` die Ablage als
+    /// ungültig: kein Zustandswechsel, das Monster kehrt zurück (F-10 / AK-10).
+    static let minimumDropLift: Float = 0.04
+
+    /// Horizontaler Abstand zwischen zwei benachbarten Zielspalten (Meter).
+    ///
+    /// Die Entscheidungsgrenze zwischen zwei Zielen liegt genau mittig, also bei
+    /// `targetColumnSpacing / 2` = 0.10 m. So viel muss seitlich bewegt werden, um von
+    /// „Wichtig" zu „Normal" bzw. „Kritisch" zu wechseln.
+    static let targetColumnSpacing: Float = 0.20
+
     // MARK: - Zielpositionen
+    //
+    // Die drei Ziele sind reine Trefferbereiche ohne sichtbare Geometrie; sichtbare
+    // Orientierung geben die Labels Normal / Wichtig / Kritisch am oberen Rand.
+    //
+    // Ausgewertet wird über `DropEvaluator.evaluateColumn`: entscheidend ist allein, welcher
+    // Ziel-X-Wert dem abgelegten Monster am nächsten liegt. Der frühere Abstand von 0.32 m
+    // stammte aus der radiusbasierten Auswertung und war per Drag nicht erreichbar —
+    // deshalb ließ sich nur „Wichtig" (x = 0, direkt über der Startposition) zuweisen.
 
     /// Position von Ziel „Normal" (links).
-    ///
-    /// Abstand zu „Wichtig": 0.32 m > 2 × `InteractionConstants.dropTargetRadius` (0.30 m).
-    /// Zielbereiche überschneiden sich nicht.
-    static let targetPositionNormal   = SIMD3<Float>(-0.32, 0.10, 0)
+    static let targetPositionNormal   = SIMD3<Float>(-targetColumnSpacing, 0.18, 0)
 
     /// Position von Ziel „Wichtig" (Mitte).
-    static let targetPositionWichtig  = SIMD3<Float>( 0.00, 0.10, 0)
+    static let targetPositionWichtig  = SIMD3<Float>( 0.00, 0.18, 0)
 
     /// Position von Ziel „Kritisch" (rechts).
-    ///
-    /// Abstand zu „Wichtig": 0.32 m > 2 × `InteractionConstants.dropTargetRadius`.
-    static let targetPositionKritisch = SIMD3<Float>( 0.32, 0.10, 0)
+    static let targetPositionKritisch = SIMD3<Float>( targetColumnSpacing, 0.18, 0)
 }
 
 /// Maße und Positionen für die Teamzuordnungsphase (Modul 009 — F-09 / AK-09).

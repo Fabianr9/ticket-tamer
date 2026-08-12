@@ -183,15 +183,23 @@ struct TeamAssignmentView: View {
     // MARK: - Label-Subview
 
     /// Sichtbares deutsches Label für eine Teamstation.
+    ///
+    /// `lineLimit(1)` + `minimumScaleFactor` verhindern Silbentrennung in schmalen Spalten.
     @ViewBuilder
     private func teamLabel(for team: SupportTeam) -> some View {
         Text(team.displayName)
-            .font(.title2)
+            .font(.title3)
             .fontWeight(.semibold)
             .foregroundStyle(.white)
-            .padding(.horizontal, 18)
-            .padding(.vertical, 10)
-            .background(labelColor(for: team).opacity(0.75), in: RoundedRectangle(cornerRadius: 12))
+            .lineLimit(1)
+            .minimumScaleFactor(LayoutConstants.targetLabelMinimumScaleFactor)
+            .allowsTightening(true)
+            .padding(.horizontal, LayoutConstants.targetLabelHorizontalPadding)
+            .padding(.vertical, LayoutConstants.targetLabelVerticalPadding)
+            .background(
+                labelColor(for: team).opacity(LayoutConstants.targetLabelBackgroundOpacity),
+                in: RoundedRectangle(cornerRadius: LayoutConstants.targetLabelCornerRadius)
+            )
             .frame(maxWidth: .infinity)
     }
 
@@ -225,7 +233,9 @@ struct TeamAssignmentView: View {
             )
 
             // Sichtbare Zielkugel mit Teamfarbe (neutral, kein Bewertungssignal).
-            let mesh = MeshResource.generateSphere(radius: InteractionConstants.dropTargetRadius)
+            // `dropTargetVisualRadius` statt `dropTargetRadius` — siehe Konstantendoku:
+            // der Trefferradius ist eine Toleranz, keine Anzeigegröße. Trefferlogik unverändert.
+            let mesh = MeshResource.generateSphere(radius: InteractionConstants.dropTargetVisualRadius)
             var material = SimpleMaterial()
             material.color = .init(tint: uiColor(for: targetDef.team).withAlphaComponent(0.50))
             let indicator = ModelEntity(mesh: mesh, materials: [material])
@@ -244,7 +254,8 @@ struct TeamAssignmentView: View {
 
         do {
             let entity = try await MonsterAssetProvider.loadMonster(assetID: ticket.monsterAssetId)
-            entity.scale = SIMD3(repeating: LayoutConstants.monsterScaleDragDrop)
+            // Größe aus den tatsächlichen Modellmaßen ableiten statt aus einem festen Faktor.
+            MonsterAssetProvider.fit(entity, toMaxExtent: LayoutConstants.monsterDragDropTargetSize)
             entity.position = TeamAssignmentConstants.monsterStartPosition
             originTransform = entity.transform
             MonsterInteractionConfigurator.configure(entity, mode: .dragDrop)

@@ -135,6 +135,41 @@ enum MonsterAssetProvider {
         return wrapper
     }
 
+    // MARK: - Einpassung (Framing)
+
+    /// Skaliert `entity` proportional, bis ihre größte sichtbare Ausdehnung `maxExtent` Meter beträgt.
+    ///
+    /// Grund für die Messung statt eines festen Faktors: die vier Blender-Exporte besitzen
+    /// unterschiedliche Rohmaße. Ein konstanter `scale` ergibt deshalb je Asset eine andere
+    /// physische Größe — ein Monster passt, ein anderes ragt über die sichtbaren Grenzen
+    /// hinaus und wird beschnitten. Über `visualBounds` gemessen ist die Endgröße
+    /// assetunabhängig und damit vorhersagbar.
+    ///
+    /// Ein einziger Faktor für X, Y und Z ⇒ keine Streckung, keine Verzerrung.
+    ///
+    /// `relativeTo: entity` schließt die eigene Skalierung der Entity aus. Die Funktion ist
+    /// dadurch idempotent und darf bei jedem Layoutdurchlauf erneut aufgerufen werden.
+    ///
+    /// - Parameters:
+    ///   - entity: Die einzupassende Entity, üblicherweise der Wrapper aus `loadMonster(assetID:)`.
+    ///   - maxExtent: Gewünschte größte Kantenlänge in Metern.
+    /// - Returns: Die tatsächlichen Ausdehnungen nach der Einpassung in Metern.
+    @discardableResult
+    static func fit(_ entity: Entity, toMaxExtent maxExtent: Float) -> SIMD3<Float> {
+        let extents = entity.visualBounds(recursive: true, relativeTo: entity).extents
+        let largestExtent = max(extents.x, max(extents.y, extents.z))
+
+        guard largestExtent > LayoutConstants.monsterMinimumUsableExtent, maxExtent > 0 else {
+            DebugManager.log(.spawning, "VisualBounds unbrauchbar — Einpassung uebersprungen")
+            return extents * entity.scale.x
+        }
+
+        let scale = maxExtent / largestExtent
+        entity.scale = SIMD3<Float>(repeating: scale)
+        DebugManager.log(.spawning, "Eingepasst: extents=\(extents), scale=\(scale), ziel=\(maxExtent)")
+        return extents * scale
+    }
+
     // MARK: - Dateiname-Mapping (intern)
 
     /// Zuordnung von neutralen Asset-IDs auf tatsächliche USDC-Dateinamen.

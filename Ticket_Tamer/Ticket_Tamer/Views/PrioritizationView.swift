@@ -75,6 +75,11 @@ struct PrioritizationView: View {
     /// Lokale Audio-Kapselung — kein globaler Service-Locator.
     @State private var audioService = AudioService()
 
+    /// Letzte Drop-Auswertung als Klartext — nur für die DEBUG-Anzeige.
+    ///
+    /// Macht die tatsächlich erreichbare Drag-Strecke messbar, statt sie zu schätzen.
+    @State private var lastDropSummary: String? = nil
+
     // MARK: - Body
 
     var body: some View {
@@ -106,13 +111,13 @@ struct PrioritizationView: View {
             // Deutsche Labels für die drei Prioritätsziele.
             // Als ZStack-Overlay — zuverlässig ohne Attachment-API.
             // Visuell mit den drei Zielkugeln ausgerichtet (links / Mitte / rechts).
-            HStack(spacing: 12) {
+            HStack(spacing: LayoutConstants.targetLabelRowSpacing) {
                 ForEach(PriorityTargetMapping.allTargets, id: \.id) { target in
                     priorityLabel(target.priority.displayName, priority: target.priority)
                 }
             }
-            .padding(.top, 20)
-            .padding(.horizontal, 20)
+            .padding(.top, LayoutConstants.targetLabelTopPadding)
+            .padding(.horizontal, LayoutConstants.targetLabelRowHorizontalPadding)
 
             // DEBUG-Einstieg in die Teamphase — nur für Entwicklung/Simulator-Prüfung.
             // Nicht im Release-Build, nicht als F-09-Nutzerfunktion (AK-09).
@@ -129,6 +134,21 @@ struct PrioritizationView: View {
                     .padding(8)
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
                     .padding(.bottom, 12)
+                }
+            }
+
+            // Messwerte der letzten Ablage — macht die tatsächlich erreichbare Drag-Strecke
+            // sichtbar. Nur DEBUG, keine Nutzerfunktion.
+            if let summary = lastDropSummary {
+                VStack {
+                    Spacer()
+                    Text(summary)
+                        .font(.caption2)
+                        .monospaced()
+                        .foregroundStyle(.secondary)
+                        .padding(6)
+                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 6))
+                        .padding(.bottom, 48)
                 }
             }
             #endif
@@ -194,15 +214,25 @@ struct PrioritizationView: View {
     // MARK: - Label-Subview
 
     /// Sichtbares deutsches Label für ein Prioritätsziel.
+    ///
+    /// `lineLimit(1)` + `minimumScaleFactor` verhindern die Silbentrennung („Nor-mal",
+    /// „Wich-tig", „Kri-tisch"), die in schmalen Spalten entstand: statt umzubrechen,
+    /// verkleinert sich die Schrift.
     @ViewBuilder
     private func priorityLabel(_ text: String, priority: TicketPriority) -> some View {
         Text(text)
-            .font(.title2)
+            .font(.title3)
             .fontWeight(.semibold)
             .foregroundStyle(.white)
-            .padding(.horizontal, 18)
-            .padding(.vertical, 10)
-            .background(labelColor(for: priority).opacity(0.7), in: RoundedRectangle(cornerRadius: 12))
+            .lineLimit(1)
+            .minimumScaleFactor(LayoutConstants.targetLabelMinimumScaleFactor)
+            .allowsTightening(true)
+            .padding(.horizontal, LayoutConstants.targetLabelHorizontalPadding)
+            .padding(.vertical, LayoutConstants.targetLabelVerticalPadding)
+            .background(
+                labelColor(for: priority).opacity(LayoutConstants.targetLabelBackgroundOpacity),
+                in: RoundedRectangle(cornerRadius: LayoutConstants.targetLabelCornerRadius)
+            )
             .frame(maxWidth: .infinity)
     }
 
@@ -232,13 +262,17 @@ struct PrioritizationView: View {
                 )
             )
 
-            // Sichtbare Zielkugel mit Prioritätsfarbe.
-            let mesh = MeshResource.generateSphere(radius: InteractionConstants.dropTargetRadius)
-            var material = SimpleMaterial()
-            material.color = .init(tint: uiColor(for: targetDef.priority).withAlphaComponent(0.55))
-            let indicator = ModelEntity(mesh: mesh, materials: [material])
-            entity.addChild(indicator)
-
+            // Bewusst KEINE sichtbare Zielkugel.
+            //
+            // Hier hing zuvor ein `ModelEntity` mit `MeshResource.generateSphere(...)` und
+            // halbtransparentem `SimpleMaterial` in Prioritätsfarbe. Genau dieses Element war
+            // der „orangene Halbkreis" unter „Wichtig": eine durchscheinende Kugel, die von den
+            // Volume-Grenzen angeschnitten wurde. Die seitlichen Kugeln (grün/rot) lagen so weit
+            // außen, dass sie ganz weggeschnitten wurden — sichtbar blieb nur die mittlere.
+            //
+            // Die drei Ziele bleiben als reine Trefferbereiche bestehen: `DropTargetComponent`
+            // ist unverändert gesetzt, `DropEvaluator` arbeitet rein positionsbasiert. Sichtbare
+            // Orientierung geben ausschließlich die drei Labels Normal / Wichtig / Kritisch.
             targetEntities.append(entity)
             DebugManager.log(.spawning, "Prioritaetsziel bereit: \(targetDef.id) an \(targetDef.position)")
         }
@@ -252,7 +286,9 @@ struct PrioritizationView: View {
 
         do {
             let entity = try await MonsterAssetProvider.loadMonster(assetID: ticket.monsterAssetId)
-            entity.scale = SIMD3(repeating: LayoutConstants.monsterScaleDragDrop)
+            // Größe aus den tatsächlichen Modellmaßen ableiten statt aus einem festen Faktor —
+            // sonst ist die physische Größe je Blender-Export unterschiedlich.
+            MonsterAssetProvider.fit(entity, toMaxExtent: LayoutConstants.monsterDragDropTargetSize)
             entity.position = PrioritizationConstants.monsterStartPosition
             originTransform = entity.transform
             MonsterInteractionConfigurator.configure(entity, mode: .dragDrop)
@@ -264,14 +300,9 @@ struct PrioritizationView: View {
         }
     }
 
-    /// UIColor-Pendant für SimpleMaterial (je Priorität).
-    private func uiColor(for priority: TicketPriority) -> UIColor {
-        switch priority {
-        case .normal:   return .systemGreen
-        case .wichtig:  return .systemOrange
-        case .kritisch: return .systemRed
-        }
-    }
+    // Hinweis: `uiColor(for:)` ist entfallen. Die Funktion lieferte ausschließlich den
+    // Tint für das `SimpleMaterial` der entfernten Zielkugeln und wird nicht mehr benötigt.
+    // Die sichtbaren Prioritätsfarben kommen aus `labelColor(for:)`.
 
     // MARK: - Gesture-Handler
 
@@ -297,12 +328,51 @@ struct PrioritizationView: View {
         }
         guard let entity = monsterEntity, value.entity === entity else { return }
 
-        let targets: [(entity: Entity, component: DropTargetComponent)] = targetEntities.compactMap { e in
+        // Spaltenbasierte Auswertung statt Radiusprüfung.
+        //
+        // Vorher entschied `DropEvaluator.evaluate(entity:targets:)` über einen absoluten
+        // Radius um absolute Meterpositionen. Die tatsächlich per Drag erreichbare Strecke
+        // hängt aber von der Fenster-/Volumegröße ab: „Wichtig" lag 0.21 m entfernt (ab
+        // 0.06 m Bewegung erreichbar), „Normal" und „Kritisch" 0.38 m (0.23 m Bewegung
+        // nötig). Deshalb ließ sich ausschließlich „Wichtig" zuweisen, alles andere fiel in
+        // den Ungültig-Zweig und sprang zurück.
+        //
+        // `evaluateColumn` teilt den erreichbaren Bereich stattdessen unter den drei Zielen
+        // auf: es gewinnt das Ziel mit der geringsten X-Abweichung. Alle drei Prioritäten
+        // sind damit gleichwertig erreichbar.
+        let descriptors: [DropEvaluator.TargetDescriptor] = targetEntities.compactMap { e in
             guard let comp = e.components[DropTargetComponent.self] else { return nil }
-            return (entity: e, component: comp)
+            return DropEvaluator.TargetDescriptor(
+                id: comp.id,
+                position: e.position(relativeTo: nil),
+                radius: comp.radius
+            )
         }
 
-        if let hitID = DropEvaluator.evaluate(entity: entity, targets: targets) {
+        let origin = originTransform?.translation ?? PrioritizationConstants.monsterStartPosition
+        let dropped = entity.position(relativeTo: nil)
+
+        DebugManager.log(
+            .physics,
+            "Drop bei \(dropped), Start \(origin), Anhebung \(dropped.y - origin.y)"
+        )
+
+        #if DEBUG
+        lastDropSummary = String(
+            format: "x %.3f  Δy %.3f  (Grenze ±%.2f / Lift %.2f)",
+            dropped.x,
+            dropped.y - origin.y,
+            PrioritizationConstants.targetColumnSpacing / 2,
+            PrioritizationConstants.minimumDropLift
+        )
+        #endif
+
+        if let hitID = DropEvaluator.evaluateColumn(
+            entityPosition: dropped,
+            origin: origin,
+            targets: descriptors,
+            minimumLift: PrioritizationConstants.minimumDropLift
+        ) {
             DebugManager.log(.physics, "Gueltiger Drop: Ziel=\(hitID)")
             if let priority = PriorityTargetMapping.priority(for: hitID) {
                 model.savePriority(priority)

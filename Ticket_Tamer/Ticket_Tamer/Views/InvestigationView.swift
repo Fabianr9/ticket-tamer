@@ -156,30 +156,20 @@ struct InvestigationView: View {
     /// und wurde von der `RealityView` beschnitten.
     ///
     /// Vorgehen:
-    /// 1. Rohmaße über `visualBounds` messen (ohne die eigene Transformation der Entity).
-    /// 2. Verfügbaren Quader aus Panelbreite, Panelhöhe und `monsterPanelDepth` bilden,
+    /// 1. Verfügbaren Quader aus Panelbreite, Panelhöhe und `monsterPanelDepth` bilden,
     ///    abzüglich `monsterFramingInset` als Sicherheitsrand zu allen Begrenzungen.
-    /// 3. Die *größte* Modellausdehnung auf die *kleinste* Quaderkante abbilden.
+    /// 2. Die *größte* Modellausdehnung auf die *kleinste* Quaderkante abbilden —
+    ///    erledigt `MonsterAssetProvider.fit(_:toMaxExtent:)` über `visualBounds`.
     ///    Ein einziger Faktor für X, Y und Z ⇒ keine Streckung, keine Verzerrung.
-    /// 4. Modell mittig setzen und so weit nach vorne schieben, wie die Tiefe es zulässt.
+    /// 3. Modell mittig setzen und so weit nach vorne schieben, wie die Tiefe es zulässt.
     private func fitMonster(_ entity: Entity, into availableSize: CGSize) {
-        // 1. Rohmaße. `relativeTo: entity` schließt die eigene Skalierung aus und ist
-        //    damit unabhängig davon, ob bereits eingepasst wurde (idempotent).
-        let extents = entity.visualBounds(recursive: true, relativeTo: entity).extents
-        let largestExtent = max(extents.x, max(extents.y, extents.z))
-
-        guard largestExtent > LayoutConstants.monsterMinimumUsableExtent else {
-            DebugManager.log(.spawning, "VisualBounds unbrauchbar — Einpassung uebersprungen")
-            return
-        }
-
-        // 2. Verfügbarer Quader in Metern, abzüglich Sicherheitsrand.
+        // 1. Verfügbarer Quader in Metern, abzüglich Sicherheitsrand.
         let inset = 1 - LayoutConstants.monsterFramingInset
         let widthMeters = Float(availableSize.width / LayoutConstants.pointsPerMeter) * inset
         let heightMeters = Float(availableSize.height / LayoutConstants.pointsPerMeter) * inset
         let depthMeters = Float(LayoutConstants.monsterPanelDepth) * inset
 
-        // 3. Kleinste Kante begrenzt; zusätzlich durch die gewünschte Zielgröße gedeckelt.
+        // Kleinste Kante begrenzt; zusätzlich durch die gewünschte Zielgröße gedeckelt.
         let limit = min(
             min(widthMeters, heightMeters),
             min(depthMeters, LayoutConstants.monsterTargetSize)
@@ -187,20 +177,16 @@ struct InvestigationView: View {
 
         guard limit > 0 else { return }
 
-        let scale = limit / largestExtent
-        entity.scale = SIMD3<Float>(repeating: scale)
+        // 2. Proportional einpassen (idempotent — misst ohne die eigene Skalierung).
+        let fittedExtents = MonsterAssetProvider.fit(entity, toMaxExtent: limit)
 
-        // 4. Zentrieren und so weit nach vorne schieben, wie die halbe Tiefe abzüglich
+        // 3. Zentrieren und so weit nach vorne schieben, wie die halbe Tiefe abzüglich
         //    der halben Modelltiefe es erlaubt — sonst würde das Modell vorne anstoßen.
-        let fittedDepth = extents.z * scale
-        let maxForward = max((depthMeters - fittedDepth) / 2, 0)
+        let maxForward = max((depthMeters - fittedExtents.z) / 2, 0)
         let forward = min(LayoutConstants.monsterForwardOffset, maxForward)
         entity.position = SIMD3<Float>(0, 0, forward)
 
-        DebugManager.log(
-            .spawning,
-            "Monster eingepasst: extents=\(extents), scale=\(scale), z=\(forward)"
-        )
+        DebugManager.log(.spawning, "Monster-Panel: limit=\(limit), z=\(forward)")
     }
 
     // MARK: - Monster laden

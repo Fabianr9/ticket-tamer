@@ -43,11 +43,78 @@ enum LayoutConstants {
     /// Aussenabstand der Untersuchungsansicht.
     static let investigationPadding = 16.0
 
-    /// Innenabstand der Ticketkarte.
-    static let investigationCardPadding = 14.0
-
-    /// Zeilenabstand innerhalb der Ticketkarte.
+    /// Zeilenabstand innerhalb der Statusanzeigen des Monster-Panels.
     static let investigationCardSpacing = 8.0
+
+    /// Anteil der verfuegbaren Breite, den die Ticketkarte erhaelt (Rest: Monster-Panel).
+    ///
+    /// Die Aufteilung erfolgt bewusst mit expliziten Breiten statt mit `maxWidth: .infinity`,
+    /// weil die `RealityView` des Monster-Panels keine intrinsische Groesse besitzt und die
+    /// flexible Verteilung dadurch zu einer zu schmalen, "laenglichen" Ticketkarte fuehrte.
+    static let investigationCardWidthFraction = 0.55
+
+    // MARK: - Ticketkarte: Fit-to-Space (Design-Canvas)
+
+    /// Breite der festen Design-Canvas der Ticketkarte in Punkten.
+    ///
+    /// Die Karte wird immer in dieser Groesse gelayoutet und anschliessend gleichmaessig
+    /// (aspect-ratio-treu) in den verfuegbaren Bereich eingepasst. Dadurch bleibt das
+    /// Seitenverhaeltnis unabhaengig von der Fenstergroesse konstant.
+    static let ticketCardDesignWidth = 460.0
+
+    /// Hoehe der festen Design-Canvas der Ticketkarte in Punkten.
+    ///
+    /// Bemessen am laengsten Ticket des lokalen Katalogs (Titel 45, Kurzbeschreibung 76,
+    /// User Impact 85 Zeichen, drei Symptome à max. 55 Zeichen) inklusive Reserve, damit
+    /// ohne Scrollen nichts abgeschnitten wird. Kalkulierter Bedarf: ca. 556 pt.
+    static let ticketCardDesignHeight = 620.0
+
+    /// Untere Grenze des gleichmaessigen Skalierungsfaktors der Ticketkarte.
+    ///
+    /// Verhindert, dass die Karte bei sehr kleinen Fenstern unleserlich wird.
+    static let ticketCardMinScale = 0.45
+
+    /// Obere Grenze des gleichmaessigen Skalierungsfaktors der Ticketkarte.
+    ///
+    /// Erlaubt massvolles Vergroessern, damit die Karte grosse Volumes ausfuellt,
+    /// ohne dass hochskalierter Text sichtbar weich wird.
+    static let ticketCardMaxScale = 1.4
+
+    /// Eckenradius der Ticketkarte auf der Design-Canvas.
+    static let ticketCardCornerRadius = 28.0
+
+    /// Innenabstand der Ticketkarte auf der Design-Canvas.
+    static let ticketCardPadding = 24.0
+
+    /// Vertikaler Abstand zwischen den Informationsbloecken der Ticketkarte.
+    static let ticketCardSectionSpacing = 14.0
+
+    /// Vertikaler Abstand zwischen Beschriftung und Wert innerhalb eines Blocks.
+    static let ticketCardLabelSpacing = 4.0
+
+    /// Vertikaler Abstand zwischen den einzelnen Symptomzeilen.
+    static let ticketCardSymptomSpacing = 6.0
+
+    /// Horizontaler Innenabstand des Ticketnummer-Badges.
+    static let ticketCardBadgeHorizontalPadding = 10.0
+
+    /// Vertikaler Innenabstand des Ticketnummer-Badges.
+    static let ticketCardBadgeVerticalPadding = 4.0
+
+    /// Deckkraft der Badge-Hintergrundflaeche.
+    static let ticketCardBadgeBackgroundOpacity = 0.15
+
+    /// Zusaetzlicher Sicherheitsfaktor fuer Text, der die kalkulierte Zeilenzahl ueberschreitet.
+    static let ticketCardTextMinimumScaleFactor = 0.8
+
+    /// Maximale Zeilenzahl des Tickettitels auf der Design-Canvas.
+    static let ticketCardTitleLineLimit = 2
+
+    /// Maximale Zeilenzahl von Kurzbeschreibung und User Impact.
+    static let ticketCardBodyLineLimit = 4
+
+    /// Maximale Zeilenzahl einer Symptomzeile.
+    static let ticketCardSymptomLineLimit = 3
 
     /// Skalierungsfaktor fuer den Monster-Entity in der Untersuchungsansicht (statische Anzeige).
     static let monsterScale: Float = 0.2

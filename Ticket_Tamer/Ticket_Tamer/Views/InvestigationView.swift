@@ -8,6 +8,9 @@ import SwiftUI
 /// Datenquelle ist ausschließlich `SessionModel.currentTicket`.
 /// Referenzpriorität und Referenzteam werden in dieser Phase nicht angezeigt.
 /// Die Schaltfläche „Weiter zur Priorisierung" löst `SessionModel.beginPrioritizationPhase()` aus.
+///
+/// Die Ticketkarte (`TicketCardView`) ist scrollfrei und wird über `ScaledToFitView`
+/// gleichmäßig in den verfügbaren Bereich eingepasst — vollständig sichtbar, ohne Verzerrung.
 struct InvestigationView: View {
 
     // MARK: - Environment
@@ -50,15 +53,36 @@ struct InvestigationView: View {
 
     // MARK: - Hauptinhalt
 
+    /// Teilt den verfuegbaren Bereich explizit zwischen Monster-Panel und Ticketkarte auf.
+    ///
+    /// Bewusst mit `GeometryReader` und festen Breitenanteilen statt mit `maxWidth: .infinity`:
+    /// die `RealityView` des Monster-Panels besitzt keine intrinsische Groesse, wodurch die
+    /// flexible Verteilung der Ticketkarte zu wenig Breite liess und sie „laenglich" wirkte.
     @ViewBuilder
     private func mainContent(ticket: Ticket) -> some View {
-        HStack(alignment: .top, spacing: LayoutConstants.investigationSpacing) {
-            monsterPanel
-                .frame(maxWidth: .infinity)
+        GeometryReader { proxy in
+            let contentWidth = max(proxy.size.width - CGFloat(LayoutConstants.investigationSpacing), 0)
+            let cardWidth = contentWidth * CGFloat(LayoutConstants.investigationCardWidthFraction)
+            let monsterWidth = contentWidth - cardWidth
 
-            ticketCard(ticket: ticket)
-                .frame(maxWidth: .infinity)
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+            HStack(alignment: .center, spacing: LayoutConstants.investigationSpacing) {
+                monsterPanel
+                    .frame(width: monsterWidth, height: proxy.size.height)
+
+                // Fit-to-Space: feste Design-Canvas, gleichmaessig in den Bereich eingepasst.
+                ScaledToFitView(
+                    designSize: CGSize(
+                        width: LayoutConstants.ticketCardDesignWidth,
+                        height: LayoutConstants.ticketCardDesignHeight
+                    )
+                ) {
+                    TicketCardView(ticket: ticket) {
+                        DebugManager.log(.input, "Weiter zur Priorisierung ausgeloest: \(ticket.ticketNumber)")
+                        model.beginPrioritizationPhase()
+                    }
+                }
+                .frame(width: cardWidth, height: proxy.size.height)
+            }
         }
         .padding(LayoutConstants.investigationPadding)
     }
@@ -95,82 +119,6 @@ struct InvestigationView: View {
             // Initialer Zustand vor erstem Laden (kurze Lücke zwischen Erscheinen und Task-Start)
             Color.clear
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-    }
-
-    // MARK: - Ticketkarte
-
-    @ViewBuilder
-    private func ticketCard(ticket: Ticket) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Scrollbarer Inhalt: Ticketdetails
-            ScrollView {
-                VStack(alignment: .leading, spacing: LayoutConstants.investigationCardSpacing) {
-
-                    // Ticketnummer-Badge
-                    Text(ticket.ticketNumber)
-                        .font(.caption2)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(.secondary.opacity(0.15), in: Capsule())
-                        .accessibilityLabel(Text("investigation.ticketNumber.label") + Text(ticket.ticketNumber))
-
-                    // Titel
-                    Text(ticket.title)
-                        .font(.title3)
-                        .bold()
-
-                    Divider()
-
-                    // Kurzbeschreibung
-                    Text(ticket.shortDescription)
-                        .font(.callout)
-
-                    // Auswirkung
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("investigation.userImpact.label")
-                            .font(.subheadline)
-                            .bold()
-                        Text(ticket.userImpact)
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    // Symptome / Hinweise
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("investigation.symptoms.label")
-                            .font(.subheadline)
-                            .bold()
-                        ForEach(Array(ticket.symptoms.enumerated()), id: \.offset) { _, symptom in
-                            Label {
-                                Text(symptom)
-                                    .font(.callout)
-                            } icon: {
-                                Image(systemName: "circle.fill")
-                                    .imageScale(.small)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-                }
-                .padding(LayoutConstants.investigationCardPadding)
-            }
-
-            Divider()
-                .padding(.horizontal, LayoutConstants.investigationCardPadding)
-
-            // Schaltfläche: immer sichtbar, außerhalb des Scroll-Bereichs (F-07 / AK-07)
-            Button {
-                DebugManager.log(.input, "Weiter zur Priorisierung ausgeloest: \(ticket.ticketNumber)")
-                model.beginPrioritizationPhase()
-            } label: {
-                Text("investigation.button.nextPhase")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            .padding(LayoutConstants.investigationCardPadding)
         }
     }
 

@@ -1634,4 +1634,195 @@ struct ScoringAndFeedbackTests {
     func soundNamesAreDistinct() {
         #expect(FeedbackConstants.correctSoundName != FeedbackConstants.incorrectSoundName)
     }
+
+    // MARK: - 141–155: Ergebnis und Neustart (Modul 011 — F-15 / F-16 / AK-15 / AK-16)
+
+    /// Hilfsmethode: Sitzung mit einem Ticket vollständig durchspielen → Phase .ergebnis.
+    @MainActor
+    private func modelInErgebnisPhase() -> SessionModel {
+        let model = SessionModel()
+        model.setTicketCount(1)
+        model.startSession(using: { $0 })
+        model.beginPrioritizationPhase()
+        model.savePriority(model.currentTicket!.referencePriority)
+        model.evaluatePriority()
+        model.beginTeamAssignmentPhase()
+        model.saveTeam(model.currentTicket!.referenceTeam)
+        model.evaluateTeam()
+        model.completeTicketAfterTeamFeedback()
+        return model
+    }
+
+    @Test("Ergebnisphase behält finalen Score")
+    @MainActor
+    func ergebnisPhaseBehältsScore() {
+        let model = modelInErgebnisPhase()
+        #expect(model.currentPhase == .ergebnis)
+        #expect(model.score == 200) // 1 Ticket, beide richtig → max 200
+    }
+
+    @Test("Reset aus Ergebnis wechselt zu .start")
+    @MainActor
+    func resetAusErgebnisGehtZuStart() {
+        let model = modelInErgebnisPhase()
+        model.reset()
+        #expect(model.currentPhase == .start)
+    }
+
+    @Test("Reset setzt Ticketanzahl auf 6")
+    @MainActor
+    func resetSetsTicketCountToSix() {
+        let model = modelInErgebnisPhase()
+        model.setTicketCount(3)
+        model.reset()
+        #expect(model.selectedTicketCount == GameplayConstants.defaultTicketCount)
+        #expect(model.selectedTicketCount == 6)
+    }
+
+    @Test("Reset leert sessionTickets")
+    @MainActor
+    func resetClearsSessionTickets() {
+        let model = modelInErgebnisPhase()
+        model.reset()
+        #expect(model.sessionTickets.isEmpty)
+    }
+
+    @Test("Reset setzt currentTicketIndex auf 0")
+    @MainActor
+    func resetSetsIndexToZero() {
+        let model = modelInErgebnisPhase()
+        model.reset()
+        #expect(model.currentTicketIndex == 0)
+    }
+
+    @Test("Reset setzt Score auf 0")
+    @MainActor
+    func resetSetsScoreToZero() {
+        let model = modelInErgebnisPhase()
+        #expect(model.score > 0)
+        model.reset()
+        #expect(model.score == 0)
+    }
+
+    @Test("Reset setzt selectedPriority auf nil")
+    @MainActor
+    func resetClearsPriority() {
+        let model = modelInPrioPhase()
+        model.savePriority(.normal)
+        model.reset()
+        #expect(model.selectedPriority == nil)
+    }
+
+    @Test("Reset setzt selectedTeam auf nil")
+    @MainActor
+    func resetClearsTeam() {
+        let model = modelInTeamPhase()
+        model.saveTeam(.netzwerk)
+        model.reset()
+        #expect(model.selectedTeam == nil)
+    }
+
+    @Test("Reset setzt isInputLocked auf false")
+    @MainActor
+    func resetUnlocksInput() {
+        let model = modelInPrioPhase()
+        model.savePriority(.normal) // sperrt Input
+        model.reset()
+        #expect(model.isInputLocked == false)
+    }
+
+    @Test("Reset löscht priorityEvaluated indirekt: erneute Bewertung ohne Score möglich")
+    @MainActor
+    func resetClearsPriorityEvaluatedFlag() {
+        let model = modelInPrioPhase()
+        model.savePriority(model.currentTicket!.referencePriority)
+        model.evaluatePriority()
+        let scoreNachErster = model.score
+        #expect(scoreNachErster == 100)
+        // Reset
+        model.reset()
+        // Neue Sitzung starten und Priorität erneut bewerten
+        model.startSession(using: { $0 })
+        model.beginPrioritizationPhase()
+        model.savePriority(model.currentTicket!.referencePriority)
+        model.evaluatePriority()
+        #expect(model.score == 100) // frische Bewertung, kein Carryover
+    }
+
+    @Test("Reset löscht teamEvaluated indirekt: erneute Bewertung ohne Doppelpunkte")
+    @MainActor
+    func resetClearsTeamEvaluatedFlag() {
+        let model = modelInTeamPhase()
+        model.saveTeam(model.currentTicket!.referenceTeam)
+        model.evaluateTeam()
+        let scoreNachErster = model.score
+        #expect(scoreNachErster >= 100)
+        // Reset
+        model.reset()
+        // Neue Sitzung, nur Team bewerten
+        model.startSession(using: { $0 })
+        model.beginPrioritizationPhase()
+        model.savePriority(model.currentTicket!.referencePriority)
+        model.evaluatePriority()
+        model.beginTeamAssignmentPhase()
+        model.saveTeam(model.currentTicket!.referenceTeam)
+        model.evaluateTeam()
+        #expect(model.score == 200) // frisch, kein Doppelscore
+    }
+
+    @Test("Fünf aufeinanderfolgende Resets bleiben stabil")
+    @MainActor
+    func fiveConsecutiveResetsAreStable() {
+        let model = SessionModel()
+        for _ in 1...5 {
+            model.setTicketCount(1)
+            model.startSession(using: { $0 })
+            model.beginPrioritizationPhase()
+            model.savePriority(model.currentTicket!.referencePriority)
+            model.evaluatePriority()
+            model.beginTeamAssignmentPhase()
+            model.saveTeam(model.currentTicket!.referenceTeam)
+            model.evaluateTeam()
+            model.completeTicketAfterTeamFeedback()
+            #expect(model.currentPhase == .ergebnis)
+            model.reset()
+            #expect(model.currentPhase == .start)
+            #expect(model.score == 0)
+            #expect(model.selectedTicketCount == 6)
+            #expect(model.sessionTickets.isEmpty)
+        }
+    }
+
+    @Test("Nach Reset kann neue Sitzung korrekt gestartet werden")
+    @MainActor
+    func afterResetNewSessionStartsCorrectly() {
+        let model = modelInErgebnisPhase()
+        model.reset()
+        model.startSession(using: { $0 })
+        #expect(model.currentPhase == .untersuchen)
+        #expect(model.sessionTickets.count == GameplayConstants.defaultTicketCount)
+    }
+
+    @Test("Neue Sitzung nach Reset übernimmt keine alten Punkte")
+    @MainActor
+    func newSessionAfterResetHasNoCarryoverScore() {
+        let model = modelInErgebnisPhase()
+        let altScore = model.score
+        #expect(altScore > 0)
+        model.reset()
+        model.startSession(using: { $0 })
+        #expect(model.score == 0)
+    }
+
+    @Test("Neue Sitzung nach Reset übernimmt keine alten Entscheidungen")
+    @MainActor
+    func newSessionAfterResetHasNoCarryoverDecisions() {
+        let model = modelInTeamPhase()
+        model.savePriority(.normal) // würde fehlschlagen (Phase), deshalb direkt Team
+        model.saveTeam(.netzwerk)
+        model.reset()
+        model.startSession(using: { $0 })
+        #expect(model.selectedPriority == nil)
+        #expect(model.selectedTeam == nil)
+    }
 }

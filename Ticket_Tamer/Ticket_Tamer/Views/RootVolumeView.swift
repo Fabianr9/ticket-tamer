@@ -39,6 +39,9 @@ struct RootVolumeView: View {
             // Modul 009: Teamzuordnungsansicht (F-09 / AK-09).
             // Normaler Einstieg: über SessionModel.beginTeamAssignmentPhase() (Modul 010 / F-13).
             TeamAssignmentView()
+        case .ergebnis:
+            // Modul 011: Ergebnisansicht (F-15 / AK-15) mit Reset (F-16 / AK-16).
+            ResultView()
         default:
             // Neutraler Platzhalter für Phasen, die in späteren Modulen implementiert werden.
             // Die vorhandene RealityKit-Standardszene bleibt als räumliches Element erhalten.

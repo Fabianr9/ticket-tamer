@@ -1,15 +1,15 @@
 # Projekt-Stand — Ticket Tamer
 
-> Aktueller technischer Stand nach Modul 010.
+> Aktueller technischer Stand nach Modul 011.
 
-**Stand:** nach Modul `010` — Bewertung und Audiofeedback  
+**Stand:** nach Modul `011` — Ergebnis und Neustart  
 **Eingearbeitet am:** 2026-08-12  
 **Branch laut Report:** `main`  
-**009-Commit:** `0c38caf feat:Modul009`  
 **010-Commit:** `0ab0ef7 010: Bewertung und Audiofeedback`  
-**Build nach 010:** offen  
-**Simulator nach 010:** offen  
-**Testdeklarationen:** 140  
+**011-Commit:** `011: Ergebnis und Neustart` (Hash nach manuellem Commit eintragen)  
+**Build nach 011:** offen  
+**Simulator nach 011:** offen  
+**Testdeklarationen:** 155  
 **Vollständiger Testlauf:** offen
 
 ## Aktueller Funktionsstand
@@ -32,12 +32,13 @@ Vorhanden:
 - 1,5-Sekunden-Auto-Transition
 - Wechsel zum nächsten Ticket
 - Wechsel nach letztem Ticket in `.ergebnis`
+- **Ergebnisansicht mit Score und „Erneut spielen"**
+- **vollständiger Reset-Zyklus**
 
 Noch nicht vorhanden:
 
-- finale Ergebnisansicht
-- „Erneut spielen“-UI
 - finale eigene Blender-Monster
+- finale Sounddateien (nur Sinuston-Platzhalter)
 
 ## Relevanter Dateibaum
 
@@ -73,6 +74,7 @@ Ticket_Tamer/
 │  │  │  └─ DebugInteractionHarnessView.swift
 │  │  ├─ InvestigationView.swift
 │  │  ├─ PrioritizationView.swift
+│  │  ├─ ResultView.swift          ← neu seit Modul 011
 │  │  ├─ RootVolumeView.swift
 │  │  ├─ StartView.swift
 │  │  └─ TeamAssignmentView.swift
@@ -104,11 +106,36 @@ RootVolumeView
 │  └─ PrioritizationView
 ├─ .teamZuordnen
 │  └─ TeamAssignmentView
-└─ .ergebnis
-   └─ derzeit neutraler Platzhalter
+├─ .ergebnis
+│  └─ ResultView          ← seit Modul 011 aktiv
+└─ default
+   └─ sessionPlaceholderView
 ```
 
-## Modul-010-Schnittstellen
+## Ergebnisansicht (Modul 011)
+
+Sichtbar ausschließlich:
+- `SessionModel.score` als Zahl
+- Schaltfläche „Erneut spielen" → `model.reset()`
+
+Nicht sichtbar: Ticketanzahl, Maximalpunktzahl, Detailstatistik, Lösungen, Badges, Rangliste.
+
+## `reset()`-Semantik (vollständig)
+
+| Feld | Wert nach Reset |
+|---|---|
+| `selectedTicketCount` | `6` |
+| `sessionTickets` | `[]` |
+| `currentTicketIndex` | `0` |
+| `currentPhase` | `.start` |
+| `score` | `0` |
+| `selectedPriority` | `nil` |
+| `selectedTeam` | `nil` |
+| `isInputLocked` | `false` |
+| `priorityEvaluated` | `false` |
+| `teamEvaluated` | `false` |
+
+## Modul-010-Schnittstellen (weiterhin aktiv)
 
 ### `SessionModel.evaluatePriority() -> Bool?`
 
@@ -146,7 +173,7 @@ Intern:
 - `priorityEvaluated`
 - `teamEvaluated`
 
-Sie verhindern doppelte Punkte und werden beim Ticketwechsel, Sitzungsstart und Reset zurückgesetzt.
+Werden beim Ticketwechsel, Sitzungsstart und Reset zurückgesetzt.
 
 ## Punkte
 
@@ -173,12 +200,7 @@ Status:
 
 ### Service
 
-`Services/AudioService.swift`
-
-Verwendet laut Report:
-
-- AVFoundation
-- `AVAudioPlayer`
+`Services/AudioService.swift` — AVFoundation / `AVAudioPlayer`
 
 ## Feedback-Flow
 
@@ -200,6 +222,7 @@ saveTeam
 → Sound
 → 1.5 s
 → completeTicketAfterTeamFeedback
+→ .ergebnis (letztes Ticket) oder .untersuchen (nächstes Ticket)
 ```
 
 ## Scope-Regel
@@ -209,7 +232,7 @@ Die richtige Lösung wird nie angezeigt.
 Nicht vorhanden:
 
 - Lösungs-Overlay
-- „Richtig wäre …“
+- „Richtig wäre …"
 - sichtbares richtiges Team
 - Richtig-/Falsch-Text
 - Punkt-Popup
@@ -219,31 +242,10 @@ Nicht vorhanden:
 | Bereich | Stand |
 |---|---|
 | Tests vor 010 | 110 |
-| neue Tests | 30 |
-| Tests nach 010 | 140 |
+| neue Tests Modul 010 | 30 |
+| neue Tests Modul 011 | 15 |
+| Tests nach 011 | **155** |
 | vollständiger Lauf | offen |
-
-## Für Modul 011 relevant
-
-Vorhanden:
-
-- `GamePhase.ergebnis`
-- `SessionModel.score`
-- `SessionModel.reset()`
-- `GameplayConstants.defaultTicketCount == 6`
-
-Ergebnisansicht darf sichtbar ausschließlich enthalten:
-
-- Scorezahl
-- „Erneut spielen“
-
-Nicht sichtbar verwenden:
-
-- `sessionTickets.count`
-- `currentTicketIndex`
-- Maximalpunktzahl
-- Detailstatistik
-- richtige Lösungen
 
 ## Monster-Status
 
@@ -251,10 +253,10 @@ Vier USDA-Platzhalter vorhanden. Finale Blender-Monster fehlen.
 
 ## Offene Punkte
 
-- Build nach 010
-- vollständiger 140-Testlauf
+- Build nach 011
+- vollständiger 155-Testlauf
 - Audiohörbarkeit
-- Gesten-End-to-End
+- Gesten-End-to-End im Simulator
 - finale Sounds optional ersetzen
 - finale Blender-Monster
 - `.DS_Store`-Bereinigung

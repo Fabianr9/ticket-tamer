@@ -1,154 +1,145 @@
 # Projektlogbuch — Ticket Tamer
 
-> Einziger aktueller Logbuch-Stand nach Einarbeitung von Modul 012.
-
-**Stand:** nach Modul `012` — Optionale Monsterreaktion bewusst ausgelassen  
+**Stand:** Modul `013` — Integration und Gerätetest **teilweise abgeschlossen; Pflichtabnahmen offen**  
 **Eingearbeitet am:** 2026-08-12  
-**Branch laut 012-Report:** `main`  
-**Aktueller Commit laut Report:** `b94e0ed feat: add docs modul 11`  
-**Modul-011-Commit bestätigt:** `209aff2 feat:Modul011`  
-**Modul-012-Commit:** keiner, da keine Codeänderung  
-**Working Tree laut Report:** sauber  
-**Build nach Modul 011/012:** offen  
-**Simulatorstand:** offen  
-**Vollständiger Testlauf:** offen  
-**Testdeklarationen:** 155
+**Branch laut 013-Report:** `main`  
+**Commit vor Modul 013:** `b94e0ed feat: add docs modul 11`  
+**Modul-011-Commit:** `209aff2 feat:Modul011`  
+**Modul-012:** bewusst ohne Codeänderung ausgelassen  
+**Modul-013-Commit:** noch offen  
+**Testdeklarationen:** 155  
+**Vollständiger Testlauf:** nicht ausgeführt
 
 ## Modulstatus
 
 | Modul | Titel | Status |
 |---|---|---|
-| 001 | Projektgrundgerüst und zentrales Volume | technisch abgeschlossen |
-| 002 | Ticketdatenmodell und lokaler Katalog | implementiert |
-| 003 | Sitzungsmodell und Zufallsauswahl | implementiert |
-| 004 | Startansicht und Einstellungen | implementiert |
-| 005 | Monster-Asset-Pipeline | teilweise abgeschlossen; finale Blender-Monster fehlen |
-| 006 | Untersuchungsphase | implementiert |
-| 007 | Räumliche Interaktionsgrundlagen | implementiert; Laufzeitabnahme offen |
-| 008 | Priorisierungsphase | implementiert; Gestenabnahme offen |
-| 009 | Teamzuordnungsphase | implementiert; Laufzeitabnahme offen |
-| 010 | Bewertung und Audiofeedback | implementiert; Audio-/End-to-End-Abnahme offen |
-| 011 | Ergebnis und Neustart | implementiert; Laufzeitabnahme offen |
-| 012 | Optionale Monsterreaktion | **bewusst ausgelassen** |
-| 013 | Integration und Gerätetest | als Nächstes |
-| 014 | Abschlussdokumentation/Cleanup | offen |
+| 001–011 | Pflicht-Featuremodule | implementiert |
+| 005 | Monster-Asset-Pipeline | durch 013 technisch auf echte USDC-Monster aktualisiert |
+| 012 | Optionale Monsterreaktion | bewusst ausgelassen |
+| 013 | Integration und Gerätetest | **teilweise abgeschlossen** |
+| 014 | Abschlussdokumentation und Cleanup | als Nächstes, mit hartem Abnahme-Gate |
 
-## Entscheidung Modul 012
+## Eingearbeiteter Stand Modul 013
 
-F-17 / AK-17 wird nicht implementiert.
+### Finale Monsterintegration
 
-Begründung laut 012-Report:
+Vier echte USDC-Monster wurden lokal in RealityKitContent integriert:
 
-- weiterhin keine finalen Blender-Monster vorhanden
-- nur vier USDA-Kugel-Platzhalter
-- keine Gesichter, Morph Targets oder Animationen
-- mehrere Pflicht-Abnahmen sind noch offen
-- Muss-Anforderungen haben Vorrang vor optionalem Featureumfang
+| Asset-ID | integrierte Datei |
+|---|---|
+| `monster01` | `Monster_1_blue.usdc` |
+| `monster02` | `Monster_2_green.usdc` |
+| `monster03` | `Monster_3_yellow.usdc` |
+| `monster04` | `Monster_4_red.usdc` |
 
-Diese Entscheidung ist korrekt und ändert den Pflichtumfang nicht.
+Die Wrapper `monster01.usda` bis `monster04.usda` referenzieren nun diese Dateien. Das Ticket-Mapping blieb unverändert. Die Farbwahl codiert laut Report weder Team noch Priorität.
 
-## F-17 korrekt eingeordnet
+### F-14 / AK-14
 
-F-17 bedeutet ausschließlich eine optionale Monsterreaktion.
+Der Report bezeichnet die Dateien als Blender-USDC-Exporte. Im geprüften Monster-Ordner liegen jedoch keine `.blend`-Quelldateien.
 
-Nicht Bestandteil von F-17:
+Belegt:
+- vier unterschiedliche RealityKit-kompatible Monsterassets integriert
+- Kugel-Platzhalter technisch ersetzt
+- lokale Darstellung in Priorisierung und Team laut Simulatorbericht bestätigt
 
-- Highscore
-- Persistenz
-- Statistik
-- Rangliste
-- zusätzliche Punkte
-- neue Spielmechanik
+Noch offen:
+- eindeutiger Nachweis „eigene Blender-Monster“
+- `.blend`-Quelldateien oder gleichwertiger Eigentums-/Source-Nachweis
+- Blick/Pinch/Drag mit allen vier echten Meshes
+- vollständige Skalierungs-/Orientierungsprüfung aller vier
 
-## Code-/Dateistand
+**F-14 / AK-14 bleibt deshalb OPEN.**
 
-Modul 012 hat:
+### Integrationsfix 1 — Z-up → Y-up
 
-- keine Dateien geändert
-- keine neuen Schnittstellen erzeugt
-- keine DebugManager-Kategorie ergänzt
-- keinen Git-Commit erzeugt
+`MonsterAssetProvider` wurde laut Report so angepasst, dass die Blender-USDC-Orientierung nach dem Laden für RealityKit korrigiert wird. Gemeldete Wirkung: Monster liegen nicht mehr flach.
 
-Der technische Projektstand aus Modul 011 bleibt daher unverändert.
+### Integrationsfix 2 — RealityView Dependency Tracking
 
-## Offene Muss-Themen vor Modul 013
+Geändert:
+- `PrioritizationView.swift`
+- `TeamAssignmentView.swift`
 
-### Build / Tests
+Gemeldete Wirkung:
+- direkte State-Reads im RealityView-Update
+- zuverlässiger Re-Render nach asynchronem Monsterload
+- ProgressView während Ladezustand
+- echte Monster erscheinen in Priorisierungs- und Teamansicht
 
-- [ ] Build nach Modul 011 bestätigen
-- [ ] vollständigen Lauf aller 155 Tests durchführen
-- [ ] bestandene/fehlgeschlagene Tests dokumentieren
+## Build / Simulator / Tests
 
-### Simulator / End-to-End
+Laut Report:
+- Build in Xcode erfolgreich
+- visionOS-26.5-Simulator verwendet
+- echte Monster in Priorisierung und Team sichtbar
+- `correct.wav` hörbar
 
-- [ ] Startansicht
-- [ ] Untersuchung
-- [ ] Priorisierung
-- [ ] Teamzuordnung
-- [ ] Audiofeedback
-- [ ] 1,5-Sekunden-Transitions
-- [ ] Ergebnisansicht
-- [ ] Neustart
-- [ ] fünf aufeinanderfolgende Resets
+Offen:
+- vollständiger 155-Test-Lauf
+- Untersuchung AK-06/07
+- Gesten-End-to-End
+- `incorrect.wav`
+- fünf Neustarts
+- Apple-Vision-Pro-Gerätetest
 
-### Gesten
+Die Zahl 155 ist ein Deklarationsstand, kein bestandener Testnachweis.
 
-- [ ] Blickfokus
-- [ ] Pinch
-- [ ] Drag
-- [ ] gültiger Drop Priorität
-- [ ] ungültiger Drop Priorität
-- [ ] gültiger Drop Team
-- [ ] ungültiger Drop Team
-- [ ] Input-Lock nach gültigem Drop
+## Korrigierte Pflicht-Abnahmematrix
 
-### Audio
+Die Feature-/AK-Zuordnung des 013-Reports enthält Abweichungen von SPEC/Akzeptanzkriterien. Maßgeblich bleibt die ursprüngliche Projektzuordnung.
 
-- [ ] `correct.wav` hörbar
-- [ ] `incorrect.wav` hörbar
-- [ ] genau ein Sound pro Entscheidung
-- [ ] keine doppelte Wiedergabe
-- [ ] falls nötig AVAudioSession prüfen
+| AK | Verbindlicher Inhalt | Stand |
+|---|---|---|
+| AK-01 | Startansicht / Regler / Start | PASS (Simulator berichtet) |
+| AK-02 | genau 12 lokale Tickets / 4×3-Abdeckung | PASS (Quellstand) |
+| AK-03 | vollständige Ticketdaten | PASS (Quellstand) |
+| AK-04 | Sitzungsauswahl ohne Wiederholung | PASS (Modell/Simulator berichtet) |
+| AK-05 | vollständiger linearer Ablauf in genau einem Volume | **OPEN** |
+| AK-06 | Untersuchungsansicht | **OPEN** |
+| AK-07 | Weiter zur Priorisierung | **OPEN** |
+| AK-08 | Prioritäts-Drag auf alle drei Ziele | **OPEN** |
+| AK-09 | Team-Drag auf alle vier Stationen | **OPEN** |
+| AK-10 | gültig/ungültig, Lock, genau-einmal | **OPEN** |
+| AK-11 | Scoring +100/0 | **OPEN** |
+| AK-12 | beide Sounds korrekt und genau einmal | **OPEN** |
+| AK-13 | keine Lösung + ca. 1,5-s-Übergang | PASS (Simulator berichtet) |
+| AK-14 | vier eigene Blender-Monster, lokal, bewegbar, neutral | **OPEN** |
+| AK-15 | nur Scorezahl + „Erneut spielen“ | PASS (Simulator berichtet) |
+| AK-16 | vollständiger Reset, mindestens 5 Neustarts stabil | **OPEN** |
 
-### Assets
+## Noch offene Pflichtprüfungen
 
-- [ ] vier finale Blender-Monster fehlen weiterhin
-- [ ] finale USDZ-/RealityKit-kompatible Exporte
-- [ ] Skalierung/Orientierung
-- [ ] lokale Darstellung
-- [ ] Lizenz-/Urheberdokumentation
+- vollständige 155 Tests
+- AK-06/07
+- alle Prioritäts- und Teamgesten
+- Invalid-Drop / Lock / Mehrfach-Pinch
+- Scoringfälle 200/100/100/0
+- `incorrect.wav` und genau-einmal-Audio
+- 5 Neustarts
+- 1-/2-/6-/12-Ticket-End-to-End
+- eigener Blender-Source-/Ownership-Nachweis
+- alle vier echten Monster mit Gesten
+- Apple Vision Pro
 
-### Ergebnis / Reset
+## Modul-013-Commit
 
-- [ ] ResultView real sichtbar
-- [ ] nur Scorezahl + „Erneut spielen“
-- [ ] Regler nach Reset wieder 6
-- [ ] keine alten Punkte/Entscheidungen
-- [ ] 1-/2-/6-Ticket-End-to-End
+Vorgesehene Nachricht:
 
-### Gerät
+`013: Integration und Gerätetest`
 
-- [ ] Apple Vision Pro Testfenster
-- [ ] mindestens ein realer Gerätetest
-- [ ] Gesten und Audio auf Gerät
-- [ ] Lesbarkeit und Volumenlayout
-
-## Bewertung nach Modul 012
-
-- Pflicht-Spielzyklus ist auf Codeebene geschlossen.
-- Optionales F-17 bleibt bewusst offen.
-- Der größte noch nicht erfüllte Pflichtblock ist nicht Feature-Code, sondern Integration, Verifikation und finale Monster-Assets.
+Hash noch nicht bekannt. Nicht als committed behandeln, bis ein echter Hash vorliegt.
 
 ## Entscheidungslog — neu
 
-- Modul 012 wird bewusst ausgelassen.
-- Kein leerer Feature-Commit wird erzeugt.
-- Finale Blender-Monster und Pflichtabnahmen haben Vorrang.
-- Direkt Modul 013 starten.
-- F-17 kann später nur bei ausreichendem Puffer nachgezogen werden.
+- Echte USDC-Monster ersetzen technisch die Kugel-Platzhalter.
+- Z-up/Y-up-Korrektur und RealityView-State-Fix werden als Integrationsfixes übernommen.
+- Ein AK wird nur PASS, wenn alle geforderten Teilaspekte nachgewiesen sind.
+- Unvollständige Gesten-/Audio-/Reset-/Assetnachweise bleiben OPEN.
+- Modul 014 darf offene AKs nicht durch Dokumentation „schließen“.
+- F-17 bleibt ausgelassen.
 
 ## Nächster Schritt
 
-`013-Eingangsprompt.md` ausführen.
-
-Modul 013 ist kein neues Feature-Modul. Es dient der vollständigen Integration und Abnahme aller Pflichtanforderungen F-01 bis F-16 sowie der realen Simulator-/Geräteprüfung.
+`014-Eingangsprompt.md` ausführen. Modul 014 erstellt die konsistente Abschlussdokumentation und bereinigt das Projekt. Vor einem finalen „abgabebereit“ müssen offene Nachweise entweder mit realer Evidenz geschlossen oder sichtbar als OPEN/Risiko stehen bleiben.

@@ -1,114 +1,156 @@
 # Projekt-Stand — Ticket Tamer
 
-> Aktueller technischer Stand nach Modul 013.
-
-**Stand:** Code Stand Modul `011`; Modul `012` ohne Codeänderung übersprungen; Modul `013` Asset-Fix  
+**Stand:** Modul 013 technisch integriert, Abnahme teilweise offen  
 **Eingearbeitet am:** 2026-08-12  
-**Branch laut Report:** `main`  
-**Letzter Commit vor 013:** `b94e0ed feat: add docs modul 11`  
-**Modul-013-Commit:** offen (nach manuellem Build + Test vergeben)  
-**Testdeklarationen:** 155 (vollständiger Lauf manuell offen)
+**Branch:** `main`  
+**Commit vor 013:** `b94e0ed feat: add docs modul 11`  
+**Modul-011-Commit:** `209aff2 feat:Modul011`  
+**Modul-013-Commit:** offen  
+**Testdeklarationen:** 155  
+**Vollständiger Testlauf:** offen
 
 ## Technischer Funktionsstand
 
-Auf Codeebene vorhanden:
+Vorhanden:
 
-- genau ein zentrales volumetrisches Fenster
-- deutsche Startansicht
-- Ticketanzahl 1–12, Standard 6
-- zwölf lokale Tickets
-- zentrales `SessionModel`
+- zentraler visionOS-Volume-Flow
+- Startansicht
+- 12 lokale Tickets
+- Sitzungsmodell
 - Untersuchungsphase
 - Priorisierungsphase
-- Teamzuordnungsphase
+- Teamzuordnung
 - Drag-/Drop-Grundlage
-- Prioritäts- und Teamspeicherung
-- +100/0-Bewertung
-- zwei lokale Audio-Platzhalter
-- 1,5-Sekunden-Auto-Transition
-- nächstes Ticket / Ergebnisphase
+- Scoring
+- Audiofeedback
+- Auto-Transition
 - Ergebnisansicht
-- vollständiger Reset
+- Reset
+- vier echte USDC-Monster im RealityKitContent-Bundle
 
-## Modul 012
-
-Nicht implementiert.
-
-Grund:
-
-- keine finalen Blender-Monster (zum Zeitpunkt von Modul 012)
-- nur USDA-Kugel-Platzhalter
-- optionale Reaktion technisch nicht sinnvoll
-- Muss-Abnahmen haben Vorrang
-
-## Modul 013 — Asset-Fix + RealityView-Fix
-
-Durchgeführt:
-
-- `Monster_1_blue.usdc` → `monster01.usda` (Platzhalter ersetzt)
-- `Monster_2_green.usdc` → `monster02.usda` (Platzhalter ersetzt)
-- `Monster_3_yellow.usdc` → `monster03.usda` (Platzhalter ersetzt)
-- `Monster_4_red.usdc` → `monster04.usda` (Platzhalter ersetzt)
-- Blender Z-up → Y-up Korrektur (`applyBlenderCorrection`) in `MonsterAssetProvider`
-- RealityView `update:`-Closure in `PrioritizationView` und `TeamAssignmentView` auf direkte State-Reads umgestellt (SwiftUI Dependency-Tracking Fix)
-- `addEntitiesIfNeeded` aus beiden Views entfernt (war indirekte Lesebremse)
-- `ProgressView`-Ladeindikator in beiden Views ergänzt (erzwingt Body-Read auf `monsterEntity`)
-
-Noch offen (manuell):
-
-- Build-Verifikation in Xcode
-- Vollständige Testsuite (155 Tests)
-- Simulator-Abnahme aller AK-01 bis AK-16
-- Apple Vision Pro Gerätetest
-
-## Root-Phasenrouting
+## Relevante neue/geänderte Dateien aus Modul 013
 
 ```text
-RootVolumeView
-├─ .start
-│  └─ StartView
-├─ .untersuchen
-│  └─ InvestigationView
-├─ .priorisieren
-│  └─ PrioritizationView
-├─ .teamZuordnen
-│  └─ TeamAssignmentView
-└─ .ergebnis
-   └─ ResultView
+Ticket_Tamer/
+├─ Ticket_Tamer/
+│  ├─ Assets/
+│  │  └─ MonsterAssetProvider.swift
+│  ├─ Views/
+│  │  ├─ PrioritizationView.swift
+│  │  └─ TeamAssignmentView.swift
+│  └─ ...
+└─ Packages/
+   └─ RealityKitContent/
+      └─ Sources/RealityKitContent/
+         └─ RealityKitContent.rkassets/
+            ├─ Monster_1_blue.usdc
+            ├─ Monster_2_green.usdc
+            ├─ Monster_3_yellow.usdc
+            ├─ Monster_4_red.usdc
+            ├─ monster01.usda
+            ├─ monster02.usda
+            ├─ monster03.usda
+            └─ monster04.usda
 ```
+
+## Monster-Mapping
+
+| ID | Datei |
+|---|---|
+| `monster01` | `Monster_1_blue.usdc` |
+| `monster02` | `Monster_2_green.usdc` |
+| `monster03` | `Monster_3_yellow.usdc` |
+| `monster04` | `Monster_4_red.usdc` |
+
+Ticket-Mapping unverändert.
+
+## Assetstatus
+
+Technisch bestätigt:
+
+- vier unterschiedliche lokale USDC-Monster
+- USDA-Wrapper referenzieren USDC
+- Priorisierung/Team zeigen echte Monster laut Simulatorbericht
+
+Noch offen:
+
+- `.blend`-Quelldateien nicht im geprüften Ordner
+- eindeutiger eigener Blender-Source-/Ownership-Nachweis
+- alle vier Modelle mit Gesten testen
+- finale Skalierung/Orientierung aller vier testen
+
+Deshalb AK-14 noch OPEN.
+
+## Integrationsfixes
+
+### MonsterAssetProvider
+
+- Blender-Z-up wird nach dem Laden für RealityKit-Y-up korrigiert.
+
+### PrioritizationView / TeamAssignmentView
+
+- direkte State-Lesezugriffe im RealityView-Update
+- asynchron geladene Monster erscheinen dadurch zuverlässig
+- ProgressView während Ladezustand
+
+## Build-/Simulatorstand
+
+Berichtet:
+
+- Xcode-Build PASS
+- visionOS 26.5 Simulator
+- Monster in Priorisierung und Team sichtbar
+- `correct.wav` hörbar
+- 1,5-s-Transition und Ergebnis teilweise bestätigt
+
+Nicht abgeschlossen:
+
+- vollständige Tests
+- Untersuchung AK-06/07
+- Gesten-End-to-End
+- `incorrect.wav`
+- fünf Neustarts
+- Gerätetest
+
+## Strikte AK-Matrix
+
+| AK | Stand |
+|---|---|
+| AK-01 | PASS |
+| AK-02 | PASS |
+| AK-03 | PASS |
+| AK-04 | PASS |
+| AK-05 | OPEN |
+| AK-06 | OPEN |
+| AK-07 | OPEN |
+| AK-08 | OPEN |
+| AK-09 | OPEN |
+| AK-10 | OPEN |
+| AK-11 | OPEN |
+| AK-12 | OPEN |
+| AK-13 | PASS |
+| AK-14 | OPEN |
+| AK-15 | PASS |
+| AK-16 | OPEN |
 
 ## Teststand
 
-- 155 Testdeklarationen vorhanden
-- vollständiger Testlauf manuell offen (kein Xcode in Ausführungsumgebung)
+- 155 Testdeklarationen
+- Testlauf nicht ausgeführt
 
-## Audio-Status
+## Modul 012
 
-- `correct.wav` vorhanden
-- `incorrect.wav` vorhanden
-- beide projekt-eigene Platzhalter
-- tatsächliche Hörbarkeit manuell zu prüfen
+F-17 weiterhin bewusst ausgelassen.
 
-## Monster-Status
+## Für Modul 014
 
-- `monster01.usda` — referenziert `Monster_1_blue.usdc` (Blender-Export) ✓
-- `monster02.usda` — referenziert `Monster_2_green.usdc` (Blender-Export) ✓
-- `monster03.usda` — referenziert `Monster_3_yellow.usdc` (Blender-Export) ✓
-- `monster04.usda` — referenziert `Monster_4_red.usdc` (Blender-Export) ✓
-- Darstellung im Simulator noch nicht verifiziert
+Modul 014 muss:
 
-## Pflichtabnahme noch offen
-
-- Build in Xcode
-- vollständige Tests (155)
-- Gesten End-to-End
-- Audio-Hörbarkeit
-- Auto-Transition 1,5 s
-- Ergebnis / Reset Simulator
-- Monster-Darstellung (USDC) im Simulator
-- Apple Vision Pro Gerätetest
-
-## Nächster technischer Schritt
-
-Manuelle Abnahme aller AK im visionOS-Simulator. Dann Commit `013: Integration und Gerätetest`.  
-Danach: Modul 014 — Abschlussdokumentation und Cleanup.
+- alle Dokumente auf diese tatsächliche Matrix synchronisieren
+- keine offenen AKs als PASS deklarieren
+- Git-/Dateibaum bereinigen
+- Debug-only Hilfen prüfen
+- `.DS_Store` entfernen
+- Asset-/Audioquellen dokumentieren
+- finale Abgabe-Checkliste erstellen
+- noch fehlende Evidenz sichtbar als Blocker/Risiko führen

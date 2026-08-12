@@ -75,10 +75,11 @@ struct PrioritizationView: View {
     /// Lokale Audio-Kapselung — kein globaler Service-Locator.
     @State private var audioService = AudioService()
 
-    /// Letzte Drop-Auswertung als Klartext — nur für die DEBUG-Anzeige.
+    /// Position des Monsters zu Beginn der laufenden Zieh-Geste.
     ///
-    /// Macht die tatsächlich erreichbare Drag-Strecke messbar, statt sie zu schätzen.
-    @State private var lastDropSummary: String? = nil
+    /// Die Bewegung wird relativ zu diesem Wert berechnet (`PlanarDrag`), damit die
+    /// Tiefenebene erhalten bleibt. `nil`, solange keine Geste läuft.
+    @State private var dragStartPosition: SIMD3<Float>? = nil
 
     // MARK: - Body
 
@@ -136,22 +137,11 @@ struct PrioritizationView: View {
                     .padding(.bottom, 12)
                 }
             }
-
-            // Messwerte der letzten Ablage — macht die tatsächlich erreichbare Drag-Strecke
-            // sichtbar. Nur DEBUG, keine Nutzerfunktion.
-            if let summary = lastDropSummary {
-                VStack {
-                    Spacer()
-                    Text(summary)
-                        .font(.caption2)
-                        .monospaced()
-                        .foregroundStyle(.secondary)
-                        .padding(6)
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 6))
-                        .padding(.bottom, 48)
-                }
-            }
             #endif
+            // Hinweis: Hier stand eine eingeblendete Messwertanzeige
+            // („x 0.011  Δy -0.101 (Grenze ±0.10 / Lift 0.04)"). Sie ist entfernt.
+            // Dieselben Werte gehen jetzt ausschließlich per DebugManager.log(.physics, …)
+            // in die Konsole und erscheinen nie in der Benutzeroberfläche.
 
             // Ladeindikator — liest monsterEntity im Body (SwiftUI-Dependency-Tracking).
             if monsterEntity == nil && loadError == nil {
@@ -313,15 +303,26 @@ struct PrioritizationView: View {
         }
         guard let entity = monsterEntity, value.entity === entity else { return }
 
-        let scenePoint = value.convert(value.gestureValue.location3D, from: .local, to: .scene)
-        entity.position = SIMD3<Float>(
-            Float(scenePoint.x),
-            Float(scenePoint.y),
-            Float(scenePoint.z)
+        // Position bei Gestenbeginn merken — Grundlage für die relative Bewegung.
+        let start = dragStartPosition ?? entity.position(relativeTo: nil)
+        if dragStartPosition == nil {
+            dragStartPosition = start
+            DebugManager.log(.input, "Drag begonnen bei \(start)")
+        }
+
+        // Planare Bewegung: X/Y folgen der Geste, Z bleibt auf der Starttiefe.
+        // Siehe PlanarDrag zur Begründung — die frühere Übernahme der absoluten
+        // Zeigerposition verursachte Tiefensprung, Zurückwandern und zu kurze X-Wege.
+        entity.setPosition(
+            PlanarDrag.position(from: start, translation: value.gestureValue.translation),
+            relativeTo: nil
         )
     }
 
     private func handleDragEnded(value: EntityTargetValue<DragGesture.Value>) {
+        // Immer zuerst: die Geste ist beendet, der gemerkte Startpunkt gilt nicht mehr.
+        dragStartPosition = nil
+
         guard !model.isInputLocked else {
             DebugManager.log(.input, "Release ignoriert: Input bereits gesperrt (AK-10)")
             return
@@ -356,16 +357,6 @@ struct PrioritizationView: View {
             .physics,
             "Drop bei \(dropped), Start \(origin), Anhebung \(dropped.y - origin.y)"
         )
-
-        #if DEBUG
-        lastDropSummary = String(
-            format: "x %.3f  Δy %.3f  (Grenze ±%.2f / Lift %.2f)",
-            dropped.x,
-            dropped.y - origin.y,
-            PrioritizationConstants.targetColumnSpacing / 2,
-            PrioritizationConstants.minimumDropLift
-        )
-        #endif
 
         if let hitID = DropEvaluator.evaluateColumn(
             entityPosition: dropped,

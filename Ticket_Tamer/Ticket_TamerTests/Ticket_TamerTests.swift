@@ -1,3 +1,4 @@
+import CoreGraphics
 import Testing
 import simd
 @testable import Ticket_Tamer
@@ -1021,6 +1022,59 @@ struct PrioritizationPhaseTests {
             )
             #expect(result == testCase.expected, "x=\(testCase.x) ergab \(result ?? "nil")")
         }
+    }
+
+    // MARK: - Planare Zieh-Bewegung
+
+    /// Kernregression: die Tiefe darf sich durch Ziehen nie ändern. Zuvor wurde die
+    /// Z-Komponente der Zeigerposition direkt übernommen — Sprung nach vorne beim Greifen,
+    /// Stehenbleiben auf Handtiefe beim Loslassen.
+    @Test("Ziehen verändert die Z-Tiefe nicht")
+    func planarDragKeepsDepthConstant() {
+        let start = PrioritizationConstants.monsterStartPosition
+        let moves: [CGSize] = [
+            .zero,
+            CGSize(width: 300, height: -200),
+            CGSize(width: -450, height: 120),
+            CGSize(width: 0, height: -1000),
+        ]
+        for move in moves {
+            let result = PlanarDrag.position(from: start, translation: move)
+            #expect(result.z == start.z, "Z hat sich bei \(move) verändert")
+        }
+    }
+
+    @Test("Ziehrichtungen werden korrekt auf die RealityKit-Achsen abgebildet")
+    func planarDragUsesCorrectAxisDirections() {
+        let start = SIMD3<Float>(0, 0, 0.06)
+
+        // SwiftUI zählt height nach unten positiv — nach oben ziehen heißt negatives height.
+        let up = PlanarDrag.position(from: start, translation: CGSize(width: 0, height: -100))
+        #expect(up.y > start.y, "Ziehen nach oben muss Y erhöhen")
+
+        let down = PlanarDrag.position(from: start, translation: CGSize(width: 0, height: 100))
+        #expect(down.y < start.y, "Ziehen nach unten muss Y senken")
+
+        let right = PlanarDrag.position(from: start, translation: CGSize(width: 100, height: 0))
+        #expect(right.x > start.x, "Ziehen nach rechts muss X erhöhen")
+
+        let left = PlanarDrag.position(from: start, translation: CGSize(width: -100, height: 0))
+        #expect(left.x < start.x, "Ziehen nach links muss X senken")
+    }
+
+    /// Die seitliche Entscheidungsgrenze muss mit realistischem Zieh-Aufwand erreichbar sein.
+    @Test("Entscheidungsgrenze und Mindestanhebung sind per Geste erreichbar")
+    func decisionThresholdsAreReachableByDragging() {
+        let start = PrioritizationConstants.monsterStartPosition
+        let boundary = PrioritizationConstants.targetColumnSpacing / 2
+
+        // Ziehbewegung von 200 Punkten zur Seite und 100 Punkten nach oben.
+        let dragged = PlanarDrag.position(from: start, translation: CGSize(width: -200, height: -100))
+        #expect(abs(dragged.x - start.x) > boundary, "Seitliche Grenze nicht erreichbar")
+        #expect(
+            dragged.y - start.y >= PrioritizationConstants.minimumDropLift,
+            "Mindestanhebung nicht erreichbar"
+        )
     }
 
     @Test("Ablage ohne ausreichende Aufwärtsbewegung ist ungültig")

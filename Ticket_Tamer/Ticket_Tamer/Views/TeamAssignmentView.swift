@@ -66,6 +66,12 @@ struct TeamAssignmentView: View {
     @State private var monsterEntity: Entity? = nil
     @State private var targetEntities: [Entity] = []
     @State private var originTransform: Transform? = nil
+
+    /// Position des Monsters zu Beginn der laufenden Zieh-Geste.
+    ///
+    /// Die Bewegung wird relativ zu diesem Wert berechnet (`PlanarDrag`), damit die
+    /// Tiefenebene erhalten bleibt. `nil`, solange keine Geste läuft.
+    @State private var dragStartPosition: SIMD3<Float>? = nil
     @State private var loadError: String? = nil
 
     // MARK: - Modul 010: Feedback-Zustand
@@ -286,15 +292,27 @@ struct TeamAssignmentView: View {
         }
         guard let entity = monsterEntity, value.entity === entity else { return }
 
-        let scenePoint = value.convert(value.gestureValue.location3D, from: .local, to: .scene)
-        entity.position = SIMD3<Float>(
-            Float(scenePoint.x),
-            Float(scenePoint.y),
-            Float(scenePoint.z)
+        // Position bei Gestenbeginn merken — Grundlage für die relative Bewegung.
+        let start = dragStartPosition ?? entity.position(relativeTo: nil)
+        if dragStartPosition == nil {
+            dragStartPosition = start
+            DebugManager.log(.input, "Drag begonnen bei \(start)")
+        }
+
+        // Planare Bewegung auf konstanter Tiefe — identisch zur Priorisierungsphase.
+        // Die frühere Übernahme der absoluten Zeigerposition (`location3D` → `.scene`)
+        // schrieb die Handtiefe direkt in die Entity: Sprung nach vorne beim Greifen,
+        // Stehenbleiben auf Handtiefe beim Loslassen, kaum horizontaler Weg.
+        entity.setPosition(
+            PlanarDrag.position(from: start, translation: value.gestureValue.translation),
+            relativeTo: nil
         )
     }
 
     private func handleDragEnded(value: EntityTargetValue<DragGesture.Value>) {
+        // Immer zuerst: die Geste ist beendet, der gemerkte Startpunkt gilt nicht mehr.
+        dragStartPosition = nil
+
         guard !model.isInputLocked else {
             DebugManager.log(.input, "Release ignoriert: Input bereits gesperrt (AK-10)")
             return

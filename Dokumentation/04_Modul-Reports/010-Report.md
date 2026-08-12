@@ -286,7 +286,7 @@ Der `🔧 Team [DEV]`-Button in `PrioritizationView` bleibt als `#if DEBUG`-Hilf
 ## Git
 
 - **Commit:** `010: Bewertung und Audiofeedback`
-- **Hash:** nach `git commit` zu ergänzen
+- **Hash:** `0ab0ef7`
 
 ---
 

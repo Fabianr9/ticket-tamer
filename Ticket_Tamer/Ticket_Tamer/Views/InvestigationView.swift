@@ -58,6 +58,7 @@ struct InvestigationView: View {
 
             ticketCard(ticket: ticket)
                 .frame(maxWidth: .infinity)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
         }
         .padding(LayoutConstants.investigationPadding)
     }
@@ -101,61 +102,74 @@ struct InvestigationView: View {
 
     @ViewBuilder
     private func ticketCard(ticket: Ticket) -> some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: LayoutConstants.investigationCardSpacing) {
+        VStack(alignment: .leading, spacing: 0) {
+            // Scrollbarer Inhalt: Ticketdetails
+            ScrollView {
+                VStack(alignment: .leading, spacing: LayoutConstants.investigationCardSpacing) {
 
-                // Ticketnummer
-                Text(ticket.ticketNumber)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .accessibilityLabel(Text("investigation.ticketNumber.label") + Text(ticket.ticketNumber))
-
-                // Titel
-                Text(ticket.title)
-                    .font(.title2)
-                    .bold()
-
-                Divider()
-
-                // Kurzbeschreibung
-                Text(ticket.shortDescription)
-                    .font(.body)
-
-                // Auswirkung
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("investigation.userImpact.label")
-                        .font(.headline)
-                    Text(ticket.userImpact)
-                        .font(.body)
+                    // Ticketnummer-Badge
+                    Text(ticket.ticketNumber)
+                        .font(.caption2)
+                        .fontWeight(.semibold)
                         .foregroundStyle(.secondary)
-                }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(.secondary.opacity(0.15), in: Capsule())
+                        .accessibilityLabel(Text("investigation.ticketNumber.label") + Text(ticket.ticketNumber))
 
-                // Symptome / Hinweise
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("investigation.symptoms.label")
-                        .font(.headline)
-                    ForEach(Array(ticket.symptoms.enumerated()), id: \.offset) { _, symptom in
-                        Label {
-                            Text(symptom)
-                                .font(.callout)
-                        } icon: {
-                            Image(systemName: "circle.fill")
-                                .imageScale(.small)
+                    // Titel
+                    Text(ticket.title)
+                        .font(.title3)
+                        .bold()
+
+                    Divider()
+
+                    // Kurzbeschreibung
+                    Text(ticket.shortDescription)
+                        .font(.callout)
+
+                    // Auswirkung
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("investigation.userImpact.label")
+                            .font(.subheadline)
+                            .bold()
+                        Text(ticket.userImpact)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    // Symptome / Hinweise
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("investigation.symptoms.label")
+                            .font(.subheadline)
+                            .bold()
+                        ForEach(Array(ticket.symptoms.enumerated()), id: \.offset) { _, symptom in
+                            Label {
+                                Text(symptom)
+                                    .font(.callout)
+                            } icon: {
+                                Image(systemName: "circle.fill")
+                                    .imageScale(.small)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                     }
                 }
-
-                // Schaltfläche: Weiter zur Priorisierung (F-07 / AK-07)
-                Button {
-                    DebugManager.log(.input, "Weiter zur Priorisierung ausgeloest: \(ticket.ticketNumber)")
-                    model.beginPrioritizationPhase()
-                } label: {
-                    Text("investigation.button.nextPhase")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .padding(.top, LayoutConstants.investigationSpacing)
+                .padding(LayoutConstants.investigationCardPadding)
             }
+
+            Divider()
+                .padding(.horizontal, LayoutConstants.investigationCardPadding)
+
+            // Schaltfläche: immer sichtbar, außerhalb des Scroll-Bereichs (F-07 / AK-07)
+            Button {
+                DebugManager.log(.input, "Weiter zur Priorisierung ausgeloest: \(ticket.ticketNumber)")
+                model.beginPrioritizationPhase()
+            } label: {
+                Text("investigation.button.nextPhase")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
             .padding(LayoutConstants.investigationCardPadding)
         }
     }

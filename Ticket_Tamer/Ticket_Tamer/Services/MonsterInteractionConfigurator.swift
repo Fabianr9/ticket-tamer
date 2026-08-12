@@ -36,19 +36,21 @@ enum MonsterInteractionConfigurator {
         switch mode {
         case .dragDrop:
             // Indirekte Eingabe: Blickfokus + Pinch — kein eigenes Handtracking nötig.
+            // InputTarget und Collision auf dem Wrapper-Root (der das visuelle Zentrum trägt).
             entity.components.set(InputTargetComponent(allowedInputTypes: .indirect))
 
-            // Kollisionsform: Kugel (radius InteractionConstants.monsterCollisionRadius).
-            // Groß genug für zuverlässige Interaktion, aber kleiner als der Zielbereich,
-            // damit Drop-Targets ohne Überschneidung nebeneinander existieren können.
+            // Kollisionsform: Kugel am Wrapper-Origin = visuelles Zentrum (nach wrapAndCenter).
+            // Größer als früher (0.12 m) damit das Greifen bei Skalierung 0.08–0.10 zuverlässig ist.
             entity.components.set(
                 CollisionComponent(
                     shapes: [.generateSphere(radius: InteractionConstants.monsterCollisionRadius)]
                 )
             )
 
-            // Natives visionOS Hover-/Fokus-Feedback ohne eigene Logik.
+            // HoverEffect auf Root (für Gesten-Erkennung) und auf alle Mesh-Kinder
+            // (für das native visionOS-Leucht-Feedback, das nur auf ModelComponents wirkt).
             entity.components.set(HoverEffectComponent())
+            applyHoverEffectToDescendants(entity)
 
             DebugManager.log(.input, "Monster konfiguriert: dragDrop")
 
@@ -59,6 +61,22 @@ enum MonsterInteractionConfigurator {
             entity.components.remove(HoverEffectComponent.self)
 
             DebugManager.log(.input, "Monster konfiguriert: inspectionOnly")
+        }
+    }
+
+    // MARK: - HoverEffect-Propagation
+
+    /// Setzt `HoverEffectComponent` rekursiv auf alle Kindentities mit Geometrie.
+    ///
+    /// Der Wrapper-Root (keine Geometrie) zeigt den nativen visionOS-Hover-Effekt nicht,
+    /// weil der Effekt eine `ModelComponent` voraussetzt. Durch das Setzen auf Mesh-Kinder
+    /// leuchten die sichtbaren Modellteile beim Anblicken korrekt auf.
+    private static func applyHoverEffectToDescendants(_ entity: Entity) {
+        for child in entity.children {
+            if child.components.has(ModelComponent.self) {
+                child.components.set(HoverEffectComponent())
+            }
+            applyHoverEffectToDescendants(child)
         }
     }
 }

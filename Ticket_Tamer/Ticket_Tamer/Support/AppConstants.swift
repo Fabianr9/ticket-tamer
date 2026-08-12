@@ -38,19 +38,25 @@ enum LayoutConstants {
     // MARK: - Investigation View (Modul 006)
 
     /// Abstand zwischen Monster-Panel und Ticketkarte.
-    static let investigationSpacing = 24.0
+    static let investigationSpacing = 16.0
 
     /// Aussenabstand der Untersuchungsansicht.
-    static let investigationPadding = 24.0
+    static let investigationPadding = 16.0
 
     /// Innenabstand der Ticketkarte.
-    static let investigationCardPadding = 16.0
+    static let investigationCardPadding = 14.0
 
     /// Zeilenabstand innerhalb der Ticketkarte.
-    static let investigationCardSpacing = 12.0
+    static let investigationCardSpacing = 8.0
 
-    /// Skalierungsfaktor fuer den Monster-Entity im Volume (RealityKit-Float, ca. 20 cm Kantenlänge).
+    /// Skalierungsfaktor fuer den Monster-Entity in der Untersuchungsansicht (statische Anzeige).
     static let monsterScale: Float = 0.2
+
+    /// Skalierungsfaktor fuer den Monster-Entity in den Drag-Drop-Phasen (Priorisierung / Team).
+    ///
+    /// Kleiner als `monsterScale`, damit der Entity vollständig im Volume sichtbar bleibt
+    /// und genug Platz für die Drop-Zielkugeln verbleibt. Wert: ca. 8 cm Kantenlänge.
+    static let monsterScaleDragDrop: Float = 0.08
 }
 
 /// Spielweite Grundwerte aus der SPEC, ohne Sitzungslogik vorwegzunehmen.
@@ -75,8 +81,10 @@ enum InteractionConstants {
 
     /// Radius der sphärischen Kollisionsform am Monster in Metern.
     ///
-    /// Kleiner als `dropTargetRadius`, damit die Kollisionsform das Ziel nicht überdeckt.
-    static let monsterCollisionRadius: Float = 0.10
+    /// Bewusst großzügig (0.12 m), damit Blick + Pinch bei kleiner Skalierung (0.08–0.10)
+    /// zuverlässig registriert wird. Kleiner als `dropTargetRadius`, damit Ziele nicht
+    /// unbeabsichtigt überdeckt werden.
+    static let monsterCollisionRadius: Float = 0.12
 
     // MARK: - Drop-Zielbereich
 

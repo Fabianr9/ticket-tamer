@@ -67,10 +67,11 @@ enum MonsterAssetProvider {
         ) {
             do {
                 // Entity.load(contentsOf:) ist synchron; im async-Kontext auf MainActor akzeptabel.
-                let entity = try Entity.load(contentsOf: url)
-                applyBlenderCorrection(to: entity)
-                DebugManager.log(.spawning, "Asset per URL geladen: \(assetID) → \(fileName).usdc, children: \(entity.children.count)")
-                return entity
+                let loaded = try Entity.load(contentsOf: url)
+                applyBlenderCorrection(to: loaded)
+                let wrapper = wrapAndCenter(loaded)
+                DebugManager.log(.spawning, "Asset per URL geladen: \(assetID) → \(fileName).usdc")
+                return wrapper
             } catch {
                 DebugManager.log(.spawning, "URL-Ladefehler fuer '\(assetID)': \(error.localizedDescription)")
             }
@@ -80,10 +81,11 @@ enum MonsterAssetProvider {
 
         // 2. Fallback: benannte Entity aus rkassets-Bundle
         do {
-            let entity = try await Entity(named: assetID, in: realityKitContentBundle)
-            applyBlenderCorrection(to: entity)
-            DebugManager.log(.spawning, "Asset per Name geladen: \(assetID), children: \(entity.children.count)")
-            return entity
+            let loaded = try await Entity(named: assetID, in: realityKitContentBundle)
+            applyBlenderCorrection(to: loaded)
+            let wrapper = wrapAndCenter(loaded)
+            DebugManager.log(.spawning, "Asset per Name geladen: \(assetID)")
+            return wrapper
         } catch {
             DebugManager.log(.spawning, "Ladefehler fuer '\(assetID)': \(error.localizedDescription)")
             throw LoadError.entityLoadFailed(assetID)
@@ -100,6 +102,37 @@ enum MonsterAssetProvider {
     private static func applyBlenderCorrection(to entity: Entity) {
         entity.orientation = simd_quatf(angle: -.pi / 2, axis: SIMD3<Float>(1, 0, 0))
         DebugManager.log(.spawning, "Blender-Z-up-Korrektur angewendet")
+    }
+
+    // MARK: - Zentrierung (Layout-Fix Modul 013)
+
+    /// Kapselt die geladene Entity in einen Wrapper, dessen Ursprung mit dem visuellen
+    /// Mittelpunkt des Modells zusammenfällt.
+    ///
+    /// Blender-Modelle haben ihren Origin oft am Fuß oder an einer anderen Extremstelle.
+    /// Ohne Korrektur liegt die Kollisionssphäre (am Entity-Origin) nicht auf dem
+    /// visuellen Zentrum → Greifen schlägt fehl. Der Wrapper-Ursprung wird so gesetzt,
+    /// dass `wrapper.position` direkt die visuelle Mitte des Monsters angibt.
+    ///
+    /// Methode: `visualBounds(relativeTo: wrapper)` berücksichtigt bereits die
+    /// Orientierungskorrektur von `loaded`, da es die volle lokale Transformation einbezieht.
+    private static func wrapAndCenter(_ loaded: Entity) -> Entity {
+        let wrapper = Entity()
+        wrapper.addChild(loaded)
+
+        // Bounds in Wrapper-Koordinaten = Weltkoordinaten (Orientierung der loaded-Entity inklusive)
+        let bounds = loaded.visualBounds(recursive: true, relativeTo: wrapper)
+        let extents = bounds.extents
+
+        guard extents.x > 0.001 || extents.y > 0.001 || extents.z > 0.001 else {
+            DebugManager.log(.spawning, "VisualBounds zu klein — Zentrierung übersprungen")
+            return wrapper
+        }
+
+        // Verschiebe loaded so, dass bounds.center = (0,0,0) im Wrapper-Raum.
+        loaded.position = -bounds.center
+        DebugManager.log(.spawning, "Zentriert: center=\(bounds.center), extents=\(extents)")
+        return wrapper
     }
 
     // MARK: - Dateiname-Mapping (intern)

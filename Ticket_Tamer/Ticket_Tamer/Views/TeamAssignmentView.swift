@@ -244,7 +244,7 @@ struct TeamAssignmentView: View {
 
         do {
             let entity = try await MonsterAssetProvider.loadMonster(assetID: ticket.monsterAssetId)
-            entity.scale = SIMD3(repeating: LayoutConstants.monsterScale)
+            entity.scale = SIMD3(repeating: LayoutConstants.monsterScaleDragDrop)
             entity.position = TeamAssignmentConstants.monsterStartPosition
             originTransform = entity.transform
             MonsterInteractionConfigurator.configure(entity, mode: .dragDrop)

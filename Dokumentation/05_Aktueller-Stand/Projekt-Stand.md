@@ -1,94 +1,48 @@
 # Projekt-Stand — Ticket Tamer
 
-> Aktueller technischer Stand nach Modul 011.
+> Aktueller technischer Stand nach Modul 012.
 
-**Stand:** nach Modul `011` — Ergebnis und Neustart  
+**Stand:** Code weiterhin Stand Modul `011`; Modul `012` bewusst ohne Codeänderung ausgelassen  
 **Eingearbeitet am:** 2026-08-12  
 **Branch laut Report:** `main`  
-**010-Commit:** `0ab0ef7 010: Bewertung und Audiofeedback`  
-**011-Commit:** Hash offen  
-**Build nach 011:** offen  
-**Simulator nach 011:** offen  
-**Testdeklarationen:** 155  
-**Vollständiger Testlauf:** offen
+**Aktueller Commit:** `b94e0ed feat: add docs modul 11`  
+**Modul-011-Commit:** `209aff2 feat:Modul011`  
+**Modul-012-Commit:** keiner  
+**Testdeklarationen:** 155
 
-## Aktueller Funktionsstand
+## Technischer Funktionsstand
 
 Auf Codeebene vorhanden:
 
 - genau ein zentrales volumetrisches Fenster
 - deutsche Startansicht
-- 1–12 Tickets, Standard 6
+- Ticketanzahl 1–12, Standard 6
 - zwölf lokale Tickets
 - zentrales `SessionModel`
 - Untersuchungsphase
 - Priorisierungsphase
 - Teamzuordnungsphase
 - Drag-/Drop-Grundlage
-- genau-einmal-Speicherung von Priorität und Team
+- Prioritäts- und Teamspeicherung
 - +100/0-Bewertung
 - zwei lokale Audio-Platzhalter
 - 1,5-Sekunden-Auto-Transition
-- Wechsel zum nächsten Ticket
-- Ergebnisphase
+- nächstes Ticket / Ergebnisphase
 - Ergebnisansicht
-- vollständiger Reset zurück zur Startansicht
+- vollständiger Reset
 
-Damit ist der vollständige Pflicht-Spielzyklus auf Implementierungsebene geschlossen.
+## Modul 012
 
-## Relevanter Dateibaum
+Nicht implementiert.
 
-```text
-Ticket_Tamer/
-├─ Ticket_Tamer/
-│  ├─ App/
-│  │  └─ Ticket_TamerApp.swift
-│  ├─ Assets/
-│  │  └─ MonsterAssetProvider.swift
-│  ├─ Components/
-│  │  └─ DropTargetComponent.swift
-│  ├─ Data/
-│  │  └─ LocalTicketCatalog.swift
-│  ├─ Debug/
-│  │  └─ DebugManager.swift
-│  ├─ Models/
-│  │  ├─ GamePhase.swift
-│  │  ├─ SessionModel.swift
-│  │  └─ Ticket.swift
-│  ├─ Resources/
-│  │  ├─ Localizable.xcstrings
-│  │  ├─ correct.wav
-│  │  └─ incorrect.wav
-│  ├─ Services/
-│  │  ├─ AudioService.swift
-│  │  ├─ DropEvaluator.swift
-│  │  └─ MonsterInteractionConfigurator.swift
-│  ├─ Support/
-│  │  └─ AppConstants.swift
-│  ├─ Views/
-│  │  ├─ Debug/
-│  │  │  └─ DebugInteractionHarnessView.swift
-│  │  ├─ InvestigationView.swift
-│  │  ├─ PrioritizationView.swift
-│  │  ├─ ResultView.swift
-│  │  ├─ RootVolumeView.swift
-│  │  ├─ StartView.swift
-│  │  └─ TeamAssignmentView.swift
-│  ├─ Assets.xcassets
-│  └─ Info.plist
-├─ Ticket_TamerTests/
-│  └─ Ticket_TamerTests.swift
-└─ Packages/
-   └─ RealityKitContent/
-      └─ Sources/RealityKitContent/RealityKitContent.rkassets/
-         ├─ Scene.usda
-         ├─ monster01.usda
-         ├─ monster02.usda
-         ├─ monster03.usda
-         ├─ monster04.usda
-         └─ Materials/
-            └─ GridMaterial.usda
-```
+Grund:
+
+- keine finalen Blender-Monster
+- nur USDA-Kugel-Platzhalter
+- optionale Reaktion technisch nicht sinnvoll
+- Muss-Abnahmen haben Vorrang
+
+Keine Codeänderung, keine neuen Dateien, keine neuen Schnittstellen.
 
 ## Root-Phasenrouting
 
@@ -106,90 +60,39 @@ RootVolumeView
    └─ ResultView
 ```
 
-## ResultView
-
-Sichtbar:
-
-- `model.score` als große Zahl
-- `Erneut spielen`
-
-Nicht sichtbar:
-
-- Ticketanzahl
-- Statistik
-- richtige Lösungen
-- Badges
-- Highscore
-- Ranking
-
-Button-Aktion:
-
-`model.reset()`
-
-## Reset
-
-Nach `reset()`:
-
-- Ticketanzahl 6
-- leere Sitzungstickets
-- Index 0
-- Phase `.start`
-- Score 0
-- Priorität nil
-- Team nil
-- Input-Lock false
-- Bewertungsflags false
-
 ## Teststand
 
-| Bereich | Stand |
-|---|---|
-| Tests vor 011 | 140 |
-| neue Tests | 15 |
-| Tests nach 011 | 155 |
-| vollständiger Lauf | offen |
-
-## Pflichtanforderungen — Implementierungsstatus
-
-| Bereich | Stand |
-|---|---|
-| Start | implementiert |
-| lokale Tickets | implementiert |
-| Sitzungsauswahl | implementiert |
-| Untersuchung | implementiert |
-| Priorisierung | implementiert |
-| Teamzuordnung | implementiert |
-| Drag/Drop | implementiert |
-| Scoring | implementiert |
-| Audio | technisch implementiert mit Platzhaltern |
-| Auto-Transition | implementiert |
-| Ergebnis | implementiert |
-| Reset | implementiert |
-
-## Noch offene Pflichtabnahme
-
-- Build
-- vollständige 155 Tests
-- Simulator-End-to-End
-- Audiohörbarkeit
-- Gesten
-- ResultView
-- fünf Neustarts
-- finale Blender-Monster
-- Vision-Pro-Gerätetest
-
-## Modul 012
-
-F-17 bedeutet **optionale Monsterreaktion**, nicht Highscore/Persistenz.
-
-Modul 012 darf nur einfache visuelle Monsterreaktionen ergänzen und ist nicht verpflichtend.
-
-Bei Zeitdruck direkt Modul 013 starten.
-
-## Monster-Status
-
-Vier USDA-Platzhalter vorhanden. Vier finale eigene Blender-Monster fehlen weiterhin.
+- 155 Testdeklarationen vorhanden
+- vollständiger Testlauf weiterhin offen
 
 ## Audio-Status
 
-Zwei projekt-eigene WAV-Platzhalter vorhanden. Hörbarkeit und finale Soundentscheidung offen.
+- `correct.wav` vorhanden
+- `incorrect.wav` vorhanden
+- beide projekt-eigene Platzhalter
+- tatsächliche Hörbarkeit offen
+
+## Monster-Status
+
+- `monster01.usda` — Platzhalter
+- `monster02.usda` — Platzhalter
+- `monster03.usda` — Platzhalter
+- `monster04.usda` — Platzhalter
+- finale Blender-/USDZ-Monster fehlen
+
+## Pflichtabnahme noch offen
+
+- Build
+- vollständige Tests
+- Gesten
+- Audio
+- Auto-Transition
+- Ergebnis
+- Reset
+- End-to-End
+- reale Blender-Monster
+- Apple Vision Pro Gerätetest
+
+## Nächster technischer Schritt
+
+Modul 013 — Integration und Gerätetest.

@@ -1,15 +1,17 @@
 # Projektlogbuch — Ticket Tamer
 
-> Einziger aktueller Logbuch-Stand nach Einarbeitung von Modul 011.
+> Einziger aktueller Logbuch-Stand nach Einarbeitung von Modul 012.
 
-**Stand:** nach Modul `011` — Ergebnis und Neustart  
+**Stand:** nach Modul `012` — Optionale Monsterreaktion bewusst ausgelassen  
 **Eingearbeitet am:** 2026-08-12  
-**Branch laut 011-Report:** `main`  
-**Letzter bestätigter Commit vor Modul 011:** `0ab0ef7 010: Bewertung und Audiofeedback`  
-**Modul-011-Commit:** Hash offen  
-**Build nach Modul 011:** nicht nachgewiesen  
-**Simulator nach Modul 011:** nicht nachgewiesen  
-**Vollständiger Testlauf:** nicht nachgewiesen  
+**Branch laut 012-Report:** `main`  
+**Aktueller Commit laut Report:** `b94e0ed feat: add docs modul 11`  
+**Modul-011-Commit bestätigt:** `209aff2 feat:Modul011`  
+**Modul-012-Commit:** keiner, da keine Codeänderung  
+**Working Tree laut Report:** sauber  
+**Build nach Modul 011/012:** offen  
+**Simulatorstand:** offen  
+**Vollständiger Testlauf:** offen  
 **Testdeklarationen:** 155
 
 ## Modulstatus
@@ -27,194 +29,126 @@
 | 009 | Teamzuordnungsphase | implementiert; Laufzeitabnahme offen |
 | 010 | Bewertung und Audiofeedback | implementiert; Audio-/End-to-End-Abnahme offen |
 | 011 | Ergebnis und Neustart | implementiert; Laufzeitabnahme offen |
-| 012 | Optionale Monsterreaktion | optional / noch nicht entschieden |
-| 013 | Integration und Gerätetest | offen |
+| 012 | Optionale Monsterreaktion | **bewusst ausgelassen** |
+| 013 | Integration und Gerätetest | als Nächstes |
 | 014 | Abschlussdokumentation/Cleanup | offen |
 
-## Stand Modul 011
+## Entscheidung Modul 012
 
-Modul 011 schließt den funktionalen Spielzyklus auf Codeebene:
+F-17 / AK-17 wird nicht implementiert.
 
-`Start → Untersuchung → Priorisierung → Teamzuordnung → Ergebnis → Neustart`
+Begründung laut 012-Report:
 
-### Neue oder geänderte Bestandteile
+- weiterhin keine finalen Blender-Monster vorhanden
+- nur vier USDA-Kugel-Platzhalter
+- keine Gesichter, Morph Targets oder Animationen
+- mehrere Pflicht-Abnahmen sind noch offen
+- Muss-Anforderungen haben Vorrang vor optionalem Featureumfang
 
-- `Views/ResultView.swift` — neu
-- `Views/RootVolumeView.swift` — `.ergebnis → ResultView`
-- `Ticket_TamerTests/Ticket_TamerTests.swift` — 15 neue Ergebnis-/Resettests
+Diese Entscheidung ist korrekt und ändert den Pflichtumfang nicht.
 
-Unverändert blieben laut Report:
+## F-17 korrekt eingeordnet
 
-- `SessionModel.swift`
-- `StartView.swift`
-- `InvestigationView.swift`
-- `PrioritizationView.swift`
-- `TeamAssignmentView.swift`
-- `AudioService.swift`
-- `Localizable.xcstrings`
-- Scoring- und Ticketdaten
+F-17 bedeutet ausschließlich eine optionale Monsterreaktion.
 
-### Ergebnisansicht
-
-Sichtbar sind ausschließlich:
-
-- `model.score` als Zahl
-- `Erneut spielen`
-
-Nicht sichtbar:
-
-- Ticketanzahl
-- Maximalpunktzahl
-- Prozentwert
-- Trefferstatistik
-- Ticket-für-Ticket-Auswertung
-- richtige Lösungen
-- Badges
-- Rang
-- Highscore
-- Zeit
-- Verlauf
-
-Das Accessibility-Label `Punkte: <score>` ist nicht sichtbar und verletzt den Minimalumfang nicht.
-
-### Reset
-
-`SessionModel.reset()` war bereits vor Modul 011 vollständig und wurde nicht geändert.
-
-Nach Reset:
-
-- `selectedTicketCount = 6`
-- `sessionTickets = []`
-- `currentTicketIndex = 0`
-- `currentPhase = .start`
-- `score = 0`
-- `selectedPriority = nil`
-- `selectedTeam = nil`
-- `isInputLocked = false`
-- `priorityEvaluated = false`
-- `teamEvaluated = false`
-
-### Task-Race-Prüfung
-
-Der Report meldet keinen Carry-over-Fix als notwendig.
-
-Begründung:
-
-- der Team-Feedback-Task prüft nach dem Sleep weiterhin `currentPhase == .teamZuordnen`
-- ein verspäteter alter Task soll damit nach einem Zustandswechsel nicht unkontrolliert weiterlaufen
-
-Diese Aussage ist code-review-basiert; eine reale Laufzeitprüfung nach schnellem Reset steht weiterhin aus.
-
-## Bewertung F-15 / F-16 / AK-15 / AK-16
-
-### Implementiert
-
-- F-15 Ergebnisansicht
-- F-16 Neustart/Reset
-- AK-15-Struktur
-- AK-16-Modellreset
-
-### Noch nicht laufzeitverifiziert
-
-- Ergebnisansicht real im Simulator
-- ausschließlich Score + Button sichtbar
-- Button kehrt real zur Startansicht zurück
-- Regler steht sichtbar wieder auf 6
-- fünf reale Neustartzyklen
-- 1-/2-/6-Ticket-End-to-End-Läufe
-
-Daher:
-
-- **F-15/F-16: implementiert**
-- **AK-15/AK-16: code- und testseitig vorbereitet, Laufzeitabnahme offen**
-
-## Teststand
-
-- vor Modul 011: 140 Testdeklarationen
-- neu: 15
-- nach Modul 011: 155 Testdeklarationen
-- vollständiger Testlauf: nicht nachgewiesen
-
-Neue Testbereiche:
-
-- Score bleibt in Ergebnisphase erhalten
-- Reset → `.start`
-- Ticketanzahl → 6
-- Sitzungstickets geleert
-- Index → 0
-- Score → 0
-- Priorität/Team → nil
-- Input-Lock → false
-- Bewertungsflags indirekt zurückgesetzt
-- fünf aufeinanderfolgende Resets stabil
-- neue Sitzung ohne alten Score/alte Entscheidungen
-
-## Wichtige Scope-Korrektur
-
-Die Empfehlung im 011-Report beschreibt F-17 fälschlich als „Highscore/Persistenz“.
-
-Das ist falsch.
-
-**F-17 ist ausschließlich die optionale Monsterreaktion.**
-
-Erlaubter optionaler Umfang:
-
-- einfache positive Reaktion bei richtiger Entscheidung
-- einfache negative/traurige Reaktion bei falscher Entscheidung
-
-Nicht Teil von F-17:
+Nicht Bestandteil von F-17:
 
 - Highscore
 - Persistenz
 - Statistik
-- Ranglisten
-- Benutzerkonten
-- Historie
+- Rangliste
+- zusätzliche Punkte
+- neue Spielmechanik
 
-## Entscheidungsstand zu Modul 012
+## Code-/Dateistand
 
-Modul 012 ist ein **Kann-Modul**.
+Modul 012 hat:
 
-Es darf nur gestartet werden, wenn ausreichend Puffer vorhanden ist und keine Muss-Lücke gefährdet wird.
+- keine Dateien geändert
+- keine neuen Schnittstellen erzeugt
+- keine DebugManager-Kategorie ergänzt
+- keinen Git-Commit erzeugt
 
-Aktuell offene Muss-Themen sind wichtiger:
+Der technische Projektstand aus Modul 011 bleibt daher unverändert.
 
-- finale Blender-Monster
-- vollständiger Build/Testlauf
-- Audiohörbarkeit
-- Gesten-End-to-End
-- 1,5-s-Transitions
-- reale Ergebnis-/Resetabnahme
-- Vision-Pro-Gerätetest
+## Offene Muss-Themen vor Modul 013
 
-Daher gilt:
+### Build / Tests
 
-- `012-Eingangsprompt.md` wird bereitgestellt
-- Ausführung ist optional
-- bei Zeitdruck direkt zu Modul 013 wechseln
+- [ ] Build nach Modul 011 bestätigen
+- [ ] vollständigen Lauf aller 155 Tests durchführen
+- [ ] bestandene/fehlgeschlagene Tests dokumentieren
 
-## Offene Punkte vor Modul 012/013
+### Simulator / End-to-End
 
-- [ ] Modul-011-Commit/Hash dokumentieren
-- [ ] Build nach Modul 011
-- [ ] vollständige 155 Tests
-- [ ] Prioritäts-Gesten
-- [ ] Team-Gesten
-- [ ] Audio hörbar
+- [ ] Startansicht
+- [ ] Untersuchung
+- [ ] Priorisierung
+- [ ] Teamzuordnung
+- [ ] Audiofeedback
 - [ ] 1,5-Sekunden-Transitions
-- [ ] Ergebnisansicht real prüfen
-- [ ] mindestens fünf Neustarts real prüfen
+- [ ] Ergebnisansicht
+- [ ] Neustart
+- [ ] fünf aufeinanderfolgende Resets
+
+### Gesten
+
+- [ ] Blickfokus
+- [ ] Pinch
+- [ ] Drag
+- [ ] gültiger Drop Priorität
+- [ ] ungültiger Drop Priorität
+- [ ] gültiger Drop Team
+- [ ] ungültiger Drop Team
+- [ ] Input-Lock nach gültigem Drop
+
+### Audio
+
+- [ ] `correct.wav` hörbar
+- [ ] `incorrect.wav` hörbar
+- [ ] genau ein Sound pro Entscheidung
+- [ ] keine doppelte Wiedergabe
+- [ ] falls nötig AVAudioSession prüfen
+
+### Assets
+
+- [ ] vier finale Blender-Monster fehlen weiterhin
+- [ ] finale USDZ-/RealityKit-kompatible Exporte
+- [ ] Skalierung/Orientierung
+- [ ] lokale Darstellung
+- [ ] Lizenz-/Urheberdokumentation
+
+### Ergebnis / Reset
+
+- [ ] ResultView real sichtbar
+- [ ] nur Scorezahl + „Erneut spielen“
+- [ ] Regler nach Reset wieder 6
+- [ ] keine alten Punkte/Entscheidungen
 - [ ] 1-/2-/6-Ticket-End-to-End
-- [ ] finale vier Blender-Monster
-- [ ] finale Soundentscheidung
-- [ ] `.DS_Store`-Bereinigung
-- [ ] Apple-Vision-Pro-Gerätetest
+
+### Gerät
+
+- [ ] Apple Vision Pro Testfenster
+- [ ] mindestens ein realer Gerätetest
+- [ ] Gesten und Audio auf Gerät
+- [ ] Lesbarkeit und Volumenlayout
+
+## Bewertung nach Modul 012
+
+- Pflicht-Spielzyklus ist auf Codeebene geschlossen.
+- Optionales F-17 bleibt bewusst offen.
+- Der größte noch nicht erfüllte Pflichtblock ist nicht Feature-Code, sondern Integration, Verifikation und finale Monster-Assets.
+
+## Entscheidungslog — neu
+
+- Modul 012 wird bewusst ausgelassen.
+- Kein leerer Feature-Commit wird erzeugt.
+- Finale Blender-Monster und Pflichtabnahmen haben Vorrang.
+- Direkt Modul 013 starten.
+- F-17 kann später nur bei ausreichendem Puffer nachgezogen werden.
 
 ## Nächster Schritt
 
-Entweder:
+`013-Eingangsprompt.md` ausführen.
 
-- optional `012-Eingangsprompt.md` ausführen, **oder**
-- Modul 012 bewusst auslassen und direkt Modul 013 Integration/Gerätetest starten.
-
-Keine Highscore-/Persistenzfunktion hinzufügen.
+Modul 013 ist kein neues Feature-Modul. Es dient der vollständigen Integration und Abnahme aller Pflichtanforderungen F-01 bis F-16 sowie der realen Simulator-/Geräteprüfung.

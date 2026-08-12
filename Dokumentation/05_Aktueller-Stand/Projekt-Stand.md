@@ -6,7 +6,7 @@
 **Eingearbeitet am:** 2026-08-12  
 **Branch laut Report:** `main`  
 **010-Commit:** `0ab0ef7 010: Bewertung und Audiofeedback`  
-**011-Commit:** `011: Ergebnis und Neustart` (Hash nach manuellem Commit eintragen)  
+**011-Commit:** Hash offen  
 **Build nach 011:** offen  
 **Simulator nach 011:** offen  
 **Testdeklarationen:** 155  
@@ -14,7 +14,7 @@
 
 ## Aktueller Funktionsstand
 
-Vorhanden:
+Auf Codeebene vorhanden:
 
 - genau ein zentrales volumetrisches Fenster
 - deutsche Startansicht
@@ -26,19 +26,15 @@ Vorhanden:
 - Teamzuordnungsphase
 - Drag-/Drop-Grundlage
 - genau-einmal-Speicherung von Priorität und Team
-- genau-einmal-Bewertung
-- +100/0-Punktelogik
+- +100/0-Bewertung
 - zwei lokale Audio-Platzhalter
 - 1,5-Sekunden-Auto-Transition
 - Wechsel zum nächsten Ticket
-- Wechsel nach letztem Ticket in `.ergebnis`
-- **Ergebnisansicht mit Score und „Erneut spielen"**
-- **vollständiger Reset-Zyklus**
+- Ergebnisphase
+- Ergebnisansicht
+- vollständiger Reset zurück zur Startansicht
 
-Noch nicht vorhanden:
-
-- finale eigene Blender-Monster
-- finale Sounddateien (nur Sinuston-Platzhalter)
+Damit ist der vollständige Pflicht-Spielzyklus auf Implementierungsebene geschlossen.
 
 ## Relevanter Dateibaum
 
@@ -74,7 +70,7 @@ Ticket_Tamer/
 │  │  │  └─ DebugInteractionHarnessView.swift
 │  │  ├─ InvestigationView.swift
 │  │  ├─ PrioritizationView.swift
-│  │  ├─ ResultView.swift          ← neu seit Modul 011
+│  │  ├─ ResultView.swift
 │  │  ├─ RootVolumeView.swift
 │  │  ├─ StartView.swift
 │  │  └─ TeamAssignmentView.swift
@@ -106,157 +102,94 @@ RootVolumeView
 │  └─ PrioritizationView
 ├─ .teamZuordnen
 │  └─ TeamAssignmentView
-├─ .ergebnis
-│  └─ ResultView          ← seit Modul 011 aktiv
-└─ default
-   └─ sessionPlaceholderView
+└─ .ergebnis
+   └─ ResultView
 ```
 
-## Ergebnisansicht (Modul 011)
+## ResultView
 
-Sichtbar ausschließlich:
-- `SessionModel.score` als Zahl
-- Schaltfläche „Erneut spielen" → `model.reset()`
+Sichtbar:
 
-Nicht sichtbar: Ticketanzahl, Maximalpunktzahl, Detailstatistik, Lösungen, Badges, Rangliste.
+- `model.score` als große Zahl
+- `Erneut spielen`
 
-## `reset()`-Semantik (vollständig)
+Nicht sichtbar:
 
-| Feld | Wert nach Reset |
-|---|---|
-| `selectedTicketCount` | `6` |
-| `sessionTickets` | `[]` |
-| `currentTicketIndex` | `0` |
-| `currentPhase` | `.start` |
-| `score` | `0` |
-| `selectedPriority` | `nil` |
-| `selectedTeam` | `nil` |
-| `isInputLocked` | `false` |
-| `priorityEvaluated` | `false` |
-| `teamEvaluated` | `false` |
+- Ticketanzahl
+- Statistik
+- richtige Lösungen
+- Badges
+- Highscore
+- Ranking
 
-## Modul-010-Schnittstellen (weiterhin aktiv)
+Button-Aktion:
 
-### `SessionModel.evaluatePriority() -> Bool?`
+`model.reset()`
 
-- richtig → +100 / `true`
-- falsch → +0 / `false`
-- bereits bewertet/ungültig → `nil`
+## Reset
 
-### `SessionModel.evaluateTeam() -> Bool?`
+Nach `reset()`:
 
-Analog für Team.
-
-### `SessionModel.completeTicketAfterTeamFeedback()`
-
-Weiteres Ticket:
-
-- Index +1
-- `selectedPriority = nil`
-- `selectedTeam = nil`
-- Bewertungsflags zurück
-- Input entsperrt
-- Phase `.untersuchen`
-- Score bleibt
-
-Letztes Ticket:
-
-- Phase `.ergebnis`
-- Score bleibt
-- Input entsperrt
-- kein Indexüberlauf
-
-## Bewertungsflags
-
-Intern:
-
-- `priorityEvaluated`
-- `teamEvaluated`
-
-Werden beim Ticketwechsel, Sitzungsstart und Reset zurückgesetzt.
-
-## Punkte
-
-- richtige Priorität: +100
-- falsche Priorität: 0
-- richtiges Team: +100
-- falsches Team: 0
-- keine negativen Punkte
-- maximal 200 pro Ticket
-
-## Audio
-
-### Dateien
-
-- `Resources/correct.wav`
-- `Resources/incorrect.wav`
-
-Status:
-
-- lokal
-- WAV
-- projekt-eigene Sinuston-Platzhalter
-- keine Fremdrechte
-
-### Service
-
-`Services/AudioService.swift` — AVFoundation / `AVAudioPlayer`
-
-## Feedback-Flow
-
-Priorität:
-
-```text
-savePriority
-→ evaluatePriority
-→ Sound
-→ 1.5 s
-→ beginTeamAssignmentPhase
-```
-
-Team:
-
-```text
-saveTeam
-→ evaluateTeam
-→ Sound
-→ 1.5 s
-→ completeTicketAfterTeamFeedback
-→ .ergebnis (letztes Ticket) oder .untersuchen (nächstes Ticket)
-```
-
-## Scope-Regel
-
-Die richtige Lösung wird nie angezeigt.
-
-Nicht vorhanden:
-
-- Lösungs-Overlay
-- „Richtig wäre …"
-- sichtbares richtiges Team
-- Richtig-/Falsch-Text
-- Punkt-Popup
+- Ticketanzahl 6
+- leere Sitzungstickets
+- Index 0
+- Phase `.start`
+- Score 0
+- Priorität nil
+- Team nil
+- Input-Lock false
+- Bewertungsflags false
 
 ## Teststand
 
 | Bereich | Stand |
 |---|---|
-| Tests vor 010 | 110 |
-| neue Tests Modul 010 | 30 |
-| neue Tests Modul 011 | 15 |
-| Tests nach 011 | **155** |
+| Tests vor 011 | 140 |
+| neue Tests | 15 |
+| Tests nach 011 | 155 |
 | vollständiger Lauf | offen |
+
+## Pflichtanforderungen — Implementierungsstatus
+
+| Bereich | Stand |
+|---|---|
+| Start | implementiert |
+| lokale Tickets | implementiert |
+| Sitzungsauswahl | implementiert |
+| Untersuchung | implementiert |
+| Priorisierung | implementiert |
+| Teamzuordnung | implementiert |
+| Drag/Drop | implementiert |
+| Scoring | implementiert |
+| Audio | technisch implementiert mit Platzhaltern |
+| Auto-Transition | implementiert |
+| Ergebnis | implementiert |
+| Reset | implementiert |
+
+## Noch offene Pflichtabnahme
+
+- Build
+- vollständige 155 Tests
+- Simulator-End-to-End
+- Audiohörbarkeit
+- Gesten
+- ResultView
+- fünf Neustarts
+- finale Blender-Monster
+- Vision-Pro-Gerätetest
+
+## Modul 012
+
+F-17 bedeutet **optionale Monsterreaktion**, nicht Highscore/Persistenz.
+
+Modul 012 darf nur einfache visuelle Monsterreaktionen ergänzen und ist nicht verpflichtend.
+
+Bei Zeitdruck direkt Modul 013 starten.
 
 ## Monster-Status
 
-Vier USDA-Platzhalter vorhanden. Finale Blender-Monster fehlen.
+Vier USDA-Platzhalter vorhanden. Vier finale eigene Blender-Monster fehlen weiterhin.
 
-## Offene Punkte
+## Audio-Status
 
-- Build nach 011
-- vollständiger 155-Testlauf
-- Audiohörbarkeit
-- Gesten-End-to-End im Simulator
-- finale Sounds optional ersetzen
-- finale Blender-Monster
-- `.DS_Store`-Bereinigung
+Zwei projekt-eigene WAV-Platzhalter vorhanden. Hörbarkeit und finale Soundentscheidung offen.

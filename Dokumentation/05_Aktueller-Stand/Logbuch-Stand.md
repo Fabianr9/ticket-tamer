@@ -1,16 +1,16 @@
 # Projektlogbuch — Ticket Tamer
 
-> Einziger aktueller Logbuch-Stand nach Einarbeitung von Modul 010.
+> Einziger aktueller Logbuch-Stand nach Einarbeitung von Modul 011.
 
-**Stand:** nach Modul `010` — Bewertung und Audiofeedback  
+**Stand:** nach Modul `011` — Ergebnis und Neustart  
 **Eingearbeitet am:** 2026-08-12  
-**Branch laut 010-Report:** `main`  
-**Modul-009-Commit:** `0c38caf feat:Modul009`  
-**Modul-010-Commit:** `0ab0ef7 010: Bewertung und Audiofeedback`  
-**Build nach Modul 010:** nicht nachgewiesen  
-**Simulator nach Modul 010:** nicht nachgewiesen  
+**Branch laut 011-Report:** `main`  
+**Letzter bestätigter Commit vor Modul 011:** `0ab0ef7 010: Bewertung und Audiofeedback`  
+**Modul-011-Commit:** Hash offen  
+**Build nach Modul 011:** nicht nachgewiesen  
+**Simulator nach Modul 011:** nicht nachgewiesen  
 **Vollständiger Testlauf:** nicht nachgewiesen  
-**Testdeklarationen:** 140
+**Testdeklarationen:** 155
 
 ## Modulstatus
 
@@ -25,210 +25,196 @@
 | 007 | Räumliche Interaktionsgrundlagen | implementiert; Laufzeitabnahme offen |
 | 008 | Priorisierungsphase | implementiert; Gestenabnahme offen |
 | 009 | Teamzuordnungsphase | implementiert; Laufzeitabnahme offen |
-| 010 | Bewertung und Audiofeedback | implementiert; Laufzeit-/Audioabnahme offen |
-| 011 | Ergebnis und Neustart | als Nächstes |
-| 012 | Optionale Monsterreaktion | Kann-Modul |
+| 010 | Bewertung und Audiofeedback | implementiert; Audio-/End-to-End-Abnahme offen |
+| 011 | Ergebnis und Neustart | implementiert; Laufzeitabnahme offen |
+| 012 | Optionale Monsterreaktion | optional / noch nicht entschieden |
 | 013 | Integration und Gerätetest | offen |
 | 014 | Abschlussdokumentation/Cleanup | offen |
 
-## Stand Modul 010
+## Stand Modul 011
 
-Modul 010 implementiert die vollständige Bewertungs- und Feedbackschicht.
+Modul 011 schließt den funktionalen Spielzyklus auf Codeebene:
+
+`Start → Untersuchung → Priorisierung → Teamzuordnung → Ergebnis → Neustart`
 
 ### Neue oder geänderte Bestandteile
 
-- `Resources/correct.wav`
-- `Resources/incorrect.wav`
-- `Services/AudioService.swift`
-- `FeedbackConstants` in `Support/AppConstants.swift`
-- `SessionModel.evaluatePriority()`
-- `SessionModel.evaluateTeam()`
-- `SessionModel.completeTicketAfterTeamFeedback()`
-- interne Flags `priorityEvaluated` und `teamEvaluated`
-- Feedback-Tasks in `PrioritizationView`
-- Feedback-Tasks in `TeamAssignmentView`
-- 30 neue `ScoringAndFeedbackTests`
+- `Views/ResultView.swift` — neu
+- `Views/RootVolumeView.swift` — `.ergebnis → ResultView`
+- `Ticket_TamerTests/Ticket_TamerTests.swift` — 15 neue Ergebnis-/Resettests
 
-### Bewertung
+Unverändert blieben laut Report:
 
-`evaluatePriority() -> Bool?`
+- `SessionModel.swift`
+- `StartView.swift`
+- `InvestigationView.swift`
+- `PrioritizationView.swift`
+- `TeamAssignmentView.swift`
+- `AudioService.swift`
+- `Localizable.xcstrings`
+- Scoring- und Ticketdaten
 
-- gültig nur in `.priorisieren`
-- benötigt `selectedPriority` und aktuelles Ticket
-- nur einmal pro Ticket
-- richtig: +100 und `true`
-- falsch: +0 und `false`
-- erneuter/ungültiger Aufruf: `nil`
+### Ergebnisansicht
 
-`evaluateTeam() -> Bool?` arbeitet entsprechend in `.teamZuordnen`.
+Sichtbar sind ausschließlich:
 
-### Punktelogik
+- `model.score` als Zahl
+- `Erneut spielen`
 
-- richtige Priorität: +100
-- falsche Priorität: 0
-- richtiges Team: +100
-- falsches Team: 0
-- kein Punktabzug
-- maximal 200 Punkte pro Ticket
-- Score bleibt über Ticketwechsel erhalten
-- Reset setzt Score auf 0
-
-### Genau-einmal-Schutz
-
-Interne Bewertungsflags verhindern doppelte Punkte bei:
-
-- View-Neuberechnung
-- mehrfachen Tasks
-- erneutem Methodenaufruf
-- mehrfachen Release-Ereignissen
-
-Die Flags werden beim Sitzungsstart, Ticketwechsel und Reset zurückgesetzt.
-
-### Audio
-
-Lokale Ressourcen:
-
-| Sound | Datei | Status |
-|---|---|---|
-| richtig | `correct.wav` | projekt-eigener Sinuston-Platzhalter |
-| falsch | `incorrect.wav` | projekt-eigener Sinuston-Platzhalter |
-
-Beide sind WAV 44.1 kHz, 16 bit, mono, ohne Fremdrechte.
-
-`AudioService` verwendet laut Report AVFoundation/`AVAudioPlayer`.
-
-Offen bleibt die tatsächliche Hörprüfung im Simulator beziehungsweise auf Gerät. Falls kein Audio hörbar ist, muss die Notwendigkeit einer expliziten Audio-Session-Konfiguration geprüft werden.
-
-### Automatischer Prioritätsflow
-
-1. `savePriority(_:)`
-2. Input gesperrt
-3. `evaluatePriority()`
-4. genau ein Richtig-/Falsch-Sound
-5. ca. 1,5 Sekunden warten
-6. `beginTeamAssignmentPhase()`
-7. Teamphase mit entsperrtem Input
-
-### Automatischer Teamflow
-
-1. `saveTeam(_:)`
-2. Input gesperrt
-3. `evaluateTeam()`
-4. genau ein Richtig-/Falsch-Sound
-5. ca. 1,5 Sekunden warten
-6. `completeTicketAfterTeamFeedback()`
-
-Bei weiterem Ticket:
-
-- Index +1
-- Priorität nil
-- Team nil
-- Bewertungsflags zurück
-- Input entsperrt
-- Phase `.untersuchen`
-- Score bleibt
-
-Nach letztem Ticket:
-
-- kein Indexüberlauf
-- Phase `.ergebnis`
-- Input entsperrt
-- Score bleibt
-- Sitzung bleibt für Ergebnisansicht erhalten
-
-### Feedbackdauer
-
-`FeedbackConstants.feedbackTransitionDelay = 1.5`
-
-### Richtige Lösung bleibt verborgen
-
-Nicht implementiert:
-
-- kein „Richtig wäre …“
-- kein sichtbares richtiges Team
-- kein Lösungs-Overlay
-- kein Richtig-/Falsch-Text
-- keine Lösungserklärung
-- keine farbliche Markierung des richtigen Ziels als Feedback
-
-Feedback besteht ausschließlich aus internem Score, Sound und automatischem Übergang.
-
-## Anforderungen nach Modul 010
-
-| Anforderung | Stand |
-|---|---|
-| F-11 Bewertung +100/0 | implementiert |
-| F-12 zwei lokale Sounds | technisch implementiert mit Platzhaltern |
-| F-12 richtige Lösung nicht anzeigen | implementiert |
-| F-13 Input-Lock + 1,5-s-Übergang | implementiert |
-| AK-08 Gestenlaufzeit | offen |
-| AK-09 Gestenlaufzeit | offen |
-| AK-10 End-to-End | offen |
-| AK-11 Scoring-Laufzeit | offen |
-| AK-12 Audiohörbarkeit | offen |
-| AK-13 Auto-Transition-Laufzeit | offen |
-
-## Teststand
-
-- vor Modul 010: 110 Testdeklarationen
-- neu: 30 `ScoringAndFeedbackTests`
-- nach Modul 010: 140 Testdeklarationen
-- vollständiger Testlauf nicht nachgewiesen
-
-## Bereitgestellte Schnittstellen für Modul 011
-
-- `SessionModel.score`
-- `SessionModel.reset()`
-- `SessionModel.sessionTickets`
-- `SessionModel.currentTicketIndex`
-- `GamePhase.ergebnis`
-
-Für die Ergebnisansicht dürfen `sessionTickets` und `currentTicketIndex` **nicht sichtbar als Statistik genutzt werden**.
-
-## Verbindliche Ergebnis-Scope-Regel
-
-F-15 verlangt ausschließlich:
-
-1. Gesamtpunktzahl als Zahl
-2. „Erneut spielen“
-
-Nicht zulässig:
+Nicht sichtbar:
 
 - Ticketanzahl
 - Maximalpunktzahl
-- Detailstatistik
-- Ticket-für-Ticket-Aufschlüsselung
+- Prozentwert
+- Trefferstatistik
+- Ticket-für-Ticket-Auswertung
 - richtige Lösungen
 - Badges
-- Rankings
+- Rang
 - Highscore
+- Zeit
+- Verlauf
 
-## Entscheidungslog — neue Punkte
+Das Accessibility-Label `Punkte: <score>` ist nicht sichtbar und verletzt den Minimalumfang nicht.
 
-- Modul 010 verwendet Bewertungsflags für genau-einmal-Punkte.
-- Die zwei WAV-Dateien sind projekt-eigene Platzhalter und keine Fremdassets.
-- Die richtige Lösung wird niemals angezeigt.
-- Ergebnisphase wird nach dem letzten Teamfeedback erreicht.
-- Modul 011 zeigt ausschließlich Scorezahl + „Erneut spielen“.
-- Empfehlung des 010-Reports für Ticketanzahl/Statistik wird nicht übernommen, weil sie F-15 widerspricht.
+### Reset
 
-## Offene Punkte vor Modul 011
+`SessionModel.reset()` war bereits vor Modul 011 vollständig und wurde nicht geändert.
 
-- [ ] Build nach Modul 010
-- [ ] Simulatorstart
-- [ ] vollständige 140 Tests
+Nach Reset:
+
+- `selectedTicketCount = 6`
+- `sessionTickets = []`
+- `currentTicketIndex = 0`
+- `currentPhase = .start`
+- `score = 0`
+- `selectedPriority = nil`
+- `selectedTeam = nil`
+- `isInputLocked = false`
+- `priorityEvaluated = false`
+- `teamEvaluated = false`
+
+### Task-Race-Prüfung
+
+Der Report meldet keinen Carry-over-Fix als notwendig.
+
+Begründung:
+
+- der Team-Feedback-Task prüft nach dem Sleep weiterhin `currentPhase == .teamZuordnen`
+- ein verspäteter alter Task soll damit nach einem Zustandswechsel nicht unkontrolliert weiterlaufen
+
+Diese Aussage ist code-review-basiert; eine reale Laufzeitprüfung nach schnellem Reset steht weiterhin aus.
+
+## Bewertung F-15 / F-16 / AK-15 / AK-16
+
+### Implementiert
+
+- F-15 Ergebnisansicht
+- F-16 Neustart/Reset
+- AK-15-Struktur
+- AK-16-Modellreset
+
+### Noch nicht laufzeitverifiziert
+
+- Ergebnisansicht real im Simulator
+- ausschließlich Score + Button sichtbar
+- Button kehrt real zur Startansicht zurück
+- Regler steht sichtbar wieder auf 6
+- fünf reale Neustartzyklen
+- 1-/2-/6-Ticket-End-to-End-Läufe
+
+Daher:
+
+- **F-15/F-16: implementiert**
+- **AK-15/AK-16: code- und testseitig vorbereitet, Laufzeitabnahme offen**
+
+## Teststand
+
+- vor Modul 011: 140 Testdeklarationen
+- neu: 15
+- nach Modul 011: 155 Testdeklarationen
+- vollständiger Testlauf: nicht nachgewiesen
+
+Neue Testbereiche:
+
+- Score bleibt in Ergebnisphase erhalten
+- Reset → `.start`
+- Ticketanzahl → 6
+- Sitzungstickets geleert
+- Index → 0
+- Score → 0
+- Priorität/Team → nil
+- Input-Lock → false
+- Bewertungsflags indirekt zurückgesetzt
+- fünf aufeinanderfolgende Resets stabil
+- neue Sitzung ohne alten Score/alte Entscheidungen
+
+## Wichtige Scope-Korrektur
+
+Die Empfehlung im 011-Report beschreibt F-17 fälschlich als „Highscore/Persistenz“.
+
+Das ist falsch.
+
+**F-17 ist ausschließlich die optionale Monsterreaktion.**
+
+Erlaubter optionaler Umfang:
+
+- einfache positive Reaktion bei richtiger Entscheidung
+- einfache negative/traurige Reaktion bei falscher Entscheidung
+
+Nicht Teil von F-17:
+
+- Highscore
+- Persistenz
+- Statistik
+- Ranglisten
+- Benutzerkonten
+- Historie
+
+## Entscheidungsstand zu Modul 012
+
+Modul 012 ist ein **Kann-Modul**.
+
+Es darf nur gestartet werden, wenn ausreichend Puffer vorhanden ist und keine Muss-Lücke gefährdet wird.
+
+Aktuell offene Muss-Themen sind wichtiger:
+
+- finale Blender-Monster
+- vollständiger Build/Testlauf
+- Audiohörbarkeit
+- Gesten-End-to-End
+- 1,5-s-Transitions
+- reale Ergebnis-/Resetabnahme
+- Vision-Pro-Gerätetest
+
+Daher gilt:
+
+- `012-Eingangsprompt.md` wird bereitgestellt
+- Ausführung ist optional
+- bei Zeitdruck direkt zu Modul 013 wechseln
+
+## Offene Punkte vor Modul 012/013
+
+- [ ] Modul-011-Commit/Hash dokumentieren
+- [ ] Build nach Modul 011
+- [ ] vollständige 155 Tests
 - [ ] Prioritäts-Gesten
 - [ ] Team-Gesten
 - [ ] Audio hörbar
 - [ ] 1,5-Sekunden-Transitions
-- [ ] 1-Ticket-Sitzung bis `.ergebnis`
-- [ ] Mehrticket-Sitzung bis `.ergebnis`
-- [ ] keine richtige Lösung sichtbar
-- [ ] final entscheiden, ob Audio-Platzhalter ersetzt werden
-- [ ] vier finale Blender-Monster weiterhin offen
+- [ ] Ergebnisansicht real prüfen
+- [ ] mindestens fünf Neustarts real prüfen
+- [ ] 1-/2-/6-Ticket-End-to-End
+- [ ] finale vier Blender-Monster
+- [ ] finale Soundentscheidung
+- [ ] `.DS_Store`-Bereinigung
+- [ ] Apple-Vision-Pro-Gerätetest
 
 ## Nächster Schritt
 
-`011-Eingangsprompt.md` ausführen.
+Entweder:
 
-Modul 011 implementiert ausschließlich die Ergebnisansicht mit Scorezahl und „Erneut spielen“ sowie den vollständigen Reset zur Startansicht mit Ticketanzahl 6.
+- optional `012-Eingangsprompt.md` ausführen, **oder**
+- Modul 012 bewusst auslassen und direkt Modul 013 Integration/Gerätetest starten.
+
+Keine Highscore-/Persistenzfunktion hinzufügen.

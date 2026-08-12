@@ -66,7 +66,7 @@ struct InvestigationView: View {
             let monsterWidth = contentWidth - cardWidth
 
             HStack(alignment: .center, spacing: LayoutConstants.investigationSpacing) {
-                monsterPanel
+                monsterPanel(availableSize: CGSize(width: monsterWidth, height: proxy.size.height))
                     .frame(width: monsterWidth, height: proxy.size.height)
 
                 // Fit-to-Space: feste Design-Canvas, gleichmaessig in den Bereich eingepasst.
@@ -89,8 +89,13 @@ struct InvestigationView: View {
 
     // MARK: - Monster-Panel
 
+    /// Zeigt das Monster mittig im zugewiesenen Bereich, vollständig und unverzerrt.
+    ///
+    /// - Parameter availableSize: Vom Layout zugewiesene Panelfläche in Punkten.
+    ///   Wird zusammen mit `LayoutConstants.monsterPanelDepth` in einen physischen
+    ///   Rahmen umgerechnet, in den das Modell eingepasst wird.
     @ViewBuilder
-    private var monsterPanel: some View {
+    private func monsterPanel(availableSize: CGSize) -> some View {
         if isLoadingMonster {
             VStack(spacing: LayoutConstants.investigationCardSpacing) {
                 ProgressView()
@@ -102,9 +107,15 @@ struct InvestigationView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if let entity = monsterEntity {
             RealityView { content in
-                entity.scale = SIMD3(repeating: LayoutConstants.monsterScale)
+                fitMonster(entity, into: availableSize)
                 content.add(entity)
+            } update: { _ in
+                // Fenster- oder Layoutänderung: Einpassung neu berechnen.
+                fitMonster(entity, into: availableSize)
             }
+            // Ohne explizite Tiefe hätte die RealityView praktisch keine Z-Ausdehnung
+            // und würde Modellteile vor/hinter der Ebene beschneiden.
+            .frame(depth: LayoutConstants.monsterPanelDepth)
         } else if monsterLoadError != nil {
             VStack(spacing: LayoutConstants.investigationCardSpacing) {
                 Image(systemName: "exclamationmark.triangle")
@@ -133,6 +144,63 @@ struct InvestigationView: View {
                 .font(.title3)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    // MARK: - Monster einpassen (Framing)
+
+    /// Skaliert und positioniert das Monster so, dass es vollständig im Panel liegt.
+    ///
+    /// Warum dynamisch statt fester Faktor: die vier Blender-Exporte haben unterschiedliche
+    /// Rohmaße. Ein konstanter `scale` (früher 0.2) ergibt deshalb je Asset eine andere
+    /// physische Größe — ein Monster passte, ein anderes ragte über die Panelgrenzen hinaus
+    /// und wurde von der `RealityView` beschnitten.
+    ///
+    /// Vorgehen:
+    /// 1. Rohmaße über `visualBounds` messen (ohne die eigene Transformation der Entity).
+    /// 2. Verfügbaren Quader aus Panelbreite, Panelhöhe und `monsterPanelDepth` bilden,
+    ///    abzüglich `monsterFramingInset` als Sicherheitsrand zu allen Begrenzungen.
+    /// 3. Die *größte* Modellausdehnung auf die *kleinste* Quaderkante abbilden.
+    ///    Ein einziger Faktor für X, Y und Z ⇒ keine Streckung, keine Verzerrung.
+    /// 4. Modell mittig setzen und so weit nach vorne schieben, wie die Tiefe es zulässt.
+    private func fitMonster(_ entity: Entity, into availableSize: CGSize) {
+        // 1. Rohmaße. `relativeTo: entity` schließt die eigene Skalierung aus und ist
+        //    damit unabhängig davon, ob bereits eingepasst wurde (idempotent).
+        let extents = entity.visualBounds(recursive: true, relativeTo: entity).extents
+        let largestExtent = max(extents.x, max(extents.y, extents.z))
+
+        guard largestExtent > LayoutConstants.monsterMinimumUsableExtent else {
+            DebugManager.log(.spawning, "VisualBounds unbrauchbar — Einpassung uebersprungen")
+            return
+        }
+
+        // 2. Verfügbarer Quader in Metern, abzüglich Sicherheitsrand.
+        let inset = 1 - LayoutConstants.monsterFramingInset
+        let widthMeters = Float(availableSize.width / LayoutConstants.pointsPerMeter) * inset
+        let heightMeters = Float(availableSize.height / LayoutConstants.pointsPerMeter) * inset
+        let depthMeters = Float(LayoutConstants.monsterPanelDepth) * inset
+
+        // 3. Kleinste Kante begrenzt; zusätzlich durch die gewünschte Zielgröße gedeckelt.
+        let limit = min(
+            min(widthMeters, heightMeters),
+            min(depthMeters, LayoutConstants.monsterTargetSize)
+        )
+
+        guard limit > 0 else { return }
+
+        let scale = limit / largestExtent
+        entity.scale = SIMD3<Float>(repeating: scale)
+
+        // 4. Zentrieren und so weit nach vorne schieben, wie die halbe Tiefe abzüglich
+        //    der halben Modelltiefe es erlaubt — sonst würde das Modell vorne anstoßen.
+        let fittedDepth = extents.z * scale
+        let maxForward = max((depthMeters - fittedDepth) / 2, 0)
+        let forward = min(LayoutConstants.monsterForwardOffset, maxForward)
+        entity.position = SIMD3<Float>(0, 0, forward)
+
+        DebugManager.log(
+            .spawning,
+            "Monster eingepasst: extents=\(extents), scale=\(scale), z=\(forward)"
+        )
     }
 
     // MARK: - Monster laden

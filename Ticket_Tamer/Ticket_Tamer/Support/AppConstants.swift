@@ -116,8 +116,45 @@ enum LayoutConstants {
     /// Maximale Zeilenzahl einer Symptomzeile.
     static let ticketCardSymptomLineLimit = 3
 
-    /// Skalierungsfaktor fuer den Monster-Entity in der Untersuchungsansicht (statische Anzeige).
+    /// Fester Skalierungsfaktor fuer den Monster-Entity.
+    ///
+    /// Nur noch von `DebugInteractionHarnessView` verwendet. Die Untersuchungsansicht
+    /// skaliert stattdessen dynamisch ueber `visualBounds` (siehe Monster-Panel unten),
+    /// weil die vier Blender-Exporte unterschiedliche Rohmasse besitzen und ein fester
+    /// Faktor je Asset zu einer anderen physischen Groesse fuehrt.
     static let monsterScale: Float = 0.2
+
+    // MARK: - Monster-Panel der Untersuchungsansicht (Framing)
+
+    /// Tiefe des Monster-Panels in Metern.
+    ///
+    /// Ohne explizite Tiefe hat die `RealityView` in einem 2D-Layout praktisch keine
+    /// Z-Ausdehnung; Modellteile vor und hinter der Ebene werden dann beschnitten.
+    /// Bleibt deutlich unter `centralVolumeDepth` (0.4 m), damit das Panel nicht
+    /// an die Volume-Grenzen stoesst.
+    static let monsterPanelDepth = 0.34
+
+    /// Naeherung: Punkte pro Meter in visionOS bei Standard-Betrachtungsabstand.
+    ///
+    /// Dient ausschliesslich dazu, die in Punkten bekannte Panelflaeche in einen
+    /// physischen Rahmen fuer die Monster-Einpassung umzurechnen.
+    static let pointsPerMeter = 1360.0
+
+    /// Anteil jeder Panelkante, der als Sicherheitsrand frei bleibt (0.15 = 15 %).
+    static let monsterFramingInset: Float = 0.15
+
+    /// Obergrenze der Kantenlaenge des eingepassten Monsters in Metern.
+    ///
+    /// Verhindert, dass das Monster in sehr grossen Volumes den Bildausschnitt dominiert.
+    static let monsterTargetSize: Float = 0.24
+
+    /// Gewuenschte Verschiebung des Monsters zur betrachtenden Person (+Z) in Metern.
+    ///
+    /// Wird beim Einpassen so begrenzt, dass das Modell die Panel-Tiefe nicht verlaesst.
+    static let monsterForwardOffset: Float = 0.06
+
+    /// Untere Schwelle, ab der ein `visualBounds`-Ergebnis als brauchbar gilt.
+    static let monsterMinimumUsableExtent: Float = 0.0001
 
     /// Skalierungsfaktor fuer den Monster-Entity in den Drag-Drop-Phasen (Priorisierung / Team).
     ///

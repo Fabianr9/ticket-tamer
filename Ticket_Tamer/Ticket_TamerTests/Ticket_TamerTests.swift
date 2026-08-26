@@ -1130,6 +1130,55 @@ struct PrioritizationPhaseTests {
         #expect(start.y + PrioritizationConstants.minimumDropLift <= limits.y)
     }
 
+    // MARK: - Sichtabstand zur Label-Zeile
+
+    /// Regression: bei `targetLabelTopPadding = 120` lag die Label-Zeile auf der
+    /// Monsteroberkante und verdeckte dessen Silhouette.
+    @Test("Monster steht in der Startposition deutlich unter der Label-Zeile")
+    func monsterStartsClearlyBelowLabelBand() {
+        let height = LayoutConstants.monsterDragDropTargetSize
+        let monsterTop = PrioritizationConstants.monsterStartPosition.y + height / 2
+        let gap = PrioritizationConstants.labelBandBottomY - monsterTop
+
+        #expect(gap > 0, "Monster ragt in die Label-Zeile")
+        #expect(gap >= height, "Abstand unter einer Monsterhöhe — wirkt gedrängt (\(gap) m)")
+    }
+
+    /// Auch am höchsten erreichbaren Zieh-Punkt darf keine Überdeckung entstehen —
+    /// und zwar für unterschiedlich hohe Modelle.
+    @Test("Zieh-Obergrenze hält das Monster unter der Label-Zeile")
+    func dragCeilingKeepsMonsterBelowLabelBand() {
+        // Bandbreite plausibler Modellhöhen nach dem Einpassen.
+        for height in [Float(0.08), 0.11, 0.13, 0.16] {
+            let ceiling = PrioritizationConstants.monsterCeiling(forMonsterHeight: height)
+            let topAtCeiling = ceiling + height / 2
+
+            #expect(
+                topAtCeiling < PrioritizationConstants.labelBandBottomY,
+                "Modellhöhe \(height): Oberkante \(topAtCeiling) überdeckt die Label-Zeile"
+            )
+
+            // Die für einen gültigen Drop nötige Anhebung muss unter der Decke bleiben.
+            let requiredY = PrioritizationConstants.monsterStartPosition.y
+                + PrioritizationConstants.minimumDropLift
+            #expect(
+                requiredY < ceiling,
+                "Modellhöhe \(height): Mindestanhebung liegt über der Zieh-Obergrenze"
+            )
+        }
+    }
+
+    /// Die Decke darf die Volume-Grenze nicht überschreiten — sonst wäre sie wirkungslos.
+    @Test("Zieh-Obergrenze liegt innerhalb der Spielfläche")
+    func dragCeilingStaysInsidePlayArea() {
+        let height = LayoutConstants.monsterDragDropTargetSize
+        let limits = PlanarDrag.playAreaLimits(forEntityOfSize: height)
+        let ceiling = PrioritizationConstants.monsterCeiling(forMonsterHeight: height)
+
+        #expect(ceiling <= limits.y)
+        #expect(ceiling > PrioritizationConstants.monsterStartPosition.y)
+    }
+
     @Test("Ablage ohne ausreichende Aufwärtsbewegung ist ungültig")
     func dropWithoutLiftIsInvalid() {
         let origin = PrioritizationConstants.monsterStartPosition

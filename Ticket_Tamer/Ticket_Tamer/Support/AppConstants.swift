@@ -188,10 +188,33 @@ enum LayoutConstants {
 
     /// Aussenabstand der Label-Zeile nach oben.
     ///
-    /// Bewusst grosszuegig: die Zeile sass zuvor direkt am oberen Rand, sodass das Monster
-    /// beim Ziehen bis fast an die Volume-Grenze musste. Tiefer gesetzt verkuerzt sich die
-    /// noetige Zieh-Strecke und ueber den Labels bleibt sichtbarer Rand.
-    static let targetLabelTopPadding = 120.0
+    /// **Layout-Fix:** dieser Wert lag zwischenzeitlich bei 120 pt. Da die SwiftUI-Ebene
+    /// nur rund `layoutPointsPerMeter` Punkte pro Meter umfasst, entsprachen 120 pt fast
+    /// 0.29 m — die Zeile rutschte damit genau auf die Oberkante des Monsters und verdeckte
+    /// dessen Silhouette. Mit 16 pt (≈ 0.04 m) sitzt sie wieder am oberen Rand.
+    static let targetLabelTopPadding = 16.0
+
+    /// Geschaetzte Gesamthoehe eines Ziel-Labels in Punkten.
+    ///
+    /// Schriftgroesse `title3` (~28 pt Zeilenhoehe) plus zweimal
+    /// `targetLabelVerticalPadding`. Dient ausschliesslich dazu, die Unterkante der
+    /// Label-Zeile in Metern abzuschaetzen (siehe `PrioritizationConstants.labelBandBottomY`).
+    static let targetLabelHeight = 28.0 + 2 * targetLabelVerticalPadding
+
+    /// Punkte pro Meter der **SwiftUI-Ebene** des volumetrischen Fensters.
+    ///
+    /// Am Simulator kalibriert: bei `targetLabelTopPadding = 120` lag die Mitte der
+    /// Label-Zeile exakt auf der Oberkante des Monsters (y = 0.045 m). Daraus folgt
+    /// (120 + 28) pt ≙ (0.4 − 0.045) m ⇒ rund 417 pt/m.
+    ///
+    /// Bewusst getrennt von `pointsPerMeter`: jener Wert steuert die Empfindlichkeit der
+    /// Zieh-Geste und ist so eingestellt, wie sich die Interaktion gut anfuehlt. Dieser Wert
+    /// hier beschreibt dagegen die tatsaechliche Groesse der 2D-Ebene und wird nur fuer
+    /// Layoutberechnungen verwendet.
+    ///
+    /// Nachmessen: `targetLabelTopPadding` veraendern und pruefen, auf welcher Hoehe die
+    /// Label-Zeile relativ zum Monster liegt.
+    static let layoutPointsPerMeter = 417.0
 
     /// Seitlicher Aussenabstand der Label-Zeile.
     static let targetLabelRowHorizontalPadding = 16.0
@@ -287,6 +310,46 @@ enum PrioritizationConstants {
     /// Abstand zu allen drei Zielen > `InteractionConstants.dropTargetRadius`, das Monster
     /// liegt also zu Beginn in keinem Zielbereich (AK-10).
     static let monsterStartPosition = SIMD3<Float>(0, -0.02, 0.06)
+
+    // MARK: - Label-Band und Sichtabstand zum Monster
+
+    /// Y-Wert der **Unterkante** der Label-Zeile in Szenenkoordinaten (Meter).
+    ///
+    /// Die Labels sind eine SwiftUI-2D-Ebene, das Monster eine RealityKit-Entity. Um beide
+    /// gegeneinander abstimmen zu können, wird die in Punkten bekannte Position der Zeile
+    /// über `LayoutConstants.layoutPointsPerMeter` in Meter umgerechnet:
+    ///
+    ///     Unterkante = halbe Volume-Höhe − (Aussenabstand + Labelhöhe) / Punkte-pro-Meter
+    ///
+    /// Alles unterhalb dieses Wertes ist frei — dort darf das Monster stehen, ohne von den
+    /// Auswahlflächen überdeckt zu werden.
+    static var labelBandBottomY: Float {
+        let halfHeight = Float(LayoutConstants.centralVolumeHeight / 2)
+        let offsetInMeters = Float(
+            (LayoutConstants.targetLabelTopPadding + LayoutConstants.targetLabelHeight)
+                / LayoutConstants.layoutPointsPerMeter
+        )
+        return halfHeight - offsetInMeters
+    }
+
+    /// Sichtabstand zwischen Monsteroberkante und Label-Unterkante, **in Monsterhöhen**.
+    ///
+    /// Bewusst als Vielfaches der Modellhöhe statt als fester Meterwert: höhere Modelle
+    /// bekommen automatisch mehr Abstand, flachere weniger. Damit bleibt der optische
+    /// Eindruck über alle vier Monster-Assets gleich, obwohl deren Proportionen abweichen.
+    static let labelClearanceInMonsterHeights: Float = 0.3
+
+    /// Höchster erlaubter Y-Wert für die **Mitte** des Monsters.
+    ///
+    /// Ergibt sich aus der Label-Unterkante abzüglich Sichtabstand und halber Modellhöhe.
+    /// Dadurch kann das Monster auch am höchsten Zieh-Punkt nicht unter die Auswahlflächen
+    /// geraten — die Silhouette bleibt zu jedem Zeitpunkt vollständig sichtbar.
+    ///
+    /// - Parameter height: **Gemessene** Höhe des geladenen Modells in Metern
+    ///   (aus `MonsterAssetProvider.fit`), nicht der Nennwert.
+    static func monsterCeiling(forMonsterHeight height: Float) -> Float {
+        labelBandBottomY - height * labelClearanceInMonsterHeights - height / 2
+    }
 
     // MARK: - Label-Offset
 

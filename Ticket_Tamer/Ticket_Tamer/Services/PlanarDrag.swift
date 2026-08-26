@@ -49,10 +49,14 @@ enum PlanarDrag {
     ///     vom Volume-Mittelpunkt. Siehe `playAreaLimits(forEntityOfSize:)`.
     /// - Returns: Position mit angepasstem X und Y bei **unveränderter Z-Tiefe**,
     ///   geklemmt auf `limits`.
+    ///   - maximumY: Zusätzliche Obergrenze für Y, unabhängig von `limits`. Wird genutzt,
+    ///     um das Monster unterhalb der Label-Zeile zu halten
+    ///     (`PrioritizationConstants.monsterCeiling(forMonsterHeight:)`).
     static func position(
         from start: SIMD3<Float>,
         translation: CGSize,
-        limits: SIMD3<Float> = SIMD3<Float>(repeating: .greatestFiniteMagnitude)
+        limits: SIMD3<Float> = SIMD3<Float>(repeating: .greatestFiniteMagnitude),
+        maximumY: Float = .greatestFiniteMagnitude
     ) -> SIMD3<Float> {
         let pointsPerMeter = LayoutConstants.pointsPerMeter
 
@@ -66,7 +70,8 @@ enum PlanarDrag {
 
         return SIMD3<Float>(
             clamp(moved.x, to: limits.x),
-            clamp(moved.y, to: limits.y),
+            // Zusätzlich zur symmetrischen Volume-Grenze die Label-Unterkante beachten.
+            min(clamp(moved.y, to: limits.y), maximumY),
             // Z wird nicht geklemmt: der Wert stammt unverändert aus `start` und liegt
             // damit per Definition bereits innerhalb der Spielfläche.
             moved.z

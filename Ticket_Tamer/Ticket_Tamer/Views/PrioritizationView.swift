@@ -75,6 +75,13 @@ struct PrioritizationView: View {
     /// Lokale Audio-Kapselung — kein globaler Service-Locator.
     @State private var audioService = AudioService()
 
+    /// Tatsächlich gemessene Höhe des geladenen Modells in Metern.
+    ///
+    /// Stammt aus `MonsterAssetProvider.fit` und ist je Asset leicht unterschiedlich.
+    /// Grundlage für den Sichtabstand zur Label-Zeile — dadurch passt der Abstand
+    /// automatisch zu höheren wie flacheren Monstern.
+    @State private var monsterHeight: Float = LayoutConstants.monsterDragDropTargetSize
+
     /// Position des Monsters zu Beginn der laufenden Zieh-Geste.
     ///
     /// Die Bewegung wird relativ zu diesem Wert berechnet (`PlanarDrag`), damit die
@@ -278,7 +285,12 @@ struct PrioritizationView: View {
             let entity = try await MonsterAssetProvider.loadMonster(assetID: ticket.monsterAssetId)
             // Größe aus den tatsächlichen Modellmaßen ableiten statt aus einem festen Faktor —
             // sonst ist die physische Größe je Blender-Export unterschiedlich.
-            MonsterAssetProvider.fit(entity, toMaxExtent: LayoutConstants.monsterDragDropTargetSize)
+            let fitted = MonsterAssetProvider.fit(
+                entity,
+                toMaxExtent: LayoutConstants.monsterDragDropTargetSize
+            )
+            // Gemessene Höhe merken — Grundlage für den Sichtabstand zur Label-Zeile.
+            monsterHeight = fitted.y
             entity.position = PrioritizationConstants.monsterStartPosition
             originTransform = entity.transform
             MonsterInteractionConfigurator.configure(entity, mode: .dragDrop)
@@ -323,7 +335,10 @@ struct PrioritizationView: View {
                 translation: value.gestureValue.translation,
                 limits: PlanarDrag.playAreaLimits(
                     forEntityOfSize: LayoutConstants.monsterDragDropTargetSize
-                )
+                ),
+                // Obergrenze aus der gemessenen Modellhöhe: das Monster bleibt auch am
+                // höchsten Zieh-Punkt sichtbar unterhalb der Auswahlflächen.
+                maximumY: PrioritizationConstants.monsterCeiling(forMonsterHeight: monsterHeight)
             ),
             relativeTo: nil
         )

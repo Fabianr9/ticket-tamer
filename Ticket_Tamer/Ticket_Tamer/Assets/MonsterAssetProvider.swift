@@ -187,3 +187,54 @@ enum MonsterAssetProvider {
         }
     }
 }
+
+// MARK: - Sichtbare Bounds (Modul 013 — Drag-/Drop-Randfix)
+
+extension MonsterAssetProvider {
+
+    /// Sichtbare Ausdehnung des Monsters **relativ zu seinem Root**, inklusive Skalierung.
+    ///
+    /// Grundlage für `DragBounds.safeRegion(volume:monsterBounds:padding:)` und für die
+    /// Überlappungsprüfung in `DropEvaluator.evaluateOverlap`.
+    ///
+    /// ## Warum nicht das Nennmaß `LayoutConstants.monsterDragDropTargetSize`
+    ///
+    /// Das Nennmaß beschreibt nur das **Ziel** der Einpassung, nicht das Ergebnis:
+    ///
+    /// * `fit(_:toMaxExtent:)` bricht bei unbrauchbaren `visualBounds` still ab und lässt
+    ///   die Skalierung unverändert — das Nennmaß gilt dann gar nicht,
+    /// * es beschreibt ausschließlich die **größte** Kante. Ein Modell von 0.13 m Höhe
+    ///   und 0.06 m Breite würde horizontal doppelt so stark eingeschränkt wie nötig,
+    /// * es sagt nichts darüber, wie die Hülle um den Ursprung verteilt ist.
+    ///
+    /// Gemessen wird deshalb tatsächlich, je Asset und je Seite.
+    ///
+    /// - Parameter entity: Der Wrapper aus `loadMonster(assetID:)`, üblicherweise bereits
+    ///   über `fit(_:toMaxExtent:)` eingepasst.
+    /// - Returns: Box mit den Offsets `minX/maxX/minY/maxY/minZ/maxZ` relativ zum Root.
+    ///   Für ein über `wrapAndCenter` zentriertes Modell liegt sie annähernd symmetrisch
+    ///   um den Ursprung; für ein Modell mit Ursprung am Fuß entsprechend verschoben.
+    static func localVisualBounds(of entity: Entity) -> BoundingBox {
+        // `relativeTo: entity` misst im Eigenraum und schließt die eigene Skalierung aus.
+        // Deshalb wird sie anschließend explizit angewendet — so ist das Ergebnis
+        // unabhängig davon, ob die Entity bereits einer Szene hinzugefügt wurde.
+        let raw = entity.visualBounds(recursive: true, relativeTo: entity)
+        let scale = entity.scale
+
+        let cornerA = raw.min * scale
+        let cornerB = raw.max * scale
+
+        return BoundingBox(
+            min: SIMD3<Float>(
+                Swift.min(cornerA.x, cornerB.x),
+                Swift.min(cornerA.y, cornerB.y),
+                Swift.min(cornerA.z, cornerB.z)
+            ),
+            max: SIMD3<Float>(
+                Swift.max(cornerA.x, cornerB.x),
+                Swift.max(cornerA.y, cornerB.y),
+                Swift.max(cornerA.z, cornerB.z)
+            )
+        )
+    }
+}

@@ -1,4 +1,6 @@
 import RealityKit
+import simd
+import Spatial
 import SwiftUI
 
 // MARK: - Ziel-ID → SupportTeam Mapping (Modul 009 — F-09 / AK-09)
@@ -40,6 +42,14 @@ enum TeamTargetMapping {
     static func team(for targetID: String) -> SupportTeam? {
         allTargets.first { $0.id == targetID }?.team
     }
+
+    /// Gibt die technische Ziel-ID für ein `SupportTeam` zurück.
+    ///
+    /// Nötig, damit das sichtbare Label seinen gemessenen Rahmen unter derselben ID
+    /// meldet, unter der die zugehörige `DropTargetComponent` registriert ist.
+    static func targetID(for team: SupportTeam) -> String? {
+        allTargets.first { $0.team == team }?.id
+    }
 }
 
 // MARK: - Teamzuordnungsansicht (Modul 009 — F-09 / AK-09 / AK-10)
@@ -74,6 +84,23 @@ struct TeamAssignmentView: View {
     @State private var dragStartPosition: SIMD3<Float>? = nil
     @State private var loadError: String? = nil
 
+    // MARK: - Modul 013: gemessene Drag-/Drop-Geometrie
+
+    /// Gemeinsame Geometriequelle beider Zieh-Phasen — identisch zur Priorisierungsphase.
+    ///
+    /// Beide Ansichten hatten dieselbe technische Ursache (geratene statt gemessener
+    /// Grenzen) und teilen sich deshalb bewusst dieselbe Lösung.
+    @State private var geometry = MonsterDragGeometry()
+
+    /// Rahmen der sichtbaren Team-Labels in Punkten, je Ziel-ID.
+    @State private var labelFrames: [String: CGRect] = [:]
+
+    /// Verhindert, dass die Grenz-Debugausgabe während einer Geste in jedem Frame erscheint.
+    @State private var clampLogged: Bool = false
+
+    /// Benannter Koordinatenraum, in dem die Label-Rahmen gemessen werden.
+    private static let layoutSpace = "teamAssignmentLayout"
+
     // MARK: - Modul 010: Feedback-Zustand
 
     /// Verhindert mehrfachen Task-Start bei View-Refresh nach gespeichertem Team.
@@ -84,12 +111,15 @@ struct TeamAssignmentView: View {
     // MARK: - Body
 
     var body: some View {
+        // Siehe `PrioritizationView`: der Layoutrahmen aus `GeometryReader3D` zusammen mit
+        // `content.convert(_:from:to:)` ergibt die tatsächliche Volume-Größe in Metern.
+        GeometryReader3D { proxy in
         ZStack(alignment: .top) {
             // 3D-Szene
             // update: liest monsterEntity und targetEntities direkt — notwendig damit
             // RealityKit den Closure nach @State-Änderungen erneut ausführt (AK-09 Fix).
-            RealityView { _ in
-                // Szene wird via update: aufgebaut, nachdem Entities asynchron bereit sind.
+            RealityView { content in
+                measureVolume(proxy: proxy, content: content)
             } update: { content in
                 // Direkte Reads stellen SwiftUI-Dependency-Tracking sicher.
                 let currentMonster  = monsterEntity
@@ -101,6 +131,8 @@ struct TeamAssignmentView: View {
                 if let monster = currentMonster, monster.scene == nil {
                     content.add(monster)
                 }
+
+                measureVolume(proxy: proxy, content: content)
             }
             .gesture(
                 DragGesture()
@@ -144,6 +176,13 @@ struct TeamAssignmentView: View {
                     .padding(.top, 80)
             }
         }
+        .coordinateSpace(.named(Self.layoutSpace))
+        .onPreferenceChange(TargetFramePreferenceKey.self) { frames in
+            Task { @MainActor in
+                labelFrames = frames
+                syncTargetGeometry()
+            }
+        }
         .task {
             await setupScene()
         }
@@ -184,6 +223,7 @@ struct TeamAssignmentView: View {
                 DebugManager.log(.state, "Team-Feedbacktask abgeschlossen → \(model.currentPhase)")
             }
         }
+        }
     }
 
     // MARK: - Label-Subview
@@ -205,6 +245,14 @@ struct TeamAssignmentView: View {
             .background(
                 labelColor(for: team).opacity(LayoutConstants.targetLabelBackgroundOpacity),
                 in: RoundedRectangle(cornerRadius: LayoutConstants.targetLabelCornerRadius)
+            )
+            // Bewusst **vor** `.frame(maxWidth: .infinity)`: gemeldet wird der Rahmen der
+            // sichtbaren farbigen Fläche, nicht der der unsichtbaren Spaltenbreite. Die
+            // Beschriftung bleibt an ihrer Layoutposition, nur das DropTarget richtet sich
+            // danach aus.
+            .reportTargetFrame(
+                id: TeamTargetMapping.targetID(for: team) ?? team.rawValue,
+                in: .named(Self.layoutSpace)
             )
             .frame(maxWidth: .infinity)
     }
@@ -238,15 +286,19 @@ struct TeamAssignmentView: View {
                 )
             )
 
-            // Sichtbare Zielkugel mit Teamfarbe (neutral, kein Bewertungssignal).
-            // `dropTargetVisualRadius` statt `dropTargetRadius` — siehe Konstantendoku:
-            // der Trefferradius ist eine Toleranz, keine Anzeigegröße. Trefferlogik unverändert.
-            let mesh = MeshResource.generateSphere(radius: InteractionConstants.dropTargetVisualRadius)
-            var material = SimpleMaterial()
-            material.color = .init(tint: uiColor(for: targetDef.team).withAlphaComponent(0.50))
-            let indicator = ModelEntity(mesh: mesh, materials: [material])
-            entity.addChild(indicator)
-
+            // Bewusst KEINE sichtbare Zielkugel mehr.
+            //
+            // Hier hing eine halbtransparente Kugel am Zielentity. Solange die Zielentity
+            // bei festen Meterwerten stand, war das ein eigenständiges drittes Element:
+            // sichtbare Beschriftung oben/unten, farbige Kugel in der Mitte, unsichtbarer
+            // Trefferbereich um die Kugel. Für die Nutzerin war damit nicht erkennbar,
+            // worauf sie das Monster eigentlich ziehen soll.
+            //
+            // Seit dem Modul-013-Randfix liegt die Trefferfläche deckungsgleich auf der
+            // sichtbaren Beschriftung (siehe `MonsterDragGeometry.updateTargets`). Die
+            // Kugel würde jetzt mitten auf dem Label sitzen und dessen Text verdecken.
+            // Sichtbares Ziel ist deshalb — wie in der Priorisierungsphase — allein die
+            // Beschriftung. Damit verhalten sich beide Phasen identisch.
             targetEntities.append(entity)
             DebugManager.log(.spawning, "Teamstation bereit: \(targetDef.id) an \(targetDef.position)")
         }
@@ -266,6 +318,12 @@ struct TeamAssignmentView: View {
             originTransform = entity.transform
             MonsterInteractionConfigurator.configure(entity, mode: .dragDrop)
             monsterEntity = entity
+
+            // Tatsächliche sichtbare Hülle messen — Grundlage für den sicheren
+            // Zieh-Bereich und für die Überlappungsprüfung beim Loslassen.
+            geometry.measureMonster(entity, assetID: ticket.monsterAssetId)
+            syncTargetGeometry()
+
             DebugManager.log(.spawning, "Monster bereit: \(ticket.monsterAssetId), Modus: dragDrop")
         } catch {
             DebugManager.log(.spawning, "Monster-Load fehlgeschlagen: \(error.localizedDescription)")
@@ -273,14 +331,48 @@ struct TeamAssignmentView: View {
         }
     }
 
-    /// UIColor-Pendant für SimpleMaterial (je Team, neutral).
-    private func uiColor(for team: SupportTeam) -> UIColor {
-        switch team {
-        case .netzwerk:  return .systemBlue
-        case .konto:     return .systemPurple
-        case .software:  return .systemTeal
-        case .hardware:  return .systemIndigo
+    // Hinweis: `uiColor(for:)` ist entfallen. Die Funktion lieferte ausschließlich den
+    // Tint für das `SimpleMaterial` der entfernten Zielkugeln. Die sichtbaren Teamfarben
+    // kommen aus `labelColor(for:)`.
+
+    // MARK: - Geometrie (Modul 013 — Drag-/Drop-Randfix)
+
+    /// Misst das tatsächliche Volume und die Layoutebene.
+    ///
+    /// Identisch zur Priorisierungsphase — dieselbe Ursache, dieselbe Lösung.
+    private func measureVolume(proxy: GeometryProxy3D, content: RealityViewContent) {
+        let localFrame = proxy.frame(in: .local)
+
+        // Entities werden über `content.add(_:)` direkt an der Szenenwurzel eingehängt;
+        // `entity.position` und `.scene` beschreiben deshalb denselben Raum.
+        let volume = content.convert(localFrame, from: .local, to: .scene)
+
+        let measured = VolumeMetrics(
+            volume: volume,
+            layoutFrame: CGRect(
+                x: localFrame.origin.x,
+                y: localFrame.origin.y,
+                width: localFrame.size.width,
+                height: localFrame.size.height
+            )
+        )
+
+        guard measured.isUsable, geometry.metrics != measured else { return }
+
+        Task { @MainActor in
+            geometry.update(metrics: measured)
+            syncTargetGeometry()
         }
+    }
+
+    /// Richtet die technischen DropTargets auf die gemessenen Rahmen der sichtbaren
+    /// Labels aus. Die Labels selbst werden nicht bewegt.
+    private func syncTargetGeometry() {
+        geometry.updateTargets(
+            labelFrames: labelFrames,
+            entities: targetEntities,
+            dropPlaneZ: TeamAssignmentConstants.monsterStartPosition.z
+        )
     }
 
     // MARK: - Gesture-Handler
@@ -301,6 +393,12 @@ struct TeamAssignmentView: View {
         if dragStartPosition == nil {
             dragStartPosition = start
             DebugManager.log(.input, "[Monster Transform BEFORE DRAG] \(entity.dragStateSummary)")
+            // Kontrollausgabe: lokale und Weltposition müssen übereinstimmen — siehe
+            // gleichnamige Ausgabe in `PrioritizationView`.
+            DebugManager.log(
+                .physics,
+                "Raumprobe: local=\(entity.position) world=\(entity.position(relativeTo: nil))"
+            )
         }
 
         // Planare Bewegung auf konstanter Tiefe — identisch zur Priorisierungsphase.
@@ -308,18 +406,44 @@ struct TeamAssignmentView: View {
         // schrieb die Handtiefe direkt in die Entity: Sprung nach vorne beim Greifen,
         // Stehenbleiben auf Handtiefe beim Loslassen, kaum horizontaler Weg.
         // Nur die Translation wird geschrieben — Rotation und Scale bleiben unangetastet.
-        entity.position = PlanarDrag.position(
+        let requested = PlanarDrag.requestedPosition(
             from: start,
-            translation: value.gestureValue.translation,
-            limits: PlanarDrag.playAreaLimits(
-                forEntityOfSize: LayoutConstants.monsterDragDropTargetSize
-            )
+            translation: value.gestureValue.translation
         )
+
+        if let allowed = geometry.clamped(requested) {
+            // Einmal je Geste protokollieren, sobald die Grenze tatsächlich greift.
+            if !clampLogged, simd_distance(allowed, requested) > 0.0005 {
+                clampLogged = true
+                DebugManager.log(
+                    .physics,
+                    "Requested drag position: \(requested) | Clamped drag position: \(allowed)"
+                )
+                if let safe = geometry.safeBounds {
+                    DebugManager.log(.physics, safe.debugSummary)
+                }
+            }
+
+            // Grenze aus gemessenem Volume minus gemessener Monsterhülle minus Padding.
+            // Wirkt an allen vier Rändern und achsenweise unabhängig — an einer Ecke
+            // gleitet das Monster entlang der jeweils freien Achse weiter.
+            entity.position = allowed
+        } else {
+            // Rückfallebene, solange Volume oder Monster noch nicht vermessen sind.
+            entity.position = PlanarDrag.position(
+                from: start,
+                translation: value.gestureValue.translation,
+                limits: PlanarDrag.playAreaLimits(
+                    forEntityOfSize: LayoutConstants.monsterDragDropTargetSize
+                )
+            )
+        }
     }
 
     private func handleDragEnded(value: EntityTargetValue<DragGesture.Value>) {
         // Immer zuerst: die Geste ist beendet, der gemerkte Startpunkt gilt nicht mehr.
         dragStartPosition = nil
+        clampLogged = false
 
         guard !model.isInputLocked else {
             DebugManager.log(.input, "Release ignoriert: Input bereits gesperrt (AK-10)")
@@ -327,35 +451,42 @@ struct TeamAssignmentView: View {
         }
         guard let entity = monsterEntity, value.entity === entity else { return }
 
-        // Nächster-Nachbar-Auswertung statt absoluter Trefferradien.
+        // Überlappungsbasierte Auswertung — identisch zur Priorisierungsphase.
         //
-        // Nötig geworden durch das vergrößerte Volume (1.0 × 1.0 m): die Teamstationen liegen
-        // bei festen Meterwerten, der beim Ziehen zum jeweiligen Label tatsächlich erreichte
-        // Punkt verschiebt sich mit der Volumegröße. Mit Radiusprüfung wären die Stationen
-        // knapp außerhalb gelandet — derselbe Fehler, der zuvor in der Priorisierungsphase
-        // nur „Wichtig" funktionieren ließ.
-        let descriptors: [DropEvaluator.TargetDescriptor] = targetEntities.compactMap { e in
-            guard let comp = e.components[DropTargetComponent.self] else { return nil }
-            return DropEvaluator.TargetDescriptor(
-                id: comp.id,
-                // Lokal wie das Monster — beide sind Kinder derselben Wurzelentity.
-                position: e.position,
-                radius: comp.radius
-            )
-        }
-
+        // `evaluateNearest` teilte zuvor die gesamte erreichbare Fläche unter den vier
+        // Stationen auf: jede Ablage jenseits von 0.15 m Bewegung traf zwangsläufig eine
+        // davon, auch eine Ablage genau zwischen zwei Stationen. `evaluateOverlap` verlangt
+        // stattdessen, dass die sichtbare Monsterhülle die sichtbare Zielfläche
+        // ausreichend überdeckt.
         let origin = originTransform?.translation ?? TeamAssignmentConstants.monsterStartPosition
         let dropped = entity.position
 
         DebugManager.log(.physics, "[Monster Transform AT RELEASE] \(entity.dragStateSummary)")
         DebugManager.log(.physics, "Drop bei \(dropped), Start \(origin)")
 
-        if let hitID = DropEvaluator.evaluateNearest(
-            entityPosition: dropped,
-            origin: origin,
-            targets: descriptors,
-            minimumDistance: TeamAssignmentConstants.minimumDropDistance
-        ) {
+        let hit: String?
+        if geometry.canEvaluateOverlap {
+            hit = geometry.hitTarget(at: dropped)
+        } else {
+            // Rückfallebene, solange die Label-Rahmen noch nicht gemessen sind.
+            let descriptors: [DropEvaluator.TargetDescriptor] = targetEntities.compactMap { e in
+                guard let comp = e.components[DropTargetComponent.self] else { return nil }
+                return DropEvaluator.TargetDescriptor(
+                    id: comp.id,
+                    position: e.position,
+                    radius: comp.radius
+                )
+            }
+            hit = DropEvaluator.evaluateNearest(
+                entityPosition: dropped,
+                origin: origin,
+                targets: descriptors,
+                minimumDistance: TeamAssignmentConstants.minimumDropDistance
+            )
+            DebugManager.log(.physics, "Fallback-Auswertung (Geometrie noch nicht vermessen)")
+        }
+
+        if let hitID = hit {
             DebugManager.log(.physics, "Gueltiger Drop: Ziel=\(hitID)")
             if let team = TeamTargetMapping.team(for: hitID) {
                 model.saveTeam(team)

@@ -1,4 +1,6 @@
 import RealityKit
+import simd
+import Spatial
 import SwiftUI
 
 // MARK: - Ziel-ID → TicketPriority Mapping (Modul 008 — F-08 / AK-08)
@@ -88,15 +90,40 @@ struct PrioritizationView: View {
     /// Tiefenebene erhalten bleibt. `nil`, solange keine Geste läuft.
     @State private var dragStartPosition: SIMD3<Float>? = nil
 
+    // MARK: - Modul 013: gemessene Drag-/Drop-Geometrie
+
+    /// Gemeinsame Geometriequelle beider Zieh-Phasen — gemessenes Volume, gemessene
+    /// Monster-Bounds, daraus abgeleiteter sicherer Bereich und die an den sichtbaren
+    /// Labels ausgerichteten Zielflächen.
+    @State private var geometry = MonsterDragGeometry()
+
+    /// Rahmen der sichtbaren Prioritäts-Labels in Punkten, je Ziel-ID.
+    @State private var labelFrames: [String: CGRect] = [:]
+
+    /// Verhindert, dass die Grenz-Debugausgabe während einer Geste in jedem Frame erscheint.
+    @State private var clampLogged: Bool = false
+
+    /// Benannter Koordinatenraum, in dem die Label-Rahmen gemessen werden.
+    ///
+    /// Muss derselbe Raum sein, dessen Ausdehnung `VolumeMetrics.layoutFrame` beschreibt —
+    /// sonst stimmen die abgeleiteten Zielflächen nicht mit den sichtbaren Labels überein.
+    private static let layoutSpace = "prioritizationLayout"
+
     // MARK: - Body
 
     var body: some View {
+        // `GeometryReader3D` liefert den tatsächlichen Layoutrahmen; zusammen mit
+        // `content.convert(_:from:to:)` ergibt sich daraus die echte Volume-Größe in
+        // Metern. Damit entfällt die Annahme, das Volume habe exakt die Maße aus
+        // `LayoutConstants.centralVolume*` — genau diese Annahme war die gemeinsame
+        // Ursache des Beschnitts in beiden Zieh-Phasen.
+        GeometryReader3D { proxy in
         ZStack(alignment: .top) {
             // 3D-Szene
             // update: liest monsterEntity und targetEntities direkt — notwendig damit
             // RealityKit den Closure nach @State-Änderungen erneut ausführt (AK-08 Fix).
-            RealityView { _ in
-                // Szene wird via update: aufgebaut, nachdem Entities asynchron bereit sind.
+            RealityView { content in
+                measureVolume(proxy: proxy, content: content)
             } update: { content in
                 // Direkte Reads stellen SwiftUI-Dependency-Tracking sicher.
                 let currentMonster  = monsterEntity
@@ -108,6 +135,8 @@ struct PrioritizationView: View {
                 if let monster = currentMonster, monster.scene == nil {
                     content.add(monster)
                 }
+
+                measureVolume(proxy: proxy, content: content)
             }
             .gesture(
                 DragGesture()
@@ -121,7 +150,7 @@ struct PrioritizationView: View {
             // Visuell mit den drei Zielkugeln ausgerichtet (links / Mitte / rechts).
             HStack(spacing: LayoutConstants.targetLabelRowSpacing) {
                 ForEach(PriorityTargetMapping.allTargets, id: \.id) { target in
-                    priorityLabel(target.priority.displayName, priority: target.priority)
+                    priorityLabel(for: target)
                 }
             }
             .padding(.top, LayoutConstants.targetLabelTopPadding)
@@ -167,6 +196,13 @@ struct PrioritizationView: View {
                     .padding(.top, 80)
             }
         }
+        .coordinateSpace(.named(Self.layoutSpace))
+        .onPreferenceChange(TargetFramePreferenceKey.self) { frames in
+            Task { @MainActor in
+                labelFrames = frames
+                syncTargetGeometry()
+            }
+        }
         .task {
             await setupScene()
         }
@@ -206,6 +242,7 @@ struct PrioritizationView: View {
                 DebugManager.log(.state, "Prioritaets-Feedbacktask abgeschlossen → teamZuordnen")
             }
         }
+        }
     }
 
     // MARK: - Label-Subview
@@ -216,8 +253,8 @@ struct PrioritizationView: View {
     /// „Wich-tig", „Kri-tisch"), die in schmalen Spalten entstand: statt umzubrechen,
     /// verkleinert sich die Schrift.
     @ViewBuilder
-    private func priorityLabel(_ text: String, priority: TicketPriority) -> some View {
-        Text(text)
+    private func priorityLabel(for target: PriorityTargetMapping.TargetDefinition) -> some View {
+        Text(target.priority.displayName)
             .font(.title3)
             .fontWeight(.semibold)
             .foregroundStyle(.white)
@@ -227,9 +264,14 @@ struct PrioritizationView: View {
             .padding(.horizontal, LayoutConstants.targetLabelHorizontalPadding)
             .padding(.vertical, LayoutConstants.targetLabelVerticalPadding)
             .background(
-                labelColor(for: priority).opacity(LayoutConstants.targetLabelBackgroundOpacity),
+                labelColor(for: target.priority).opacity(LayoutConstants.targetLabelBackgroundOpacity),
                 in: RoundedRectangle(cornerRadius: LayoutConstants.targetLabelCornerRadius)
             )
+            // Bewusst **vor** `.frame(maxWidth: .infinity)`: gemeldet werden soll der
+            // Rahmen der sichtbaren farbigen Fläche, nicht der der unsichtbaren
+            // Spaltenbreite. Die Beschriftung selbst wird dadurch nicht bewegt — nur das
+            // technische DropTarget richtet sich anschließend darauf aus (Aufgabe 8).
+            .reportTargetFrame(id: target.id, in: .named(Self.layoutSpace))
             .frame(maxWidth: .infinity)
     }
 
@@ -295,6 +337,12 @@ struct PrioritizationView: View {
             originTransform = entity.transform
             MonsterInteractionConfigurator.configure(entity, mode: .dragDrop)
             monsterEntity = entity
+
+            // Tatsächliche sichtbare Hülle messen — Grundlage für den sicheren
+            // Zieh-Bereich und für die Überlappungsprüfung beim Loslassen.
+            geometry.measureMonster(entity, assetID: ticket.monsterAssetId)
+            syncTargetGeometry()
+
             DebugManager.log(.spawning, "Monster bereit: \(ticket.monsterAssetId), Modus: dragDrop")
         } catch {
             DebugManager.log(.spawning, "Monster-Load fehlgeschlagen: \(error.localizedDescription)")
@@ -305,6 +353,53 @@ struct PrioritizationView: View {
     // Hinweis: `uiColor(for:)` ist entfallen. Die Funktion lieferte ausschließlich den
     // Tint für das `SimpleMaterial` der entfernten Zielkugeln und wird nicht mehr benötigt.
     // Die sichtbaren Prioritätsfarben kommen aus `labelColor(for:)`.
+
+    // MARK: - Geometrie (Modul 013 — Drag-/Drop-Randfix)
+
+    /// Misst das tatsächliche Volume und die Layoutebene.
+    ///
+    /// Wird sowohl beim Aufbau als auch bei jedem `RealityView`-Update aufgerufen, damit
+    /// eine Größenänderung des Volumes sofort in die Zieh-Grenzen einfließt. Der Zustand
+    /// wird nur geschrieben, wenn sich die Messung tatsächlich geändert hat — sonst
+    /// entstünde eine Update-Schleife.
+    private func measureVolume(proxy: GeometryProxy3D, content: RealityViewContent) {
+        let localFrame = proxy.frame(in: .local)
+
+        // Entities werden über `content.add(_:)` direkt an der Szenenwurzel eingehängt;
+        // `entity.position` und `.scene` beschreiben deshalb denselben Raum.
+        let volume = content.convert(localFrame, from: .local, to: .scene)
+
+        let measured = VolumeMetrics(
+            volume: volume,
+            layoutFrame: CGRect(
+                x: localFrame.origin.x,
+                y: localFrame.origin.y,
+                width: localFrame.size.width,
+                height: localFrame.size.height
+            )
+        )
+
+        guard measured.isUsable, geometry.metrics != measured else { return }
+
+        Task { @MainActor in
+            geometry.update(metrics: measured)
+            syncTargetGeometry()
+        }
+    }
+
+    /// Richtet die technischen DropTargets auf die gemessenen Rahmen der sichtbaren
+    /// Labels aus.
+    ///
+    /// Die Labels selbst bleiben unverändert an ihrer Layoutposition; verschoben wird
+    /// ausschließlich die Trefferfläche — und zwar **auf** die sichtbare Box, nicht zur
+    /// Mitte hin.
+    private func syncTargetGeometry() {
+        geometry.updateTargets(
+            labelFrames: labelFrames,
+            entities: targetEntities,
+            dropPlaneZ: PrioritizationConstants.monsterStartPosition.z
+        )
+    }
 
     // MARK: - Gesture-Handler
 
@@ -327,6 +422,13 @@ struct PrioritizationView: View {
         if dragStartPosition == nil {
             dragStartPosition = start
             DebugManager.log(.input, "[Monster Transform BEFORE DRAG] \(entity.dragStateSummary)")
+            // Kontrollausgabe: lokale und Weltposition müssen übereinstimmen, sonst ist die
+            // Annahme falsch, dass `content.add(_:)` an der Szenenwurzel einhängt — und die
+            // gemessenen Volume-Grenzen lägen in einem anderen Raum als `entity.position`.
+            DebugManager.log(
+                .physics,
+                "Raumprobe: local=\(entity.position) world=\(entity.position(relativeTo: nil))"
+            )
         }
 
         // Planare Bewegung: X/Y folgen der Geste, Z bleibt auf der Starttiefe.
@@ -339,21 +441,53 @@ struct PrioritizationView: View {
         // Nur die Translation wird geschrieben — Rotation und Scale der Entity bleiben
         // unangetastet. Die Blender-Y-up-Korrektur und die Einpassung aus
         // `MonsterAssetProvider` überstehen das Ziehen dadurch unverändert.
-        entity.position = PlanarDrag.position(
+        let requested = PlanarDrag.requestedPosition(
             from: start,
-            translation: value.gestureValue.translation,
-            limits: PlanarDrag.playAreaLimits(
-                forEntityOfSize: LayoutConstants.monsterDragDropTargetSize
-            ),
-            // Obergrenze aus der gemessenen Modellhöhe: das Monster bleibt auch am
-            // höchsten Zieh-Punkt sichtbar unterhalb der Auswahlflächen.
-            maximumY: PrioritizationConstants.monsterCeiling(forMonsterHeight: monsterHeight)
+            translation: value.gestureValue.translation
         )
+
+        if let allowed = geometry.clamped(requested) {
+            // Einmal je Geste protokollieren, sobald die Grenze tatsächlich greift.
+            if !clampLogged, simd_distance(allowed, requested) > 0.0005 {
+                clampLogged = true
+                DebugManager.log(
+                    .physics,
+                    "Requested drag position: \(requested) | Clamped drag position: \(allowed)"
+                )
+                if let safe = geometry.safeBounds {
+                    DebugManager.log(.physics, safe.debugSummary)
+                }
+            }
+
+            // Regulärer Weg: Grenze aus gemessenem Volume minus gemessener Monsterhülle
+            // minus Padding. Sie wirkt an allen vier Rändern und achsenweise unabhängig,
+            // sodass das Monster an einer Ecke entlang der jeweils freien Achse
+            // weitergleitet.
+            //
+            // Die frühere Obergrenze `PrioritizationConstants.monsterCeiling(...)` ist hier
+            // bewusst entfallen: sie hielt das Monster unterhalb der Label-Zeile — genau
+            // dort, wo die Ziele liegen. Mit ihr wäre keine Zielbox mehr erreichbar.
+            // Dass das Monster oben nicht abgeschnitten wird, sichert jetzt der gemessene
+            // sichere Bereich.
+            entity.position = allowed
+        } else {
+            // Rückfallebene, solange Volume oder Monster noch nicht vermessen sind
+            // (erster Layoutdurchlauf). Verhält sich wie bisher.
+            entity.position = PlanarDrag.position(
+                from: start,
+                translation: value.gestureValue.translation,
+                limits: PlanarDrag.playAreaLimits(
+                    forEntityOfSize: LayoutConstants.monsterDragDropTargetSize
+                ),
+                maximumY: PrioritizationConstants.monsterCeiling(forMonsterHeight: monsterHeight)
+            )
+        }
     }
 
     private func handleDragEnded(value: EntityTargetValue<DragGesture.Value>) {
         // Immer zuerst: die Geste ist beendet, der gemerkte Startpunkt gilt nicht mehr.
         dragStartPosition = nil
+        clampLogged = false
 
         guard !model.isInputLocked else {
             DebugManager.log(.input, "Release ignoriert: Input bereits gesperrt (AK-10)")
@@ -361,29 +495,18 @@ struct PrioritizationView: View {
         }
         guard let entity = monsterEntity, value.entity === entity else { return }
 
-        // Spaltenbasierte Auswertung statt Radiusprüfung.
+        // Überlappungsbasierte Auswertung.
         //
-        // Vorher entschied `DropEvaluator.evaluate(entity:targets:)` über einen absoluten
-        // Radius um absolute Meterpositionen. Die tatsächlich per Drag erreichbare Strecke
-        // hängt aber von der Fenster-/Volumegröße ab: „Wichtig" lag 0.21 m entfernt (ab
-        // 0.06 m Bewegung erreichbar), „Normal" und „Kritisch" 0.38 m (0.23 m Bewegung
-        // nötig). Deshalb ließ sich ausschließlich „Wichtig" zuweisen, alles andere fiel in
-        // den Ungültig-Zweig und sprang zurück.
+        // Zuvor entschied `evaluateColumn` allein über die geringste X-Abweichung. Das
+        // machte zwar alle drei Ziele erreichbar, teilte aber die gesamte Fläche unter
+        // ihnen auf: jede Ablage oberhalb der Lift-Schwelle traf zwangsläufig irgendein
+        // Ziel, auch eine Ablage genau zwischen zwei Boxen.
         //
-        // `evaluateColumn` teilt den erreichbaren Bereich stattdessen unter den drei Zielen
-        // auf: es gewinnt das Ziel mit der geringsten X-Abweichung. Alle drei Prioritäten
-        // sind damit gleichwertig erreichbar.
-        let descriptors: [DropEvaluator.TargetDescriptor] = targetEntities.compactMap { e in
-            guard let comp = e.components[DropTargetComponent.self] else { return nil }
-            return DropEvaluator.TargetDescriptor(
-                id: comp.id,
-                // Lokal wie das Monster — beide sind Kinder derselben Wurzelentity und
-                // wurden über `entity.position = …` aus denselben Konstanten gesetzt.
-                position: e.position,
-                radius: comp.radius
-            )
-        }
-
+        // `evaluateOverlap` prüft stattdessen, ob die **sichtbare** Monsterhülle die
+        // **sichtbare** Zielfläche ausreichend überdeckt. Der Monster-Root muss dafür kein
+        // Ziel-Zentrum erreichen — was bei randnahen Zielen mit korrektem sicheren
+        // Zieh-Bereich auch gar nicht möglich wäre — und eine Ablage im Freiraum trifft
+        // nichts.
         let origin = originTransform?.translation ?? PrioritizationConstants.monsterStartPosition
         let dropped = entity.position
 
@@ -393,12 +516,29 @@ struct PrioritizationView: View {
             "Drop bei \(dropped), Start \(origin), Anhebung \(dropped.y - origin.y)"
         )
 
-        if let hitID = DropEvaluator.evaluateColumn(
-            entityPosition: dropped,
-            origin: origin,
-            targets: descriptors,
-            minimumLift: PrioritizationConstants.minimumDropLift
-        ) {
+        let hit: String?
+        if geometry.canEvaluateOverlap {
+            hit = geometry.hitTarget(at: dropped)
+        } else {
+            // Rückfallebene, solange die Label-Rahmen noch nicht gemessen sind.
+            let descriptors: [DropEvaluator.TargetDescriptor] = targetEntities.compactMap { e in
+                guard let comp = e.components[DropTargetComponent.self] else { return nil }
+                return DropEvaluator.TargetDescriptor(
+                    id: comp.id,
+                    position: e.position,
+                    radius: comp.radius
+                )
+            }
+            hit = DropEvaluator.evaluateColumn(
+                entityPosition: dropped,
+                origin: origin,
+                targets: descriptors,
+                minimumLift: PrioritizationConstants.minimumDropLift
+            )
+            DebugManager.log(.physics, "Fallback-Auswertung (Geometrie noch nicht vermessen)")
+        }
+
+        if let hitID = hit {
             DebugManager.log(.physics, "Gueltiger Drop: Ziel=\(hitID)")
             if let priority = PriorityTargetMapping.priority(for: hitID) {
                 model.savePriority(priority)

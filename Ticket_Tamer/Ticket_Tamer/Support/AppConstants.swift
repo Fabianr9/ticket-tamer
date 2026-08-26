@@ -300,6 +300,43 @@ enum InteractionConstants {
     /// der „orangene Halbkreis". Trefferlogik und Zielabstände bleiben unverändert.
     static let dropTargetVisualRadius: Float = 0.05
 
+    // MARK: - Sicherer Zieh-Bereich (Modul 013 — Drag-/Drop-Randfix)
+
+    /// Zusätzlicher **unsichtbarer** Abstand zwischen der sichtbaren Monsterhülle und der
+    /// Clipping-Kante des Volumes in Metern.
+    ///
+    /// Wirkt zusätzlich zu den gemessenen Monster-Bounds: der erlaubte Root-Bereich ist
+    /// `Volume − Monsterausdehnung − dieses Padding`. Der Rand bekommt keine Geometrie,
+    /// keine Farbe und keine UI — er ist ausschließlich eine Rechengröße
+    /// (siehe `DragBounds`).
+    ///
+    /// Bewusst klein: er soll Rundungs- und Messtoleranzen abfangen, nicht die Ziele
+    /// unerreichbar machen. Jeder zusätzliche Zentimeter hier verkleinert direkt die
+    /// erreichbare Fläche.
+    static let dragSafetyPadding: Float = 0.02
+
+    // MARK: - Drop-Erkennung über Überlappung
+
+    /// Mindestüberdeckung zwischen Monsterhülle und sichtbarer Zielfläche, damit ein Drop
+    /// als gültig gilt (siehe `DropEvaluator.overlapRatioXY`).
+    ///
+    /// Bezugsgröße ist die **kleinere** der beiden X/Y-Flächen. `0.25` bedeutet also:
+    /// ein Viertel der kleineren Fläche muss überdeckt sein.
+    ///
+    /// Die Schwelle ersetzt beide bisherigen Extreme — weder muss der Monster-Root das
+    /// Ziel-Zentrum erreichen (bei randnahen Zielen unmöglich), noch löst jede Ablage
+    /// jenseits einer Mindestbewegung irgendein Ziel aus (Ablage zwischen zwei Boxen).
+    ///
+    /// Zu klein ⇒ Streifkontakt genügt; zu groß ⇒ randnahe Ziele werden unerreichbar.
+    static let minimumDropOverlapRatio: Float = 0.25
+
+    /// Tiefe der aus einem sichtbaren Label abgeleiteten Zielfläche in Metern.
+    ///
+    /// Die Drop-Auswertung prüft ausschließlich die X/Y-Überlappung; dieser Wert dient
+    /// nur dazu, den Zielbereichen eine plausible, endliche Tiefe für Debug-Ausgaben zu
+    /// geben.
+    static let dropTargetPlaneDepth: Float = 0.10
+
     // MARK: - Rückkehr-Animation
 
     /// Dauer der Rückkehrbewegung bei ungültigem Drop in Sekunden.

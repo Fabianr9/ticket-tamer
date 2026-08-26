@@ -2292,3 +2292,244 @@ struct ScoringAndFeedbackTests {
         #expect(model.selectedTeam == nil)
     }
 }
+
+// MARK: - Modul 013: sicherer Zieh-Bereich und Überlappungs-Drop
+
+/// Tests der neuen, messwertbasierten Drag-/Drop-Grundlage.
+///
+/// Alle geprüften Typen sind bewusst frei von SwiftUI und von einem laufenden
+/// RealityKit-Render-Loop: `VolumeMetrics`, `DragBounds` und
+/// `DropEvaluator.evaluateOverlap` arbeiten mit reinen Werten und sind dadurch ohne
+/// Simulator prüfbar.
+@Suite("Modul 013 — Randfix")
+struct DragBoundsAndOverlapTests {
+
+    // MARK: - Hilfswerte
+
+    /// Volume von 1.0 × 1.0 × 0.4 m, zentriert im Ursprung.
+    private var volume: BoundingBox {
+        BoundingBox(min: SIMD3<Float>(-0.5, -0.5, -0.2), max: SIMD3<Float>(0.5, 0.5, 0.2))
+    }
+
+    /// Symmetrisches Monster von 0.13 m Kantenlänge um seinen Root.
+    private var symmetricMonster: BoundingBox {
+        BoundingBox(min: SIMD3<Float>(-0.065, -0.065, -0.065), max: SIMD3<Float>(0.065, 0.065, 0.065))
+    }
+
+    /// Asymmetrisches Monster: links 0.08, rechts 0.12, oben 0.18, unten 0.06.
+    private var asymmetricMonster: BoundingBox {
+        BoundingBox(min: SIMD3<Float>(-0.08, -0.06, -0.05), max: SIMD3<Float>(0.12, 0.18, 0.05))
+    }
+
+    // MARK: - DragBounds
+
+    @Test("Der sichere Bereich haelt ein symmetrisches Monster vollstaendig im Volume")
+    func safeRegionKeepsSymmetricMonsterInside() {
+        let safe = DragBounds.safeRegion(volume: volume, monsterBounds: symmetricMonster, padding: 0.02)
+
+        #expect(safe.maximum.x + symmetricMonster.max.x <= volume.max.x)
+        #expect(safe.minimum.x + symmetricMonster.min.x >= volume.min.x)
+        #expect(safe.maximum.y + symmetricMonster.max.y <= volume.max.y)
+        #expect(safe.minimum.y + symmetricMonster.min.y >= volume.min.y)
+    }
+
+    @Test("Der sichere Bereich beruecksichtigt unterschiedliche Ausdehnungen je Seite")
+    func safeRegionRespectsAsymmetry() {
+        let safe = DragBounds.safeRegion(volume: volume, monsterBounds: asymmetricMonster, padding: 0.02)
+
+        // Rechts ragt das Modell weiter heraus als links ⇒ rechte Grenze liegt weiter innen.
+        #expect(volume.max.x - safe.maximum.x > safe.minimum.x - volume.min.x)
+        // Oben ragt das Modell deutlich weiter heraus als unten.
+        #expect(volume.max.y - safe.maximum.y > safe.minimum.y - volume.min.y)
+
+        #expect(safe.maximum.x + asymmetricMonster.max.x <= volume.max.x)
+        #expect(safe.minimum.x + asymmetricMonster.min.x >= volume.min.x)
+        #expect(safe.maximum.y + asymmetricMonster.max.y <= volume.max.y)
+        #expect(safe.minimum.y + asymmetricMonster.min.y >= volume.min.y)
+    }
+
+    @Test("Clamp begrenzt an allen vier Raendern und an den Ecken")
+    func clampCoversAllEdgesAndCorners() {
+        let safe = DragBounds.safeRegion(volume: volume, monsterBounds: symmetricMonster, padding: 0.02)
+
+        let farOutside: [SIMD3<Float>] = [
+            SIMD3<Float>(-10, 0, 0), SIMD3<Float>(10, 0, 0),
+            SIMD3<Float>(0, 10, 0), SIMD3<Float>(0, -10, 0),
+            SIMD3<Float>(-10, 10, 0), SIMD3<Float>(10, 10, 0),
+            SIMD3<Float>(-10, -10, 0), SIMD3<Float>(10, -10, 0),
+        ]
+
+        for requested in farOutside {
+            let allowed = safe.clamp(requested)
+            #expect(allowed.x + symmetricMonster.max.x <= volume.max.x)
+            #expect(allowed.x + symmetricMonster.min.x >= volume.min.x)
+            #expect(allowed.y + symmetricMonster.max.y <= volume.max.y)
+            #expect(allowed.y + symmetricMonster.min.y >= volume.min.y)
+        }
+    }
+
+    @Test("Eine Position innerhalb des sicheren Bereichs bleibt unveraendert")
+    func clampLeavesInteriorUntouched() {
+        let safe = DragBounds.safeRegion(volume: volume, monsterBounds: symmetricMonster, padding: 0.02)
+        let inside = SIMD3<Float>(0.1, -0.05, 0.06)
+        #expect(safe.clamp(inside) == inside)
+    }
+
+    @Test("Ein Monster groesser als das Volume kollabiert auf die Mitte")
+    func oversizedMonsterCollapsesToCenter() {
+        let huge = BoundingBox(min: SIMD3<Float>(-2, -2, -0.05), max: SIMD3<Float>(2, 2, 0.05))
+        let safe = DragBounds.safeRegion(volume: volume, monsterBounds: huge, padding: 0.02)
+        #expect(safe.hasCollapsedAxis)
+        #expect(safe.minimum.x == safe.maximum.x)
+        #expect(safe.minimum.y == safe.maximum.y)
+    }
+
+    // MARK: - VolumeMetrics
+
+    @Test("Layoutpunkte werden linear und Y-gespiegelt in Szenenmeter abgebildet")
+    func layoutPointsMapToSceneMeters() {
+        let metrics = VolumeMetrics(
+            volume: volume,
+            layoutFrame: CGRect(x: 0, y: 0, width: 1000, height: 1000)
+        )
+        #expect(metrics.isUsable)
+
+        let topLeft = metrics.scenePoint(fromLayout: CGPoint(x: 0, y: 0))
+        #expect(abs(topLeft.x - volume.min.x) < 0.0001)
+        #expect(abs(topLeft.y - volume.max.y) < 0.0001)
+
+        let bottomRight = metrics.scenePoint(fromLayout: CGPoint(x: 1000, y: 1000))
+        #expect(abs(bottomRight.x - volume.max.x) < 0.0001)
+        #expect(abs(bottomRight.y - volume.min.y) < 0.0001)
+
+        let center = metrics.scenePoint(fromLayout: CGPoint(x: 500, y: 500))
+        #expect(abs(center.x) < 0.0001)
+        #expect(abs(center.y) < 0.0001)
+    }
+
+    @Test("Ein Label-Rahmen wird zu einer deckungsgleichen Zielflaeche")
+    func labelFrameBecomesMatchingTargetBox() {
+        let metrics = VolumeMetrics(
+            volume: volume,
+            layoutFrame: CGRect(x: 0, y: 0, width: 1000, height: 1000)
+        )
+        let box = metrics.sceneBox(
+            fromLayout: CGRect(x: 100, y: 50, width: 200, height: 100),
+            z: 0,
+            depth: 0.1
+        )
+        #expect(abs(box.min.x - (-0.4)) < 0.0001)
+        #expect(abs(box.max.x - (-0.2)) < 0.0001)
+        #expect(abs(box.max.y - 0.45) < 0.0001)
+        #expect(abs(box.min.y - 0.35) < 0.0001)
+    }
+
+    @Test("Unbrauchbare Messungen werden erkannt")
+    func degenerateMetricsAreRejected() {
+        #expect(!VolumeMetrics(volume: volume, layoutFrame: .zero).isUsable)
+        #expect(
+            !VolumeMetrics(
+                volume: BoundingBox(min: .zero, max: .zero),
+                layoutFrame: CGRect(x: 0, y: 0, width: 1000, height: 1000)
+            ).isUsable
+        )
+    }
+
+    // MARK: - Ueberlappungsbasierte Drop-Erkennung
+
+    /// Zielflaeche in der Groessenordnung eines sichtbaren Labels.
+    private func label(_ id: String, centerX: Float, centerY: Float) -> DropEvaluator.BoxTarget {
+        DropEvaluator.BoxTarget(
+            id: id,
+            bounds: BoundingBox(
+                min: SIMD3<Float>(centerX - 0.06, centerY - 0.02, -0.05),
+                max: SIMD3<Float>(centerX + 0.06, centerY + 0.02, 0.05)
+            )
+        )
+    }
+
+    /// Monsterhuelle an einer gegebenen Root-Position.
+    private func monster(at position: SIMD3<Float>) -> BoundingBox {
+        BoundingBox(min: symmetricMonster.min + position, max: symmetricMonster.max + position)
+    }
+
+    @Test("Ohne Ueberlappung ist der Drop ungueltig")
+    func noOverlapMeansInvalidDrop() {
+        let targets = [label("a", centerX: -0.3, centerY: 0.45), label("b", centerX: 0.3, centerY: 0.45)]
+        #expect(
+            DropEvaluator.evaluateOverlap(
+                monsterBounds: monster(at: SIMD3<Float>(0, -0.2, 0)),
+                targets: targets,
+                minimumOverlapRatio: 0.25
+            ) == nil
+        )
+    }
+
+    @Test("Zwischen zwei Zielen abgelegt wird kein Ziel ausgeloest")
+    func droppingBetweenTwoTargetsHitsNothing() {
+        let targets = [label("a", centerX: -0.3, centerY: 0.45), label("b", centerX: 0.3, centerY: 0.45)]
+        #expect(
+            DropEvaluator.evaluateOverlap(
+                monsterBounds: monster(at: SIMD3<Float>(0, 0.45, 0)),
+                targets: targets,
+                minimumOverlapRatio: 0.25
+            ) == nil
+        )
+    }
+
+    @Test("Ein randnahes Ziel ist erreichbar, ohne dass der Root sein Zentrum erreicht")
+    func edgeTargetIsReachableWithoutCenterContact() {
+        let safe = DragBounds.safeRegion(volume: volume, monsterBounds: symmetricMonster, padding: 0.02)
+
+        // Ziel dicht am oberen Rand — sein Zentrum liegt ausserhalb des sicheren Bereichs.
+        let target = label("edge", centerX: 0.3, centerY: 0.47)
+        #expect(target.bounds.center.y > safe.maximum.y)
+
+        // Der Nutzer zieht Richtung Ziel und stoesst dabei oben an die sichere Grenze.
+        let allowed = safe.clamp(SIMD3<Float>(target.bounds.center.x, 10, 0))
+        let hull = monster(at: allowed)
+
+        // Monster bleibt vollstaendig sichtbar …
+        #expect(hull.max.x <= volume.max.x)
+        #expect(hull.max.y <= volume.max.y)
+
+        // … und der Drop wird trotzdem erkannt.
+        #expect(
+            DropEvaluator.evaluateOverlap(
+                monsterBounds: hull,
+                targets: [target],
+                minimumOverlapRatio: 0.25
+            ) == "edge"
+        )
+    }
+
+    @Test("Bei mehreren getroffenen Zielen gewinnt die groessere Ueberdeckung")
+    func strongestOverlapWins() {
+        let targets = [label("links", centerX: -0.08, centerY: 0.4), label("rechts", centerX: 0.08, centerY: 0.4)]
+        #expect(
+            DropEvaluator.evaluateOverlap(
+                monsterBounds: monster(at: SIMD3<Float>(0.08, 0.4, 0)),
+                targets: targets,
+                minimumOverlapRatio: 0.1
+            ) == "rechts"
+        )
+    }
+
+    @Test("Der Ueberdeckungsgrad liegt zwischen 0 und 1")
+    func overlapRatioIsNormalised() {
+        let target = label("a", centerX: 0, centerY: 0)
+        #expect(DropEvaluator.overlapRatioXY(monster(at: SIMD3<Float>(1, 1, 0)), target.bounds) == 0)
+
+        let covered = DropEvaluator.overlapRatioXY(monster(at: .zero), target.bounds)
+        #expect(covered > 0.99)
+        #expect(covered <= 1.0001)
+    }
+
+    @Test("Die Drop-Schwelle ist weder trivial noch unerreichbar")
+    func dropThresholdIsSane() {
+        #expect(InteractionConstants.minimumDropOverlapRatio > 0)
+        #expect(InteractionConstants.minimumDropOverlapRatio < 1)
+        #expect(InteractionConstants.dragSafetyPadding > 0)
+        #expect(InteractionConstants.dragSafetyPadding < 0.1)
+    }
+}

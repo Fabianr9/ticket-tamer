@@ -110,3 +110,48 @@ enum PlanarDrag {
         min(max(value, -limit), limit)
     }
 }
+
+// MARK: - Ungeklemmte Wunschposition (Modul 013 — Drag-/Drop-Randfix)
+
+extension PlanarDrag {
+
+    /// Gewünschte Position ohne jede Begrenzung — der reine Gestenanteil.
+    ///
+    /// Trennt bewusst zwei Schritte, die zuvor in `position(from:translation:limits:maximumY:)`
+    /// vermischt waren:
+    ///
+    /// ```text
+    /// Finger / Pinch möchte Monster hierhin bewegen
+    ///                  ↓
+    ///           requestedPosition          ← diese Funktion
+    ///                  ↓
+    ///      Clamp auf sicheren Bereich      ← DragBounds.clamp(_:)
+    ///                  ↓
+    ///           allowedPosition
+    ///                  ↓
+    ///          Entity bewegen
+    /// ```
+    ///
+    /// Die Begrenzung stammt seit dem Modul-013-Randfix aus gemessenen Werten
+    /// (`MonsterDragGeometry`) statt aus den Volume-Konstanten. `playAreaLimits(forEntityOfSize:)`
+    /// bleibt als Rückfallebene erhalten, falls die Messung noch nicht vorliegt.
+    ///
+    /// - Parameters:
+    ///   - start: Position der Entity zu Beginn der Zieh-Geste.
+    ///   - translation: 2D-Translation der Geste in Punkten.
+    /// - Returns: Position mit angepasstem X und Y bei unveränderter Z-Tiefe.
+    static func requestedPosition(
+        from start: SIMD3<Float>,
+        translation: CGSize
+    ) -> SIMD3<Float> {
+        let pointsPerMeter = LayoutConstants.pointsPerMeter
+
+        return SIMD3<Float>(
+            start.x + Float(translation.width / pointsPerMeter),
+            // Minus: SwiftUI-Y wächst nach unten, RealityKit-Y nach oben.
+            start.y - Float(translation.height / pointsPerMeter),
+            // Tiefe bleibt konstant — kein Sprung nach vorne, kein Wandern nach hinten.
+            start.z
+        )
+    }
+}

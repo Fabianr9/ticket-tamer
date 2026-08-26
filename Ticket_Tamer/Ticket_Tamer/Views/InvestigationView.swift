@@ -164,9 +164,14 @@ struct InvestigationView: View {
     /// 3. Modell mittig setzen und so weit nach vorne schieben, wie die Tiefe es zulässt.
     private func fitMonster(_ entity: Entity, into availableSize: CGSize) {
         // 1. Verfügbarer Quader in Metern, abzüglich Sicherheitsrand.
+        // `layoutPointsPerMeter` statt `pointsPerMeter`: letzterer steuert die Empfindlichkeit
+        // der Zieh-Geste und ist dafür eingestellt, wie sich die Interaktion anfühlt. Für die
+        // Umrechnung einer Panelfläche in Meter ist die am Simulator kalibrierte Größe der
+        // SwiftUI-Ebene maßgeblich. Mit dem falschen Wert wurde das Monster auf 0.08 m statt
+        // 0.24 m eingepasst — dreimal zu klein.
         let inset = 1 - LayoutConstants.monsterFramingInset
-        let widthMeters = Float(availableSize.width / LayoutConstants.pointsPerMeter) * inset
-        let heightMeters = Float(availableSize.height / LayoutConstants.pointsPerMeter) * inset
+        let widthMeters = Float(availableSize.width / LayoutConstants.layoutPointsPerMeter) * inset
+        let heightMeters = Float(availableSize.height / LayoutConstants.layoutPointsPerMeter) * inset
         let depthMeters = Float(LayoutConstants.monsterPanelDepth) * inset
 
         // Kleinste Kante begrenzt; zusätzlich durch die gewünschte Zielgröße gedeckelt.

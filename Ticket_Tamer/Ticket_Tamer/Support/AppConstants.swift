@@ -12,17 +12,24 @@ enum LayoutConstants {
 
     // MARK: - Central Volume
 
+    // Die drei Volume-Masse bestimmen zweierlei zugleich:
+    // 1. die Clipping-Kante der `RealityView` — alles darueber hinaus wird abgeschnitten,
+    // 2. die Groesse der SwiftUI-Ebene in Punkten (ueber `layoutPointsPerMeter`).
+    // Punkt 2 ist der Grund fuer diese Masse: bei 0.8 m ergab sich eine Ebene von nur
+    // 334 x 334 pt, wodurch die Ticketkarte auf Faktor 0.34 heruntergerechnet werden musste.
+
     /// Breite des zentralen Volumes in Metern.
-    static let centralVolumeWidth = 0.8
+    ///
+    /// Von 0.8 auf 1.0 erhoeht: die Ticketkarte erhaelt dadurch 221 statt 157 Punkte
+    /// Spaltenbreite und rendert mit Faktor 0.48 statt 0.34.
+    static let centralVolumeWidth = 1.0
 
     /// Hoehe des zentralen Volumes in Metern.
     ///
-    /// Von 0.6 auf 0.8 erhoeht (Layout-Fix Priorisierungsphase): bei 0.6 m reichte der
-    /// Bereich oberhalb der Prioritaetsfelder nicht aus. Wird das Monster (0.13 m) zu einem
-    /// Feld gezogen, lag seine Oberkante ueber der Volume-Grenze und wurde beschnitten.
-    /// Die Volume-Grenze ist die aeusserste Clipping-Kante der RealityView — sie bestimmt,
-    /// wie weit nach oben ueberhaupt gezogen werden kann.
-    static let centralVolumeHeight = 0.8
+    /// Verlauf: 0.6 → 0.8 → 1.0. Bei 0.6 m lag die Obergrenze bei y = 0.30 m; ein 0.13 m
+    /// hohes Monster wurde beim Ziehen zu den Prioritaetsfeldern ab y = 0.235 m
+    /// angeschnitten. Der aktuelle Wert gibt zusaetzlich der Ticketkarte vertikal Luft.
+    static let centralVolumeHeight = 1.0
 
     /// Tiefe des zentralen Volumes in Metern.
     static let centralVolumeDepth = 0.4
@@ -57,7 +64,7 @@ enum LayoutConstants {
     /// Die Aufteilung erfolgt bewusst mit expliziten Breiten statt mit `maxWidth: .infinity`,
     /// weil die `RealityView` des Monster-Panels keine intrinsische Groesse besitzt und die
     /// flexible Verteilung dadurch zu einer zu schmalen, "laenglichen" Ticketkarte fuehrte.
-    static let investigationCardWidthFraction = 0.55
+    static let investigationCardWidthFraction = 0.60
 
     // MARK: - Ticketkarte: Fit-to-Space (Design-Canvas)
 
@@ -77,8 +84,13 @@ enum LayoutConstants {
 
     /// Untere Grenze des gleichmaessigen Skalierungsfaktors der Ticketkarte.
     ///
-    /// Verhindert, dass die Karte bei sehr kleinen Fenstern unleserlich wird.
-    static let ticketCardMinScale = 0.45
+    /// **Bewusst sehr niedrig.** Diese Grenze war urspruenglich als Lesbarkeitsschutz
+    /// gedacht (0.45), kehrte aber den Zweck von „fit to available space" um: liegt der zum
+    /// Einpassen noetige Faktor darunter, wird nach oben geklemmt und die Karte ragt ueber
+    /// den verfuegbaren Bereich hinaus. Gemessen: noetig 0.34, geklemmt auf 0.45 ⇒ 50 pt
+    /// Ueberlauf in der Breite. Ueberlaufende Inhalte sind schlechter als kleine Inhalte,
+    /// deshalb gewinnt jetzt immer die Einpassung.
+    static let ticketCardMinScale = 0.2
 
     /// Obere Grenze des gleichmaessigen Skalierungsfaktors der Ticketkarte.
     ///
@@ -403,6 +415,16 @@ enum TeamAssignmentConstants {
     /// damit das Monster nicht von Beginn an in einem Zielbereich liegt.
     static let monsterStartPosition = SIMD3<Float>(0, 0, 0)
 
+    // MARK: - Ablage-Schwelle
+
+    /// Mindestbewegung gegenüber der Startposition, ab der eine Ablage als gewollt gilt
+    /// (Meter).
+    ///
+    /// Pendant zu `PrioritizationConstants.minimumDropLift`. Darunter wertet
+    /// `DropEvaluator.evaluateNearest` die Ablage als ungültig: kein Zustandswechsel,
+    /// das Monster kehrt zurück (F-10 / AK-10).
+    static let minimumDropDistance: Float = 0.15
+
     // MARK: - Zielpositionen (2×2-Layout)
     //
     // Horizontaler Abstand: 0.48 m > 2 × 0.15 m = 0.30 m ✓
@@ -410,16 +432,16 @@ enum TeamAssignmentConstants {
     // Diagonaler Abstand:   ≈ 0.58 m ✓
 
     /// Position Teamstation „Netzwerk" (oben links).
-    static let targetPositionNetzwerk  = SIMD3<Float>(-0.24,  0.16, 0)
+    static let targetPositionNetzwerk  = SIMD3<Float>(-0.26,  0.30, 0)
 
     /// Position Teamstation „Konto" (oben rechts).
-    static let targetPositionKonto     = SIMD3<Float>( 0.24,  0.16, 0)
+    static let targetPositionKonto     = SIMD3<Float>( 0.26,  0.30, 0)
 
     /// Position Teamstation „Software" (unten links).
-    static let targetPositionSoftware  = SIMD3<Float>(-0.24, -0.16, 0)
+    static let targetPositionSoftware  = SIMD3<Float>(-0.26, -0.30, 0)
 
     /// Position Teamstation „Hardware" (unten rechts).
-    static let targetPositionHardware  = SIMD3<Float>( 0.24, -0.16, 0)
+    static let targetPositionHardware  = SIMD3<Float>( 0.26, -0.30, 0)
 }
 
 /// Zeitwerte für das Audiofeedback und den automatischen Phasenübergang (Modul 010 — F-13).

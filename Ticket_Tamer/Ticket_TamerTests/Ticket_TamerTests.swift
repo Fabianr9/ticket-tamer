@@ -1029,6 +1029,40 @@ struct PrioritizationPhaseTests {
     /// Kernregression: die Tiefe darf sich durch Ziehen nie ändern. Zuvor wurde die
     /// Z-Komponente der Zeigerposition direkt übernommen — Sprung nach vorne beim Greifen,
     /// Stehenbleiben auf Handtiefe beim Loslassen.
+    /// Regression: `ticketCardMinScale` stand auf 0.45 und klemmte den Einpassfaktor nach
+    /// **oben**, wenn weniger Platz da war — die Karte ragte dann über ihre Spalte hinaus.
+    @Test("Ticketkarte passt bei realistischen Fenstergrößen ohne Überlauf hinein")
+    func ticketCardFitsWithoutOverflow() {
+        let design = CGSize(
+            width: LayoutConstants.ticketCardDesignWidth,
+            height: LayoutConstants.ticketCardDesignHeight
+        )
+
+        // Von sehr eng bis großzügig — überall darf nichts überstehen.
+        let boxes: [CGSize] = [
+            CGSize(width: 120, height: 240),
+            CGSize(width: 221, height: 385),
+            CGSize(width: 400, height: 600),
+            CGSize(width: 900, height: 1200),
+        ]
+
+        for box in boxes {
+            let raw = min(box.width / design.width, box.height / design.height)
+            let scale = min(
+                max(raw, LayoutConstants.ticketCardMinScale),
+                LayoutConstants.ticketCardMaxScale
+            )
+            #expect(
+                design.width * scale <= box.width + 0.001,
+                "Karte ist in \(box) zu breit (\(design.width * scale))"
+            )
+            #expect(
+                design.height * scale <= box.height + 0.001,
+                "Karte ist in \(box) zu hoch (\(design.height * scale))"
+            )
+        }
+    }
+
     @Test("Ziehen verändert die Z-Tiefe nicht")
     func planarDragKeepsDepthConstant() {
         let start = PrioritizationConstants.monsterStartPosition
@@ -1512,6 +1546,55 @@ struct TeamAssignmentPhaseTests {
         #expect(TeamTargetMapping.team(for: "unbekannt") == nil)
         #expect(TeamTargetMapping.team(for: "") == nil)
         #expect(TeamTargetMapping.team(for: "priority_normal") == nil)
+    }
+
+    /// Nach der Vergrößerung des Volumes werden Teamstationen über
+    /// `DropEvaluator.evaluateNearest` ausgewertet. Alle vier müssen innerhalb der
+    /// Zieh-Grenzen liegen und aus ihrer jeweiligen Ecke heraus eindeutig gewinnen.
+    @Test("Alle vier Teamstationen sind innerhalb der Spielfläche erreichbar")
+    func teamTargetsAreReachableWithinPlayArea() {
+        let limits = PlanarDrag.playAreaLimits(
+            forEntityOfSize: LayoutConstants.monsterDragDropTargetSize
+        )
+        let origin = TeamAssignmentConstants.monsterStartPosition
+        let targets = TeamTargetMapping.allTargets.map {
+            DropEvaluator.TargetDescriptor(
+                id: $0.id,
+                position: $0.position,
+                radius: InteractionConstants.dropTargetRadius
+            )
+        }
+
+        for target in TeamTargetMapping.allTargets {
+            #expect(abs(target.position.x) <= limits.x, "\(target.id) außerhalb in X")
+            #expect(abs(target.position.y) <= limits.y, "\(target.id) außerhalb in Y")
+        }
+
+        // Aus jeder Ecke der Spielfläche heraus muss die dortige Station gewinnen.
+        for target in TeamTargetMapping.allTargets {
+            let corner = SIMD3<Float>(
+                target.position.x < 0 ? -limits.x : limits.x,
+                target.position.y < 0 ? -limits.y : limits.y,
+                origin.z
+            )
+            let result = DropEvaluator.evaluateNearest(
+                entityPosition: corner,
+                origin: origin,
+                targets: targets,
+                minimumDistance: TeamAssignmentConstants.minimumDropDistance
+            )
+            #expect(result == target.id, "Ecke \(corner) ergab \(result ?? "nil")")
+        }
+
+        // Ohne nennenswerte Bewegung bleibt die Ablage ungültig.
+        #expect(
+            DropEvaluator.evaluateNearest(
+                entityPosition: origin,
+                origin: origin,
+                targets: targets,
+                minimumDistance: TeamAssignmentConstants.minimumDropDistance
+            ) == nil
+        )
     }
 
     @Test("Teamziel-Abstände sind größer als 2 × dropTargetRadius (keine Überschneidung)")

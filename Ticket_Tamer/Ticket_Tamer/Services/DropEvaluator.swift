@@ -108,6 +108,51 @@ enum DropEvaluator {
         return bestID
     }
 
+    // MARK: - Nächster-Nachbar-Auswertung (Ziele in mehreren Richtungen)
+
+    /// Wählt das räumlich nächstgelegene Ziel — sofern die Entity `origin` um mindestens
+    /// `minimumDistance` verlassen hat.
+    ///
+    /// Pendant zu `evaluateColumn` für Anordnungen, die sich nicht auf eine Achse
+    /// reduzieren lassen (Teamphase: 2×2-Raster). Dieselbe Begründung gilt: absolute
+    /// Trefferradien um absolute Meterpositionen setzen voraus, dass die erreichbare Fläche
+    /// bekannt ist. Sie hängt aber von der Volumegröße ab und ändert sich mit ihr — nach der
+    /// Vergrößerung des Volumes auf 1.0 × 1.0 m lagen die Teamstationen außerhalb des
+    /// Radius, den man beim Ziehen zum jeweiligen Label tatsächlich erreicht.
+    ///
+    /// Die Nächster-Nachbar-Auswahl teilt die erreichbare Fläche implizit unter den Zielen
+    /// auf; die Grenzen verlaufen mittig zwischen benachbarten Zielen.
+    ///
+    /// - Parameters:
+    ///   - entityPosition: Weltposition der abgelegten Entity.
+    ///   - origin: Ausgangsposition der Entity zu Beginn der Phase.
+    ///   - targets: Zu prüfende Ziele. `radius` wird hier bewusst nicht ausgewertet.
+    ///   - minimumDistance: Mindestbewegung gegenüber `origin`, ab der eine Ablage als
+    ///     gewollt gilt.
+    /// - Returns: ID des gewählten Ziels, oder `nil` bei zu geringer Bewegung
+    ///   (ungültige Ablage, F-10 / AK-10).
+    static func evaluateNearest(
+        entityPosition: SIMD3<Float>,
+        origin: SIMD3<Float>,
+        targets: [TargetDescriptor],
+        minimumDistance: Float
+    ) -> String? {
+        guard simd_distance(entityPosition, origin) >= minimumDistance else { return nil }
+
+        var bestID: String?
+        var bestDistance = Float.infinity
+
+        for target in targets {
+            let distance = simd_distance(entityPosition, target.position)
+            if distance < bestDistance {
+                bestDistance = distance
+                bestID = target.id
+            }
+        }
+
+        return bestID
+    }
+
     // MARK: - Entity-Convenience (für Gesture-Handler)
 
     /// Prüft, ob `entity` in einem der als `DropTargetComponent` markierten Ziele liegt.

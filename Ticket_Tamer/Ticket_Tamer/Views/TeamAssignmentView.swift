@@ -325,12 +325,33 @@ struct TeamAssignmentView: View {
         }
         guard let entity = monsterEntity, value.entity === entity else { return }
 
-        let targets: [(entity: Entity, component: DropTargetComponent)] = targetEntities.compactMap { e in
+        // Nächster-Nachbar-Auswertung statt absoluter Trefferradien.
+        //
+        // Nötig geworden durch das vergrößerte Volume (1.0 × 1.0 m): die Teamstationen liegen
+        // bei festen Meterwerten, der beim Ziehen zum jeweiligen Label tatsächlich erreichte
+        // Punkt verschiebt sich mit der Volumegröße. Mit Radiusprüfung wären die Stationen
+        // knapp außerhalb gelandet — derselbe Fehler, der zuvor in der Priorisierungsphase
+        // nur „Wichtig" funktionieren ließ.
+        let descriptors: [DropEvaluator.TargetDescriptor] = targetEntities.compactMap { e in
             guard let comp = e.components[DropTargetComponent.self] else { return nil }
-            return (entity: e, component: comp)
+            return DropEvaluator.TargetDescriptor(
+                id: comp.id,
+                position: e.position(relativeTo: nil),
+                radius: comp.radius
+            )
         }
 
-        if let hitID = DropEvaluator.evaluate(entity: entity, targets: targets) {
+        let origin = originTransform?.translation ?? TeamAssignmentConstants.monsterStartPosition
+        let dropped = entity.position(relativeTo: nil)
+
+        DebugManager.log(.physics, "Drop bei \(dropped), Start \(origin)")
+
+        if let hitID = DropEvaluator.evaluateNearest(
+            entityPosition: dropped,
+            origin: origin,
+            targets: descriptors,
+            minimumDistance: TeamAssignmentConstants.minimumDropDistance
+        ) {
             DebugManager.log(.physics, "Gueltiger Drop: Ziel=\(hitID)")
             if let team = TeamTargetMapping.team(for: hitID) {
                 model.saveTeam(team)

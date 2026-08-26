@@ -293,25 +293,27 @@ struct TeamAssignmentView: View {
         guard let entity = monsterEntity, value.entity === entity else { return }
 
         // Position bei Gestenbeginn merken — Grundlage für die relative Bewegung.
-        let start = dragStartPosition ?? entity.position(relativeTo: nil)
+        //
+        // Lokaler Raum (`entity.position`) statt Weltraum, identisch zur Priorisierungsphase:
+        // Start- und Zielpositionen dieser Phase sind ebenfalls lokal gesetzt. Die frühere
+        // Mischung beider Räume verursachte den fehlerhaften Rücksprung.
+        let start = dragStartPosition ?? entity.position
         if dragStartPosition == nil {
             dragStartPosition = start
-            DebugManager.log(.input, "Drag begonnen bei \(start)")
+            DebugManager.log(.input, "[Monster Transform BEFORE DRAG] \(entity.dragStateSummary)")
         }
 
         // Planare Bewegung auf konstanter Tiefe — identisch zur Priorisierungsphase.
         // Die frühere Übernahme der absoluten Zeigerposition (`location3D` → `.scene`)
         // schrieb die Handtiefe direkt in die Entity: Sprung nach vorne beim Greifen,
         // Stehenbleiben auf Handtiefe beim Loslassen, kaum horizontaler Weg.
-        entity.setPosition(
-            PlanarDrag.position(
-                from: start,
-                translation: value.gestureValue.translation,
-                limits: PlanarDrag.playAreaLimits(
-                    forEntityOfSize: LayoutConstants.monsterDragDropTargetSize
-                )
-            ),
-            relativeTo: nil
+        // Nur die Translation wird geschrieben — Rotation und Scale bleiben unangetastet.
+        entity.position = PlanarDrag.position(
+            from: start,
+            translation: value.gestureValue.translation,
+            limits: PlanarDrag.playAreaLimits(
+                forEntityOfSize: LayoutConstants.monsterDragDropTargetSize
+            )
         )
     }
 
@@ -336,14 +338,16 @@ struct TeamAssignmentView: View {
             guard let comp = e.components[DropTargetComponent.self] else { return nil }
             return DropEvaluator.TargetDescriptor(
                 id: comp.id,
-                position: e.position(relativeTo: nil),
+                // Lokal wie das Monster — beide sind Kinder derselben Wurzelentity.
+                position: e.position,
                 radius: comp.radius
             )
         }
 
         let origin = originTransform?.translation ?? TeamAssignmentConstants.monsterStartPosition
-        let dropped = entity.position(relativeTo: nil)
+        let dropped = entity.position
 
+        DebugManager.log(.physics, "[Monster Transform AT RELEASE] \(entity.dragStateSummary)")
         DebugManager.log(.physics, "Drop bei \(dropped), Start \(origin)")
 
         if let hitID = DropEvaluator.evaluateNearest(
@@ -367,12 +371,20 @@ struct TeamAssignmentView: View {
     }
 
     private func returnMonsterToOrigin(entity: Entity) {
+        // `originTransform` ist der lokale Transform aus `setupScene` (Position, Rotation,
+        // Skalierung). Deshalb auch relativ zur Elternentity zurücksetzen — vorher stand
+        // hier `relativeTo: nil`, also der Weltraum. Identischer Fix wie in der
+        // Priorisierungsphase; beide Ansichten hatten dieselbe Ursache.
         guard let origin = originTransform else { return }
         entity.move(
             to: origin,
-            relativeTo: nil,
+            relativeTo: entity.parent,
             duration: InteractionConstants.monsterReturnDuration,
             timingFunction: .easeInOut
+        )
+        DebugManager.log(
+            .physics,
+            "[Monster Transform AFTER SNAPBACK] Ziel pos=\(origin.translation) scale=\(origin.scale)"
         )
     }
 }

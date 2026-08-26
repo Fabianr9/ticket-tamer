@@ -30,6 +30,13 @@ struct Ticket_TamerApp: App {
     init() {
         // Modul 007: Benutzerdefinierte RealityKit-Komponente registrieren.
         DropTargetComponent.registerComponent()
+
+        #if DEBUG
+        // Transform-Diagnose der Drag-Interaktionen (Modul 013 / AK-10) in der Konsole.
+        // Nur im DEBUG-Build und ausschliesslich als Log — keine Einblendung in der UI.
+        DebugManager.enabled.formUnion([.input, .physics])
+        #endif
+
         DebugManager.log(.lifecycle, "App-Einstieg initialisiert")
     }
 

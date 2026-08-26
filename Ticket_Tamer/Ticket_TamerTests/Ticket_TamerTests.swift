@@ -1,4 +1,5 @@
 import CoreGraphics
+import RealityKit
 import Testing
 import simd
 @testable import Ticket_Tamer
@@ -1162,6 +1163,94 @@ struct PrioritizationPhaseTests {
 
         // Die für einen gültigen Drop nötige Höhe muss erreichbar bleiben.
         #expect(start.y + PrioritizationConstants.minimumDropLift <= limits.y)
+    }
+
+    // MARK: - Snapback nach ungültigem Drop
+
+    /// Baut die Entity-Hierarchie so auf, wie `setupScene` sie erzeugt: eine Elternentity
+    /// (die Wurzel der `RealityView`) mit einem Monster-Wrapper darunter, der Skalierung
+    /// aus `MonsterAssetProvider.fit` und die Blender-Y-up-Korrektur trägt.
+    private func makeMonsterHierarchy() -> (parent: Entity, monster: Entity) {
+        let parent = Entity()
+        // Bewusst **nicht** identisch: nur so wird sichtbar, ob lokaler und
+        // Welt-Koordinatenraum vermischt werden.
+        parent.position = SIMD3<Float>(0.5, -0.3, 0.1)
+        parent.scale = SIMD3<Float>(repeating: 2)
+
+        let monster = Entity()
+        monster.orientation = simd_quatf(angle: -.pi / 2, axis: SIMD3<Float>(1, 0, 0))
+        monster.scale = SIMD3<Float>(repeating: 0.37)
+        monster.position = PrioritizationConstants.monsterStartPosition
+        parent.addChild(monster)
+
+        return (parent, monster)
+    }
+
+    /// Kernregression: `originTransform` wird als **lokaler** Transform gesichert
+    /// (`entity.transform`). Der Snapback setzte ihn zuvor mit `relativeTo: nil`, also als
+    /// Welt-Transform, zurück. Bei einer Elternentity mit eigenem Transform landet das
+    /// Monster dadurch an anderer Stelle und in anderer Größe.
+    @Test("Snapback im lokalen Raum stellt Position, Rotation und Scale exakt wieder her")
+    func snapbackRestoresFullLocalTransform() {
+        let (_, monster) = makeMonsterHierarchy()
+        let origin = monster.transform   // wie in setupScene gesichert
+
+        // Ziehen: nur die Translation ändert sich.
+        monster.position = SIMD3<Float>(0.42, 0.18, origin.translation.z)
+
+        // Snapback wie jetzt implementiert: relativ zur Elternentity.
+        monster.setTransformMatrix(origin.matrix, relativeTo: monster.parent)
+
+        let after = monster.transform
+        #expect(simd_distance(after.translation, origin.translation) < 0.0001, "Position weicht ab")
+        #expect(simd_distance(after.scale, origin.scale) < 0.0001, "Scale weicht ab")
+        #expect(simd_distance(after.rotation.vector, origin.rotation.vector) < 0.0001, "Rotation weicht ab")
+    }
+
+    /// Gegenprobe: dieselbe Wiederherstellung im Weltraum ergibt einen anderen Transform.
+    /// Genau das war der alte Code — der Test schlägt fehl, falls jemand ihn zurückbaut.
+    @Test("Snapback im Weltraum würde Position und Größe verfälschen")
+    func snapbackInWorldSpaceWouldDrift() {
+        let (_, monster) = makeMonsterHierarchy()
+        let origin = monster.transform
+
+        monster.position = SIMD3<Float>(0.42, 0.18, origin.translation.z)
+
+        // Alter Code: lokaler Transform, angewendet als Welt-Transform.
+        monster.setTransformMatrix(origin.matrix, relativeTo: nil)
+
+        let after = monster.transform
+        #expect(
+            simd_distance(after.translation, origin.translation) > 0.0001,
+            "Erwartet wurde eine Abweichung — die Elternentity hat einen eigenen Transform"
+        )
+        #expect(
+            simd_distance(after.scale, origin.scale) > 0.0001,
+            "Erwartet wurde eine Größenabweichung durch die skalierte Elternentity"
+        )
+    }
+
+    /// Fünf ungültige Drops hintereinander dürfen keine schrittweise Drift erzeugen.
+    @Test("Fünf aufeinanderfolgende Snapbacks driften nicht")
+    func repeatedSnapbacksDoNotDrift() {
+        let (_, monster) = makeMonsterHierarchy()
+        let origin = monster.transform
+
+        for step in 1...5 {
+            monster.position = SIMD3<Float>(
+                Float(step) * 0.05,
+                Float(step) * -0.03,
+                origin.translation.z
+            )
+            monster.setTransformMatrix(origin.matrix, relativeTo: monster.parent)
+
+            let after = monster.transform
+            #expect(
+                simd_distance(after.translation, origin.translation) < 0.0001,
+                "Drift nach Durchlauf \(step)"
+            )
+            #expect(simd_distance(after.scale, origin.scale) < 0.0001, "Scale-Drift nach \(step)")
+        }
     }
 
     // MARK: - Sichtabstand zur Label-Zeile

@@ -316,10 +316,17 @@ struct PrioritizationView: View {
         guard let entity = monsterEntity, value.entity === entity else { return }
 
         // Position bei Gestenbeginn merken — Grundlage für die relative Bewegung.
-        let start = dragStartPosition ?? entity.position(relativeTo: nil)
+        //
+        // Bewusst `entity.position` (lokal, also relativ zur Elternentity) statt
+        // `position(relativeTo: nil)` (Weltraum). Lokal ist der Raum, in dem sämtliche
+        // Konstanten dieser Phase formuliert sind: Start- und Zielpositionen werden über
+        // `entity.position = …` gesetzt. Die frühere Mischung aus Weltraum beim Ziehen und
+        // lokalem Raum beim Speichern des Ursprungs war die Ursache des fehlerhaften
+        // Rücksprungs.
+        let start = dragStartPosition ?? entity.position
         if dragStartPosition == nil {
             dragStartPosition = start
-            DebugManager.log(.input, "Drag begonnen bei \(start)")
+            DebugManager.log(.input, "[Monster Transform BEFORE DRAG] \(entity.dragStateSummary)")
         }
 
         // Planare Bewegung: X/Y folgen der Geste, Z bleibt auf der Starttiefe.
@@ -329,18 +336,18 @@ struct PrioritizationView: View {
         // Die Grenzen halten die Modellhülle samt Sicherheitsabstand innerhalb des Volumes.
         // Ohne sie konnte das Monster beim Ziehen zu den Prioritätsfeldern über die obere
         // Volume-Kante hinauslaufen und wurde dort beschnitten.
-        entity.setPosition(
-            PlanarDrag.position(
-                from: start,
-                translation: value.gestureValue.translation,
-                limits: PlanarDrag.playAreaLimits(
-                    forEntityOfSize: LayoutConstants.monsterDragDropTargetSize
-                ),
-                // Obergrenze aus der gemessenen Modellhöhe: das Monster bleibt auch am
-                // höchsten Zieh-Punkt sichtbar unterhalb der Auswahlflächen.
-                maximumY: PrioritizationConstants.monsterCeiling(forMonsterHeight: monsterHeight)
+        // Nur die Translation wird geschrieben — Rotation und Scale der Entity bleiben
+        // unangetastet. Die Blender-Y-up-Korrektur und die Einpassung aus
+        // `MonsterAssetProvider` überstehen das Ziehen dadurch unverändert.
+        entity.position = PlanarDrag.position(
+            from: start,
+            translation: value.gestureValue.translation,
+            limits: PlanarDrag.playAreaLimits(
+                forEntityOfSize: LayoutConstants.monsterDragDropTargetSize
             ),
-            relativeTo: nil
+            // Obergrenze aus der gemessenen Modellhöhe: das Monster bleibt auch am
+            // höchsten Zieh-Punkt sichtbar unterhalb der Auswahlflächen.
+            maximumY: PrioritizationConstants.monsterCeiling(forMonsterHeight: monsterHeight)
         )
     }
 
@@ -370,14 +377,17 @@ struct PrioritizationView: View {
             guard let comp = e.components[DropTargetComponent.self] else { return nil }
             return DropEvaluator.TargetDescriptor(
                 id: comp.id,
-                position: e.position(relativeTo: nil),
+                // Lokal wie das Monster — beide sind Kinder derselben Wurzelentity und
+                // wurden über `entity.position = …` aus denselben Konstanten gesetzt.
+                position: e.position,
                 radius: comp.radius
             )
         }
 
         let origin = originTransform?.translation ?? PrioritizationConstants.monsterStartPosition
-        let dropped = entity.position(relativeTo: nil)
+        let dropped = entity.position
 
+        DebugManager.log(.physics, "[Monster Transform AT RELEASE] \(entity.dragStateSummary)")
         DebugManager.log(
             .physics,
             "Drop bei \(dropped), Start \(origin), Anhebung \(dropped.y - origin.y)"
@@ -403,13 +413,27 @@ struct PrioritizationView: View {
         }
     }
 
+    /// Stellt nach einem ungültigen Drop exakt den Zustand vom Phasenbeginn wieder her.
+    ///
+    /// `originTransform` ist der **lokale** Transform, wie er in `setupScene` gesichert wurde
+    /// (Position, Rotation, Skalierung). Deshalb muss auch relativ zur Elternentity
+    /// zurückgesetzt werden — vorher stand hier `relativeTo: nil`, also der Weltraum. Ein
+    /// lokaler Transform, als Welt-Transform angewendet, ergibt eine andere Platzierung und
+    /// bei skalierter Elternentity zusätzlich eine andere sichtbare Größe.
+    ///
+    /// `move(to:)` überträgt Translation, Rotation und Scale gemeinsam — es wird kein neuer
+    /// `Transform(translation:)` gebaut, bei dem Rotation oder Scale verloren gingen.
     private func returnMonsterToOrigin(entity: Entity) {
         guard let origin = originTransform else { return }
         entity.move(
             to: origin,
-            relativeTo: nil,
+            relativeTo: entity.parent,
             duration: InteractionConstants.monsterReturnDuration,
             timingFunction: .easeInOut
+        )
+        DebugManager.log(
+            .physics,
+            "[Monster Transform AFTER SNAPBACK] Ziel pos=\(origin.translation) scale=\(origin.scale)"
         )
     }
 }

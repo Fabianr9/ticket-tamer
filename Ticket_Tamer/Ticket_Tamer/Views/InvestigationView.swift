@@ -8,6 +8,9 @@ import SwiftUI
 /// Datenquelle ist ausschließlich `SessionModel.currentTicket`.
 /// Referenzpriorität und Referenzteam werden in dieser Phase nicht angezeigt.
 /// Die Schaltfläche „Weiter zur Priorisierung" löst `SessionModel.beginPrioritizationPhase()` aus.
+///
+/// Die Ticketkarte (`TicketCardView`) ist scrollfrei und wird über `ScaledToFitView`
+/// gleichmäßig in den verfügbaren Bereich eingepasst — vollständig sichtbar, ohne Verzerrung.
 struct InvestigationView: View {
 
     // MARK: - Environment
@@ -50,22 +53,49 @@ struct InvestigationView: View {
 
     // MARK: - Hauptinhalt
 
+    /// Teilt den verfuegbaren Bereich explizit zwischen Monster-Panel und Ticketkarte auf.
+    ///
+    /// Bewusst mit `GeometryReader` und festen Breitenanteilen statt mit `maxWidth: .infinity`:
+    /// die `RealityView` des Monster-Panels besitzt keine intrinsische Groesse, wodurch die
+    /// flexible Verteilung der Ticketkarte zu wenig Breite liess und sie „laenglich" wirkte.
     @ViewBuilder
     private func mainContent(ticket: Ticket) -> some View {
-        HStack(alignment: .top, spacing: LayoutConstants.investigationSpacing) {
-            monsterPanel
-                .frame(maxWidth: .infinity)
+        GeometryReader { proxy in
+            let contentWidth = max(proxy.size.width - CGFloat(LayoutConstants.investigationSpacing), 0)
+            let cardWidth = contentWidth * CGFloat(LayoutConstants.investigationCardWidthFraction)
+            let monsterWidth = contentWidth - cardWidth
 
-            ticketCard(ticket: ticket)
-                .frame(maxWidth: .infinity)
+            HStack(alignment: .center, spacing: LayoutConstants.investigationSpacing) {
+                monsterPanel(availableSize: CGSize(width: monsterWidth, height: proxy.size.height))
+                    .frame(width: monsterWidth, height: proxy.size.height)
+
+                // Fit-to-Space: feste Design-Canvas, gleichmaessig in den Bereich eingepasst.
+                ScaledToFitView(
+                    designSize: CGSize(
+                        width: LayoutConstants.ticketCardDesignWidth,
+                        height: LayoutConstants.ticketCardDesignHeight
+                    )
+                ) {
+                    TicketCardView(ticket: ticket) {
+                        DebugManager.log(.input, "Weiter zur Priorisierung ausgeloest: \(ticket.ticketNumber)")
+                        model.beginPrioritizationPhase()
+                    }
+                }
+                .frame(width: cardWidth, height: proxy.size.height)
+            }
         }
         .padding(LayoutConstants.investigationPadding)
     }
 
     // MARK: - Monster-Panel
 
+    /// Zeigt das Monster mittig im zugewiesenen Bereich, vollständig und unverzerrt.
+    ///
+    /// - Parameter availableSize: Vom Layout zugewiesene Panelfläche in Punkten.
+    ///   Wird zusammen mit `LayoutConstants.monsterPanelDepth` in einen physischen
+    ///   Rahmen umgerechnet, in den das Modell eingepasst wird.
     @ViewBuilder
-    private var monsterPanel: some View {
+    private func monsterPanel(availableSize: CGSize) -> some View {
         if isLoadingMonster {
             VStack(spacing: LayoutConstants.investigationCardSpacing) {
                 ProgressView()
@@ -77,9 +107,15 @@ struct InvestigationView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if let entity = monsterEntity {
             RealityView { content in
-                entity.scale = SIMD3(repeating: LayoutConstants.monsterScale)
+                fitMonster(entity, into: availableSize)
                 content.add(entity)
+            } update: { _ in
+                // Fenster- oder Layoutänderung: Einpassung neu berechnen.
+                fitMonster(entity, into: availableSize)
             }
+            // Ohne explizite Tiefe hätte die RealityView praktisch keine Z-Ausdehnung
+            // und würde Modellteile vor/hinter der Ebene beschneiden.
+            .frame(depth: LayoutConstants.monsterPanelDepth)
         } else if monsterLoadError != nil {
             VStack(spacing: LayoutConstants.investigationCardSpacing) {
                 Image(systemName: "exclamationmark.triangle")
@@ -97,69 +133,6 @@ struct InvestigationView: View {
         }
     }
 
-    // MARK: - Ticketkarte
-
-    @ViewBuilder
-    private func ticketCard(ticket: Ticket) -> some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: LayoutConstants.investigationCardSpacing) {
-
-                // Ticketnummer
-                Text(ticket.ticketNumber)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .accessibilityLabel(Text("investigation.ticketNumber.label") + Text(ticket.ticketNumber))
-
-                // Titel
-                Text(ticket.title)
-                    .font(.title2)
-                    .bold()
-
-                Divider()
-
-                // Kurzbeschreibung
-                Text(ticket.shortDescription)
-                    .font(.body)
-
-                // Auswirkung
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("investigation.userImpact.label")
-                        .font(.headline)
-                    Text(ticket.userImpact)
-                        .font(.body)
-                        .foregroundStyle(.secondary)
-                }
-
-                // Symptome / Hinweise
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("investigation.symptoms.label")
-                        .font(.headline)
-                    ForEach(Array(ticket.symptoms.enumerated()), id: \.offset) { _, symptom in
-                        Label {
-                            Text(symptom)
-                                .font(.callout)
-                        } icon: {
-                            Image(systemName: "circle.fill")
-                                .imageScale(.small)
-                        }
-                    }
-                }
-
-                // Schaltfläche: Weiter zur Priorisierung (F-07 / AK-07)
-                Button {
-                    DebugManager.log(.input, "Weiter zur Priorisierung ausgeloest: \(ticket.ticketNumber)")
-                    model.beginPrioritizationPhase()
-                } label: {
-                    Text("investigation.button.nextPhase")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .padding(.top, LayoutConstants.investigationSpacing)
-            }
-            .padding(LayoutConstants.investigationCardPadding)
-        }
-    }
-
     // MARK: - Fallback bei fehlendem Ticket
 
     private var noTicketView: some View {
@@ -171,6 +144,54 @@ struct InvestigationView: View {
                 .font(.title3)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    // MARK: - Monster einpassen (Framing)
+
+    /// Skaliert und positioniert das Monster so, dass es vollständig im Panel liegt.
+    ///
+    /// Warum dynamisch statt fester Faktor: die vier Blender-Exporte haben unterschiedliche
+    /// Rohmaße. Ein konstanter `scale` (früher 0.2) ergibt deshalb je Asset eine andere
+    /// physische Größe — ein Monster passte, ein anderes ragte über die Panelgrenzen hinaus
+    /// und wurde von der `RealityView` beschnitten.
+    ///
+    /// Vorgehen:
+    /// 1. Verfügbaren Quader aus Panelbreite, Panelhöhe und `monsterPanelDepth` bilden,
+    ///    abzüglich `monsterFramingInset` als Sicherheitsrand zu allen Begrenzungen.
+    /// 2. Die *größte* Modellausdehnung auf die *kleinste* Quaderkante abbilden —
+    ///    erledigt `MonsterAssetProvider.fit(_:toMaxExtent:)` über `visualBounds`.
+    ///    Ein einziger Faktor für X, Y und Z ⇒ keine Streckung, keine Verzerrung.
+    /// 3. Modell mittig setzen und so weit nach vorne schieben, wie die Tiefe es zulässt.
+    private func fitMonster(_ entity: Entity, into availableSize: CGSize) {
+        // 1. Verfügbarer Quader in Metern, abzüglich Sicherheitsrand.
+        // `layoutPointsPerMeter` statt `pointsPerMeter`: letzterer steuert die Empfindlichkeit
+        // der Zieh-Geste und ist dafür eingestellt, wie sich die Interaktion anfühlt. Für die
+        // Umrechnung einer Panelfläche in Meter ist die am Simulator kalibrierte Größe der
+        // SwiftUI-Ebene maßgeblich. Mit dem falschen Wert wurde das Monster auf 0.08 m statt
+        // 0.24 m eingepasst — dreimal zu klein.
+        let inset = 1 - LayoutConstants.monsterFramingInset
+        let widthMeters = Float(availableSize.width / LayoutConstants.layoutPointsPerMeter) * inset
+        let heightMeters = Float(availableSize.height / LayoutConstants.layoutPointsPerMeter) * inset
+        let depthMeters = Float(LayoutConstants.monsterPanelDepth) * inset
+
+        // Kleinste Kante begrenzt; zusätzlich durch die gewünschte Zielgröße gedeckelt.
+        let limit = min(
+            min(widthMeters, heightMeters),
+            min(depthMeters, LayoutConstants.monsterTargetSize)
+        )
+
+        guard limit > 0 else { return }
+
+        // 2. Proportional einpassen (idempotent — misst ohne die eigene Skalierung).
+        let fittedExtents = MonsterAssetProvider.fit(entity, toMaxExtent: limit)
+
+        // 3. Zentrieren und so weit nach vorne schieben, wie die halbe Tiefe abzüglich
+        //    der halben Modelltiefe es erlaubt — sonst würde das Modell vorne anstoßen.
+        let maxForward = max((depthMeters - fittedExtents.z) / 2, 0)
+        let forward = min(LayoutConstants.monsterForwardOffset, maxForward)
+        entity.position = SIMD3<Float>(0, 0, forward)
+
+        DebugManager.log(.spawning, "Monster-Panel: limit=\(limit), z=\(forward)")
     }
 
     // MARK: - Monster laden

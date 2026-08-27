@@ -1,6 +1,6 @@
 # Modul-Eingangsprompt — 014 Abschlussdokumentation und Cleanup
 
-> Vom Projektlogbuch nach Einarbeitung des `013-Report.md` erzeugt. Dies ist das letzte reguläre Modul. Es darf offene Pflichtnachweise nicht durch Dokumentation ersetzen.
+> Vom Projektlogbuch nach Einarbeitung des **aktualisierten** `013-Report.md` erzeugt. Dies ist das letzte reguläre Modul. Es darf offene Pflichtnachweise nicht durch Dokumentation ersetzen.
 
 ---
 
@@ -11,386 +11,504 @@ Du bist Abschluss-, QA- und Dokumentationsverantwortliche:r für Ticket Tamer.
 **Nummer:** 014  
 **Titel:** Abschlussdokumentation und Cleanup
 
-**Ziel:** Projekt, Git-Stand, aktuelle Dokumentation, Assets und Abgabezustand konsistent machen. Alle Pflichtanforderungen F-01 bis F-16 müssen mit realem Nachweis als PASS oder sichtbar als OPEN/FAIL dokumentiert sein.
+**Ziel:** Den realen Projektstand konsistent dokumentieren, Altlasten entfernen und den Abgabezustand eindeutig bewerten. Ticket Tamer darf nur als vollständig abgabebereit gelten, wenn alle Pflichtanforderungen F-01 bis F-16 tatsächlich nachgewiesen sind.
 
 ## Hartes Abschluss-Gate
 
-Modul 014 darf Ticket Tamer nur dann als vollständig abgabebereit markieren, wenn die noch offenen Nachweise aus Modul 013 tatsächlich vorliegen.
+Der aktualisierte Modul-013-Stand enthält inzwischen eine stark überarbeitete Interaktionsarchitektur mit gemessenen Laufzeitwerten und 50-%-Drop-Regel.
 
-Aktuell OPEN:
+Nach Fix 8 fehlen aber noch zentrale Nachweise:
 
-- AK-05 vollständiger linearer Flow
+- Build nach Fix 8
+- vollständige 208-Test-Suite
 - AK-06 Untersuchung
 - AK-07 Weiter zur Priorisierung
-- AK-08 Prioritätsgesten
-- AK-09 Teamgesten
-- AK-10 Drop/Lock End-to-End
-- AK-11 Scoring-Laufzeitfälle
-- AK-12 vollständiges Audiofeedback
-- AK-14 eigene Blender-Monster vollständig nachgewiesen
-- AK-16 Fünffach-Reset/Stabilität
-- vollständige 155-Test-Suite
+- AK-08 Nachtest aller drei Prioritätsziele
+- AK-09 Nachtest aller vier Teamziele
+- AK-10 Invalid/Valid/Lock/Exactly-once nach Fix 8
+- AK-11 vollständige Scoring-Laufzeitmatrix
+- AK-12 `incorrect.wav` + genau-einmal-Audio
+- AK-14 eigener Blender-Source-/Ownership-Nachweis + alle vier echten Meshes mit Gesten
+- AK-16 mindestens fünf stabile Neustarts
 - Apple-Vision-Pro-Gerätetest
 
-Wenn diese Evidenz nicht verfügbar ist:
+Diese Punkte dürfen nur mit realer neuer Evidenz zu PASS werden.
 
-- nicht erfinden
-- nicht als PASS markieren
-- sauber als OPEN/Risiko in Abschlussdokumentation führen
+## Aktueller technischer Stand
 
-## Verbindliche Quellenhierarchie
+### Testzahl
 
-Bei Widersprüchen gilt:
+Aktuell im Quellcode:
 
-1. `Projektbeschreibung.md`
-2. `SPEC.md`
-3. `Akzeptanzkriterien.md`
-4. aktueller `Logbuch-Stand.md`
-5. aktueller `Projekt-Stand.md`
-6. Modul-Reports
+**208 `@Test`-Deklarationen**
 
-Alte/stale Promptformulierungen dürfen keine funktionale Anforderung verändern.
+Davon:
 
-## Wichtige Korrektur zum 013-Report
+**34 Tests** in der Suite `Modul 013 — Zielpanels und 50-%-Drop`.
 
-Die Feature-/AK-Zuordnung im 013-Report ist teilweise falsch.
+Der vollständige Testlauf wurde noch nicht ausgeführt.
 
-Verbindlich ist unter anderem:
+### Tatsächliches Volume
 
-- F-02/F-03 betreffen Ticketkatalog/-daten
-- F-05 betrifft den linearen Ablauf in genau einem zentralen Volume
-- F-14 betrifft vier eigene Blender-Monster
-- AK-16 verlangt mindestens fünf stabile Neustarts
+Simulatortrace vom 27.08.2026:
 
-Übernimm nicht die fehlerhafte Tabellenzuordnung aus dem Report.
+`0.284 × 0.236 × 0.235 m`
 
-## Phase 1 — Git- und Repository-Check
+Die alten Default-Konstanten:
 
-Ermittle:
+`1.0 × 1.0 × 0.4 m`
 
-- Branch
-- HEAD
-- tatsächlichen Modul-013-Commit
-- Working Tree
-- untracked files
-- staged files
-- `.gitignore`
+dürfen **nicht** als reale Geometriegrundlage verwendet werden.
 
-Prüfe:
+### Drop-Regel
 
-- `.DS_Store`
-- alte Kopien von Standdateien
-- Backup-Dateien
-- temporäre Dateien
-- generierte Artefakte, die nicht ins Repo gehören
+Verbindlicher aktueller Stand:
 
-Verbindliches Single-Stand-Prinzip:
+- sichtbare flache 3D-Panels
+- mindestens 50 % der projizierten **Monsterfläche** muss über dem Ziel liegen
+- Z-Oberflächenabstand höchstens 0.05 m
+- Highlight während Drag zeigt ausschließlich „Drop wäre jetzt gültig“
+- Speicherung ausschließlich beim Loslassen
+- ungültiger Drop → Snapback
+- sichtbares Panel und Drop-Geometrie sind dieselbe Box
 
-Unter `Dokumentation/05_Aktueller-Stand/` existieren genau:
+### Neue Services aus 013
 
-- `Projekt-Stand.md`
-- `Logbuch-Stand.md`
+- `VolumeMetrics`
+- `DragBounds`
+- `MonsterDragGeometry`
+- `TargetPanelLayout`
+- `TargetPanelFactory`
 
-Keine `alt`, `copy`, `backup`, `final-final`-Varianten.
+### Assetstand
 
-## Phase 2 — Build/Test-Nachweis übernehmen oder nachholen
-
-Prüfe reale Evidenz für:
-
-- Build
-- 155 Tests
-- Simulator
-- Gerät
-
-Wenn Xcode verfügbar:
-
-- finalen Build ausführen
-- vollständige Tests ausführen
-- tatsächliche Zahlen dokumentieren
-
-Wenn nicht:
-
-- vorhandene echte Ergebnisse übernehmen
-- offene Punkte sichtbar lassen
-
-Keine Test-PASS-Zahlen erfinden.
-
-## Phase 3 — Finale AK-Matrix
-
-Erstelle eine verbindliche Matrix AK-01 bis AK-16.
-
-Für jedes AK:
-
-- Requirement
-- Implementiert?
-- Code-/Dateinachweis
-- Testnachweis
-- Simulatornachweis
-- Gerätenachweis
-- PASS / OPEN / FAIL
-- offener Restpunkt
-
-PASS nur bei vollständigem Nachweis.
-
-### Aktueller Ausgangsstand
-
-- AK-01 PASS
-- AK-02 PASS
-- AK-03 PASS
-- AK-04 PASS
-- AK-05 OPEN
-- AK-06 OPEN
-- AK-07 OPEN
-- AK-08 OPEN
-- AK-09 OPEN
-- AK-10 OPEN
-- AK-11 OPEN
-- AK-12 OPEN
-- AK-13 PASS
-- AK-14 OPEN
-- AK-15 PASS
-- AK-16 OPEN
-
-Diese Werte dürfen nur mit realer neuer Evidenz verbessert werden.
-
-## Phase 4 — Monster-Asset-Abschluss
-
-Aktuell integriert:
+Integriert:
 
 - `Monster_1_blue.usdc`
 - `Monster_2_green.usdc`
 - `Monster_3_yellow.usdc`
 - `Monster_4_red.usdc`
 
-Prüfe und dokumentiere:
+Die vier USDA-Wrapper referenzieren diese Dateien.
 
-- Herkunft
-- Urheber/Eigentum
-- Blender-Quelle
-- Exportweg
-- verwendete Farbvariante
-- Skalierung
-- Y-up-Korrektur
-- lokale Bundle-Pfade
-- keine Team-/Prioritätscodierung
+## Phase 0 — Abschlussnachtests aus Modul 013
 
-### Wichtig
+Bevor du Dokumentation finalisierst, versuche zuerst die noch offenen 013-Nachtests abzuschließen.
 
-Der 013-Report nennt die Dateien Blender-USDC-Exporte, aber im geprüften Monster-Ordner lagen keine `.blend`-Dateien.
+### Build
 
-Für AK-14 muss der Abschluss klar beantworten:
-
-**Wie ist nachgewiesen, dass dies vier eigene Blender-Monster sind?**
-
-Zulässige Evidenz kann sein:
-
-- `.blend`-Quelldateien
-- dokumentierter eigener Blender-Arbeitsordner
-- nachvollziehbarer eigener Exportprozess
-- andere klare Projektnachweise
-
-USDC-Dateien allein beweisen die Blender-Urheberschaft nicht automatisch.
-
-Wenn der Nachweis fehlt: AK-14 OPEN.
-
-## Phase 5 — Audio-Abschluss
+Führe einen Build des **aktuellen Fix-8-Stands** aus.
 
 Dokumentiere:
 
-- `correct.wav`
-- `incorrect.wav`
-- Format
-- Herkunft
-- Rechte
-- Bundle
-- Hörtest
+- Xcode-Version
+- visionOS-SDK
+- Deployment Target
+- Simulatorziel
+- Build PASS/FAIL
+- relevante Warnungen
 
-Aktuell:
+Der frühere Build nach Fix 5 reicht nicht als finaler Buildnachweis.
 
-- `correct.wav` im Simulator laut Report hörbar
-- `incorrect.wav` noch nicht explizit geprüft
+### Tests
 
-AK-12 erst PASS, wenn beide Fälle real bestätigt sind und genau-einmal-Wiedergabe geprüft ist.
+Führe `Product → Test` / vollständige Suite aus.
 
-## Phase 6 — DEBUG-/Development-Cleanup
+Erwarteter Deklarationsstand:
+
+208.
+
+Dokumentiere real:
+
+- Testzahl
+- Passed
+- Failed
+- Skipped
+- Laufzeit
+- Plattform
+
+Keine Zahlen erfinden.
+
+## Phase 1 — AK-06 / AK-07
+
+Prüfe:
+
+- Monster sichtbar
+- Ticketnummer
+- Titel
+- Kurzbeschreibung
+- Auswirkung
+- alle Symptome
+- keine Referenzpriorität sichtbar
+- kein Referenzteam sichtbar
+- „Weiter zur Priorisierung“
+- nach Wechsel bleibt dasselbe Ticket aktiv
+
+Nur bei vollständigem Nachweis PASS.
+
+## Phase 2 — AK-08 Priorisierung nach Fix 8
+
+Für:
+
+- Normal
+- Wichtig
+- Kritisch
+
+und nach Möglichkeit für alle vier Monsterassets:
+
+Prüfe jeweils schrittweise:
+
+- ca. 10 % Überlappung → kein Highlight, Snapback
+- ca. 25 % → kein Highlight, Snapback
+- knapp unter 50 % → kein Highlight, Snapback
+- ab mindestens 50 % → Highlight
+- Loslassen → genau dieses Ziel gespeichert
+
+Zusätzlich:
+
+- kein Clipping an Volume-Rändern
+- Input-Lock nach gültigem Drop
+- kein zweiter Entscheidungswechsel
+
+## Phase 3 — AK-09 Team nach Fix 8
+
+Für:
+
+- Netzwerk
+- Konto
+- Software
+- Hardware
+
+dieselbe Prüfung:
+
+- 10 %
+- 25 %
+- knapp unter 50 %
+- mindestens 50 %
+- Highlight
+- korrekte Speicherung
+- Lock
+- Snapback bei ungültigem Drop
+
+## Phase 4 — AK-10 Exactly-once / Regression
+
+Prüfe:
+
+- gültiger Drop genau einmal
+- zweiter Release ignoriert
+- schnelles mehrfaches Pinchen ignoriert
+- keine Doppelwertung
+- kein doppelter Sound
+- kein doppelter Transition-Task
+- ungültiger Drop verändert Entscheidung/Score/Phase nicht
+- Snapback exakt ohne Drift
+- keine Scale-/Rotationsänderung
+
+## Phase 5 — Clipping / Geometrie
+
+Mit jedem Monster:
+
+- links maximal
+- rechts maximal
+- oben maximal
+- unten maximal
+- vier Ecken
+
+Monster muss vollständig sichtbar bleiben.
+
+Prüfe außerdem Panels aus:
+
+- frontal
+- leicht links
+- leicht rechts
+- leicht oben
+
+Zieltext muss lesbar und räumliche Zuordnung eindeutig bleiben.
+
+## Phase 6 — Z-Frame-Restpunkt
+
+Der 013-Report dokumentiert:
+
+`local=0.06 → world=0.178`
+
+also einen Z-Versatz zwischen lokalem und Scene-Raum.
+
+Prüfe, ob im aktuellen System irgendwo:
+
+- Scene-Volumegrenzen
+- lokale Entity-Positionen
+
+direkt miteinander verrechnet werden.
+
+Wenn ja:
+
+- minimalen Koordinatenraum-Fix durchführen
+- Regressiontests ergänzen
+- dokumentieren
+
+Wenn nein und das System nachweislich konsistent ist:
+
+- Restpunkt als geprüft schließen
+- keine unnötige Architekturänderung
+
+## Phase 7 — Scoring AK-11
+
+End-to-End mindestens:
+
+- Priorität richtig + Team richtig → +200
+- Priorität richtig + Team falsch → +100
+- Priorität falsch + Team richtig → +100
+- beide falsch → +0
+
+Prüfe:
+
+- kein negativer Score
+- keine Doppelwertung
+- Score akkumuliert über mehrere Tickets
+
+## Phase 8 — Audio AK-12
+
+Prüfe:
+
+- `correct.wav` hörbar
+- `incorrect.wav` hörbar
+- richtiges Mapping
+- genau ein Sound je gültiger Entscheidung
+- keine doppelte Wiedergabe
+
+Keine richtige Lösung sichtbar.
+
+## Phase 9 — AK-13
+
+Regressionsprüfung:
+
+- Input während Feedback gesperrt
+- keine Lösung
+- kein Richtig/Falsch-Text
+- ca. 1,5 s Priorität → Team
+- ca. 1,5 s Team → nächstes Ticket/Ergebnis
+
+## Phase 10 — AK-14 Monsterabschluss
+
+Prüfe:
+
+- alle vier unterschiedlichen Monster lokal sichtbar
+- alle vier mit Blick/Pinch/Drag verwendbar
+- Skalierung aller vier angemessen
+- Y-up-Korrektur aller vier korrekt
+- Farbwahl codiert keine Antwort
+
+Zusätzlich zwingend dokumentieren:
+
+**Wie ist nachgewiesen, dass die Monster eigene Blender-Modelle sind?**
+
+Der Report nennt echte Blender-USDC-Exporte, aber im geprüften Ordner liegen keine `.blend`-Quelldateien.
+
+Mögliche Evidenz:
+
+- `.blend`-Quelldateien an anderem dokumentierten Projektort
+- Blender-Arbeitsordner
+- Exportdokumentation
+- nachvollziehbarer eigener Erstellungsnachweis
+
+Wenn kein solcher Nachweis vorhanden ist:
+
+**AK-14 bleibt OPEN.**
+
+## Phase 11 — AK-15 / AK-16
+
+### Ergebnis
+
+Sichtbar ausschließlich:
+
+- Scorezahl
+- `Erneut spielen`
+
+Keine Ticketanzahl, Statistik, Lösung, Rangliste oder Badge.
+
+### Reset
+
+Mindestens fünf aufeinanderfolgende Neustarts.
+
+Nach jedem:
+
+- Start
+- Regler 6
+- Score 0
+- Index 0
+- leere Sitzung
+- Priorität nil
+- Team nil
+- Lock false
+- keine alten Tasks
+- kein Carryover
+
+## Phase 12 — Stabilität
+
+Mindestens:
+
+- 1-Ticket-Sitzung
+- 2-Ticket-Sitzung
+- 6-Ticket-Sitzung
+- 12-Ticket-Sitzung
+- schnelle Gesten
+- mehrere Invalid-Drops
+- mehrere Resets
+
+Keine Crashes oder Phasen-Deadlocks.
+
+## Phase 13 — Gerätetest
+
+Wenn Apple Vision Pro verfügbar:
+
+- Build auf Gerät
+- Blickfokus
+- Pinch
+- Drag
+- Drop-Zielgröße
+- Panel-Lesbarkeit
+- Monstergröße
+- Audio
+- Ergebnis/Reset
+
+Wenn kein Gerät verfügbar:
+
+- offen dokumentieren
+- nicht als PASS erfinden
+
+## Phase 14 — Cleanup
+
+Entferne, falls tatsächlich vorhanden und nicht mehr benötigt:
+
+- `_abgeloest/TargetFrameReporter.swift`
+- `.git/index.lock.stale-bitte-loeschen`
+- `.DS_Store`
+- Backup-/Copy-Dateien
+- veraltete Standdokumente
+
+Unter `Dokumentation/05_Aktueller-Stand/` genau:
+
+- `Projekt-Stand.md`
+- `Logbuch-Stand.md`
+
+## Phase 15 — DEBUG-Cleanup
 
 Prüfe:
 
 - `DebugInteractionHarnessView`
-- `🔧 Team [DEV]`-Button
-- `#if DEBUG`-Blöcke
-- DebugManager
-- überflüssige Logs
+- `🔧 Team [DEV]`
+- DROP-DEBUG-Trace
+- DebugManager-Ausgaben
 
-Ziel:
+DEBUG-only Hilfen dürfen bleiben, wenn:
 
-- Release-Build enthält keine sichtbaren Development-Hilfen
-- DEBUG-only Hilfen dürfen bleiben, wenn sauber gekapselt
-- keine fachliche Nutzerfunktion hängt vom DEBUG-Code ab
+- sie im Release nicht sichtbar sind
+- keine Release-Funktion davon abhängt
+- Logs nicht unnötig sensibel/laut sind
 
-Nicht unnötig DebugManager entfernen, wenn er sauber deaktivierbar ist.
+Entferne keine hilfreiche Debugstruktur nur aus kosmetischen Gründen.
 
-## Phase 7 — UI-/Scope-Cleanup
+## Phase 16 — Dokumentationskonsistenz
 
-Prüfe final:
+Synchronisiere:
 
-### Start
-
-- nur geforderte Startinhalte
-
-### Untersuchung
-
-- keine Referenzlösung
-
-### Priorität
-
-- nur Normal/Wichtig/Kritisch
-
-### Team
-
-- nur Netzwerk/Konto/Software/Hardware
-
-### Feedback
-
-- kein Richtig/Falsch-Text
-- keine richtige Lösung
-- kein Lösungs-Overlay
-
-### Ergebnis
-
-sichtbar ausschließlich:
-
-- Scorezahl
-- „Erneut spielen“
-
-Nicht ergänzen:
-
-- Ticketanzahl
-- Statistik
-- Highscore
-- Badge
-- Ranking
-
-## Phase 8 — F-17
-
-F-17 bleibt bewusst ausgelassen.
-
-Dokumentiere:
-
-- optional
-- nicht implementiert
-- kein Einfluss auf Pflichtabgabe
-
-Nicht nachträglich stillschweigend implementieren.
-
-## Phase 9 — Dokumentationskonsistenz
-
-Aktualisiere mindestens:
-
-- `Projektbeschreibung.md` nur falls technische Realisierungshinweise ergänzt werden müssen, nicht Scope ändern
-- `SPEC.md` nur wenn Implementierungsstatus separat dokumentiert wird, Anforderungen nicht umschreiben
-- `Akzeptanzkriterien.md` Anforderungen nicht verändern
 - `Projekt-Stand.md`
 - `Logbuch-Stand.md`
 - finale AK-Matrix
-- README/Abgabehinweise falls vorhanden
+- README/Abgabehinweise, falls vorhanden
 
-Entferne falsche Altbehauptungen wie:
+Anforderungen selbst nicht umschreiben.
 
+Korrigiere alte Aussagen wie:
+
+- 155 Tests statt aktuell 208
+- Kugel-Platzhalter seien noch aktuelle Monster
+- alte Radius-/Column-/Nearest-Drop-Logik sei noch produktiv
+- `defaultSize` sei tatsächliches Volume
 - F-17 = Highscore/Persistenz
-- Ergebnis zeigt Ticketanzahl
-- USDA-Kugeln seien finale Monster
-- alle AK seien bereits vollständig abgenommen
+- Ergebnis zeige Ticketanzahl
 
-## Phase 10 — Finale Projektstruktur
+## Finale AK-Matrix
 
-Dokumentiere den tatsächlichen Dateibaum.
+Verwende als Ausgangspunkt:
 
-Keine erfundenen Dateien.
+| AK | Startstatus vor Abschlussnachtest |
+|---|---|
+| AK-01 | PASS |
+| AK-02 | PASS |
+| AK-03 | PASS |
+| AK-04 | PASS |
+| AK-05 | OPEN |
+| AK-06 | OPEN |
+| AK-07 | OPEN |
+| AK-08 | OPEN |
+| AK-09 | OPEN |
+| AK-10 | OPEN |
+| AK-11 | OPEN |
+| AK-12 | OPEN |
+| AK-13 | PASS |
+| AK-14 | OPEN |
+| AK-15 | PASS |
+| AK-16 | OPEN |
 
-Prüfe insbesondere:
+Verbessere einen Status nur mit neuem realem Nachweis.
 
-- App
-- Models
-- Views
-- Services
-- Assets
-- RealityKitContent
-- Tests
-- Dokumentation
+## F-17
 
-## Phase 11 — Abgabe-Checkliste
+Bleibt bewusst ausgelassen.
 
-Erstelle eine finale Checkliste mit:
+Keine Monsterreaktion in Modul 014 ergänzen.
 
-### Muss
+## Git
 
-- Build
-- Tests
-- Simulator
-- Gerät
-- F-01 bis F-16
-- AK-01 bis AK-16
-- vier eigene Monster
-- Audio
-- Reset
-- deutsche UI
-- genau ein Volume
+Vor Abschluss:
 
-### Nicht enthalten
+- aktuellen Branch
+- aktuellen HEAD
+- tatsächlichen Modul-013-Commit
+- Working Tree
 
-- Accounts
-- Cloud
-- Datenbank
-- Highscore
-- Statistik
-- Tutorial
-- zweites Volume
-- Immersive Space
-- Lösungserklärungen
+prüfen.
 
-### Optional
+Falls Modul 013 noch nicht committed ist:
 
-- F-17 bewusst ausgelassen
+Vorgesehene Nachricht:
 
-## Phase 12 — Abschlussstatus
+`013: Integration, Zielpanels und Drop-Erkennung`
 
-Am Ende genau eine der folgenden Aussagen treffen:
+Danach Modul 014:
+
+`014: Abschlussdokumentation und Cleanup`
+
+Alle echten Hashes dokumentieren. Keine erfinden.
+
+## Abschlussstatus
+
+Am Ende genau eine Aussage:
 
 ### A — Abgabebereit
 
-Nur wenn alle Pflicht-AKs PASS sind.
+Nur wenn alle Pflicht-AKs tatsächlich PASS sind.
 
 oder
 
 ### B — Nicht vollständig abgabebereit
 
-Dann die verbleibenden OPEN/FAIL-Punkte priorisiert auflisten.
-
-Keine beschönigende Mischform.
-
-## Git
-
-Vorgesehener Commit:
-
-`014: Abschlussdokumentation und Cleanup`
-
-Erfinde keinen Hash.
-
-Wenn Modul 013 vorab noch einen echten Integrationscommit benötigt, Commitreihenfolge sauber dokumentieren.
+Dann offene/fehlgeschlagene Punkte priorisiert nennen.
 
 ## Ausgabeformat
 
 1. Vorab-Check
-2. Git-/Cleanup-Ergebnis
-3. Build-/Testnachweis
-4. finale Asset-/Audio-Dokumentation
-5. AK-01-bis-AK-16-Matrix
-6. Scope-/UI-Check
-7. Dokumentationsänderungen
-8. finaler Dateibaum
-9. Abgabe-Checkliste
-10. Abschlussstatus A oder B
-11. vollständiger `014-Report.md`
+2. Build/Test nach Fix 8
+3. 013-Nachtests
+4. Asset-/Audioabschluss
+5. finale AK-01-bis-AK-16-Matrix
+6. Cleanup
+7. DEBUG-/Release-Prüfung
+8. Dokumentationsänderungen
+9. finaler Dateibaum
+10. Abgabe-Checkliste
+11. Abschlussstatus A oder B
+12. vollständiger `014-Report.md`
 
-Der `014-Report.md` ist die letzte technische Übergabe und muss alle verbliebenen Risiken ehrlich sichtbar machen.
+Nichts als PASS markieren, was nicht tatsächlich nachgewiesen wurde.

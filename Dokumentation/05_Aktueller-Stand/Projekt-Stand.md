@@ -1,44 +1,59 @@
 # Projekt-Stand — Ticket Tamer
 
-**Stand:** Modul 013 technisch integriert, Abnahme teilweise offen  
-**Eingearbeitet am:** 2026-08-12  
+**Stand:** aktualisiertes Modul 013; Build/Nachtests nach Fix 8 offen  
+**Eingearbeitet am:** 2026-08-27  
 **Branch:** `main`  
-**Commit vor 013:** `b94e0ed feat: add docs modul 11`  
+**Commit vor Modul 013:** `b94e0ed feat: add docs modul 11`  
 **Modul-011-Commit:** `209aff2 feat:Modul011`  
 **Modul-013-Commit:** offen  
-**Testdeklarationen:** 155  
+**Testdeklarationen:** 208  
 **Vollständiger Testlauf:** offen
 
 ## Technischer Funktionsstand
 
 Vorhanden:
 
-- zentraler visionOS-Volume-Flow
+- ein zentrales visionOS-Volume
 - Startansicht
 - 12 lokale Tickets
 - Sitzungsmodell
 - Untersuchungsphase
 - Priorisierungsphase
 - Teamzuordnung
-- Drag-/Drop-Grundlage
+- gemessene Drag-Grenzen
+- 3D-Zielpanels
+- 50-%-Drop-Regel
+- Z-Nähe-Prüfung
+- Hover-/Highlight-Feedback
 - Scoring
 - Audiofeedback
 - Auto-Transition
 - Ergebnisansicht
 - Reset
-- vier echte USDC-Monster im RealityKitContent-Bundle
+- vier lokale USDC-Monster
 
-## Relevante neue/geänderte Dateien aus Modul 013
+## Neue/geänderte Dateien aus Modul 013
 
 ```text
 Ticket_Tamer/
 ├─ Ticket_Tamer/
 │  ├─ Assets/
 │  │  └─ MonsterAssetProvider.swift
-│  ├─ Views/
-│  │  ├─ PrioritizationView.swift
-│  │  └─ TeamAssignmentView.swift
-│  └─ ...
+│  ├─ Components/
+│  │  └─ DropTargetComponent.swift
+│  ├─ Services/
+│  │  ├─ DragBounds.swift
+│  │  ├─ DropEvaluator.swift
+│  │  ├─ MonsterDragGeometry.swift
+│  │  ├─ PlanarDrag.swift
+│  │  ├─ TargetPanelFactory.swift
+│  │  ├─ TargetPanelLayout.swift
+│  │  └─ VolumeMetrics.swift
+│  ├─ Support/
+│  │  └─ AppConstants.swift
+│  └─ Views/
+│     ├─ PrioritizationView.swift
+│     └─ TeamAssignmentView.swift
 └─ Packages/
    └─ RealityKitContent/
       └─ Sources/RealityKitContent/
@@ -53,6 +68,11 @@ Ticket_Tamer/
             └─ monster04.usda
 ```
 
+Abgelöst/zu löschen:
+
+- `_abgeloest/TargetFrameReporter.swift`
+- `.git/index.lock.stale-bitte-loeschen`
+
 ## Monster-Mapping
 
 | ID | Datei |
@@ -62,59 +82,62 @@ Ticket_Tamer/
 | `monster03` | `Monster_3_yellow.usdc` |
 | `monster04` | `Monster_4_red.usdc` |
 
-Ticket-Mapping unverändert.
+## Gemessene Monstergrößen
 
-## Assetstatus
+| Asset | B | H | T |
+|---|---:|---:|---:|
+| monster01 | 0.070 | 0.130 | 0.073 |
+| monster02 | 0.045 | 0.130 | 0.052 |
+| monster03 | 0.098 | 0.130 | 0.091 |
+| monster04 | 0.070 | 0.130 | 0.088 |
 
-Technisch bestätigt:
+## Gemessenes Volume
 
-- vier unterschiedliche lokale USDC-Monster
-- USDA-Wrapper referenzieren USDC
-- Priorisierung/Team zeigen echte Monster laut Simulatorbericht
+Simulatortrace:
 
-Noch offen:
+`0.284 × 0.236 × 0.235 m`
 
-- `.blend`-Quelldateien nicht im geprüften Ordner
-- eindeutiger eigener Blender-Source-/Ownership-Nachweis
-- alle vier Modelle mit Gesten testen
-- finale Skalierung/Orientierung aller vier testen
+Die bisherigen Default-Konstanten `1.0 × 1.0 × 0.4 m` dürfen nicht als reale Geometrie verwendet werden.
 
-Deshalb AK-14 noch OPEN.
+## Interaktionsarchitektur
 
-## Integrationsfixes
+```text
+GeometryReader3D + RealityView
+        ↓
+VolumeMetrics
+        ↓
+MonsterAssetProvider.localVisualBounds
+        ↓
+MonsterDragGeometry
+   ├─ DragBounds          → sicherer Ziehbereich
+   ├─ TargetPanelLayout   → Panelgröße/-position
+   └─ DropEvaluator       → Overlap + Z-Nähe
+```
 
-### MonsterAssetProvider
+## Drop-Regel
 
-- Blender-Z-up wird nach dem Laden für RealityKit-Y-up korrigiert.
+Gültig wenn:
 
-### PrioritizationView / TeamAssignmentView
+- mindestens 50 % der projizierten Monsterfläche auf dem Panel liegen
+- Z-Oberflächenabstand höchstens 0.05 m
+- höchstens ein Ziel gewinnt
 
-- direkte State-Lesezugriffe im RealityView-Update
-- asynchron geladene Monster erscheinen dadurch zuverlässig
-- ProgressView während Ladezustand
+Während Drag:
 
-## Build-/Simulatorstand
+- gültiges Ziel wird dezent hervorgehoben
+- Speicherung erst bei `onEnded`
 
-Berichtet:
+## Teststand
 
-- Xcode-Build PASS
-- visionOS 26.5 Simulator
-- Monster in Priorisierung und Team sichtbar
-- `correct.wav` hörbar
-- 1,5-s-Transition und Ergebnis teilweise bestätigt
-
-Nicht abgeschlossen:
-
-- vollständige Tests
-- Untersuchung AK-06/07
-- Gesten-End-to-End
-- `incorrect.wav`
-- fünf Neustarts
-- Gerätetest
+- vorher 155
+- aktuell 208 Deklarationen
+- +53 aus Modul 013
+- davon 34 in `Modul 013 — Zielpanels und 50-%-Drop`
+- vollständiger Lauf offen
 
 ## Strikte AK-Matrix
 
-| AK | Stand |
+| AK | Status |
 |---|---|
 | AK-01 | PASS |
 | AK-02 | PASS |
@@ -133,24 +156,28 @@ Nicht abgeschlossen:
 | AK-15 | PASS |
 | AK-16 | OPEN |
 
-## Teststand
+## Noch offen
 
-- 155 Testdeklarationen
-- Testlauf nicht ausgeführt
+- Build nach Fix 8
+- 208 Tests
+- AK-06/07
+- Nachtest Priorität/Team nach Fix 8
+- 10/25/<50/≥50-%-Verhalten
+- alle vier Assets
+- Clipping
+- Snapback
+- Exactly-once
+- Scoringmatrix
+- `incorrect.wav`
+- fünf Neustarts
+- End-to-End 1/2/6/12 Tickets
+- Blender-Eigentums-/Source-Nachweis
+- Gerätetest
+
+## Bekannter technischer Hinweis
+
+Latenter Z-Frame-Versatz zwischen lokalem und Scene-Raum muss vor Abschluss bewusst geprüft werden.
 
 ## Modul 012
 
-F-17 weiterhin bewusst ausgelassen.
-
-## Für Modul 014
-
-Modul 014 muss:
-
-- alle Dokumente auf diese tatsächliche Matrix synchronisieren
-- keine offenen AKs als PASS deklarieren
-- Git-/Dateibaum bereinigen
-- Debug-only Hilfen prüfen
-- `.DS_Store` entfernen
-- Asset-/Audioquellen dokumentieren
-- finale Abgabe-Checkliste erstellen
-- noch fehlende Evidenz sichtbar als Blocker/Risiko führen
+F-17 bleibt bewusst ausgelassen.

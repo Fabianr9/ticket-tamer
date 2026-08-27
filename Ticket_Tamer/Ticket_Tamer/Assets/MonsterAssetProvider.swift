@@ -67,10 +67,11 @@ enum MonsterAssetProvider {
         ) {
             do {
                 // Entity.load(contentsOf:) ist synchron; im async-Kontext auf MainActor akzeptabel.
-                let entity = try Entity.load(contentsOf: url)
-                applyBlenderCorrection(to: entity)
-                DebugManager.log(.spawning, "Asset per URL geladen: \(assetID) → \(fileName).usdc, children: \(entity.children.count)")
-                return entity
+                let loaded = try Entity.load(contentsOf: url)
+                applyBlenderCorrection(to: loaded)
+                let wrapper = wrapAndCenter(loaded)
+                DebugManager.log(.spawning, "Asset per URL geladen: \(assetID) → \(fileName).usdc")
+                return wrapper
             } catch {
                 DebugManager.log(.spawning, "URL-Ladefehler fuer '\(assetID)': \(error.localizedDescription)")
             }
@@ -80,10 +81,11 @@ enum MonsterAssetProvider {
 
         // 2. Fallback: benannte Entity aus rkassets-Bundle
         do {
-            let entity = try await Entity(named: assetID, in: realityKitContentBundle)
-            applyBlenderCorrection(to: entity)
-            DebugManager.log(.spawning, "Asset per Name geladen: \(assetID), children: \(entity.children.count)")
-            return entity
+            let loaded = try await Entity(named: assetID, in: realityKitContentBundle)
+            applyBlenderCorrection(to: loaded)
+            let wrapper = wrapAndCenter(loaded)
+            DebugManager.log(.spawning, "Asset per Name geladen: \(assetID)")
+            return wrapper
         } catch {
             DebugManager.log(.spawning, "Ladefehler fuer '\(assetID)': \(error.localizedDescription)")
             throw LoadError.entityLoadFailed(assetID)
@@ -102,6 +104,72 @@ enum MonsterAssetProvider {
         DebugManager.log(.spawning, "Blender-Z-up-Korrektur angewendet")
     }
 
+    // MARK: - Zentrierung (Layout-Fix Modul 013)
+
+    /// Kapselt die geladene Entity in einen Wrapper, dessen Ursprung mit dem visuellen
+    /// Mittelpunkt des Modells zusammenfällt.
+    ///
+    /// Blender-Modelle haben ihren Origin oft am Fuß oder an einer anderen Extremstelle.
+    /// Ohne Korrektur liegt die Kollisionssphäre (am Entity-Origin) nicht auf dem
+    /// visuellen Zentrum → Greifen schlägt fehl. Der Wrapper-Ursprung wird so gesetzt,
+    /// dass `wrapper.position` direkt die visuelle Mitte des Monsters angibt.
+    ///
+    /// Methode: `visualBounds(relativeTo: wrapper)` berücksichtigt bereits die
+    /// Orientierungskorrektur von `loaded`, da es die volle lokale Transformation einbezieht.
+    private static func wrapAndCenter(_ loaded: Entity) -> Entity {
+        let wrapper = Entity()
+        wrapper.addChild(loaded)
+
+        // Bounds in Wrapper-Koordinaten = Weltkoordinaten (Orientierung der loaded-Entity inklusive)
+        let bounds = loaded.visualBounds(recursive: true, relativeTo: wrapper)
+        let extents = bounds.extents
+
+        guard extents.x > 0.001 || extents.y > 0.001 || extents.z > 0.001 else {
+            DebugManager.log(.spawning, "VisualBounds zu klein — Zentrierung übersprungen")
+            return wrapper
+        }
+
+        // Verschiebe loaded so, dass bounds.center = (0,0,0) im Wrapper-Raum.
+        loaded.position = -bounds.center
+        DebugManager.log(.spawning, "Zentriert: center=\(bounds.center), extents=\(extents)")
+        return wrapper
+    }
+
+    // MARK: - Einpassung (Framing)
+
+    /// Skaliert `entity` proportional, bis ihre größte sichtbare Ausdehnung `maxExtent` Meter beträgt.
+    ///
+    /// Grund für die Messung statt eines festen Faktors: die vier Blender-Exporte besitzen
+    /// unterschiedliche Rohmaße. Ein konstanter `scale` ergibt deshalb je Asset eine andere
+    /// physische Größe — ein Monster passt, ein anderes ragt über die sichtbaren Grenzen
+    /// hinaus und wird beschnitten. Über `visualBounds` gemessen ist die Endgröße
+    /// assetunabhängig und damit vorhersagbar.
+    ///
+    /// Ein einziger Faktor für X, Y und Z ⇒ keine Streckung, keine Verzerrung.
+    ///
+    /// `relativeTo: entity` schließt die eigene Skalierung der Entity aus. Die Funktion ist
+    /// dadurch idempotent und darf bei jedem Layoutdurchlauf erneut aufgerufen werden.
+    ///
+    /// - Parameters:
+    ///   - entity: Die einzupassende Entity, üblicherweise der Wrapper aus `loadMonster(assetID:)`.
+    ///   - maxExtent: Gewünschte größte Kantenlänge in Metern.
+    /// - Returns: Die tatsächlichen Ausdehnungen nach der Einpassung in Metern.
+    @discardableResult
+    static func fit(_ entity: Entity, toMaxExtent maxExtent: Float) -> SIMD3<Float> {
+        let extents = entity.visualBounds(recursive: true, relativeTo: entity).extents
+        let largestExtent = max(extents.x, max(extents.y, extents.z))
+
+        guard largestExtent > LayoutConstants.monsterMinimumUsableExtent, maxExtent > 0 else {
+            DebugManager.log(.spawning, "VisualBounds unbrauchbar — Einpassung uebersprungen")
+            return extents * entity.scale.x
+        }
+
+        let scale = maxExtent / largestExtent
+        entity.scale = SIMD3<Float>(repeating: scale)
+        DebugManager.log(.spawning, "Eingepasst: extents=\(extents), scale=\(scale), ziel=\(maxExtent)")
+        return extents * scale
+    }
+
     // MARK: - Dateiname-Mapping (intern)
 
     /// Zuordnung von neutralen Asset-IDs auf tatsächliche USDC-Dateinamen.
@@ -117,5 +185,49 @@ enum MonsterAssetProvider {
             default:                           return assetID
             }
         }
+    }
+}
+
+// MARK: - Sichtbare Bounds (Modul 013 — Drag-/Drop-Randfix)
+
+extension MonsterAssetProvider {
+
+    /// Sichtbare Ausdehnung des Monsters **relativ zu seinem Root**, inklusive Skalierung.
+    ///
+    /// Grundlage für `DragBounds.safeRegion(volume:monsterBounds:padding:)` und für die
+    /// Überlappungsprüfung in `DropEvaluator.bestTarget`.
+    ///
+    /// ## Warum nicht das Nennmaß `LayoutConstants.monsterDragDropTargetSize`
+    ///
+    /// Das Nennmaß beschreibt nur das **Ziel** der Einpassung, nicht das Ergebnis:
+    ///
+    /// * `fit(_:toMaxExtent:)` bricht bei unbrauchbaren `visualBounds` still ab und lässt
+    ///   die Skalierung unverändert — das Nennmaß gilt dann gar nicht,
+    /// * es beschreibt ausschließlich die **größte** Kante. Ein Modell von 0.13 m Höhe
+    ///   und 0.06 m Breite würde horizontal doppelt so stark eingeschränkt wie nötig,
+    /// * es sagt nichts darüber, wie die Hülle um den Ursprung verteilt ist.
+    ///
+    /// Gemessen wird deshalb tatsächlich, je Asset und je Seite.
+    ///
+    /// - Parameter entity: Der Wrapper aus `loadMonster(assetID:)`, üblicherweise bereits
+    ///   über `fit(_:toMaxExtent:)` eingepasst.
+    /// - Returns: Box mit den Offsets `minX/maxX/minY/maxY/minZ/maxZ` relativ zum Root.
+    ///   Für ein über `wrapAndCenter` zentriertes Modell liegt sie annähernd symmetrisch
+    ///   um den Ursprung; für ein Modell mit Ursprung am Fuß entsprechend verschoben.
+    static func localVisualBounds(of entity: Entity) -> BoundingBox {
+        // `relativeTo: entity` misst im Eigenraum und schließt die eigene Transformation
+        // aus. Anschließend wird sie explizit angewendet — aber ohne Translation, denn
+        // gesucht sind die Offsets **relativ zum Root**.
+        //
+        // Bewusst über die volle Matrix statt nur über `entity.scale`: so gehen auch eine
+        // Eigenrotation der Entity und eine ungleichmäßige Skalierung korrekt ein.
+        // `BoundingBox.transformed(by:)` transformiert alle acht Ecken und bildet daraus
+        // wieder eine achsenparallele Box — genau das, was die Überlappungsprüfung braucht.
+        let raw = entity.visualBounds(recursive: true, relativeTo: entity)
+
+        var matrix = entity.transform.matrix
+        matrix.columns.3 = SIMD4<Float>(0, 0, 0, 1)
+
+        return raw.transformed(by: matrix)
     }
 }

@@ -1,3 +1,5 @@
+import CoreGraphics
+import RealityKit
 import Testing
 import simd
 @testable import Ticket_Tamer
@@ -959,19 +961,379 @@ struct PrioritizationPhaseTests {
         #expect(PriorityTargetMapping.priority(for: "") == nil)
     }
 
-    @Test("Zielabstände sind größer als 2 × dropTargetRadius (keine Überschneidung)")
-    func targetPositionsDoNotOverlap() {
+    // MARK: - Spaltenmodell der Priorisierungsphase
+
+    /// Die drei Prioritätsziele werden über `DropEvaluator.evaluateColumn` ausgewertet:
+    /// entscheidend ist allein die X-Abweichung. Sie müssen daher auf einer Höhe liegen
+    /// und sich in X eindeutig unterscheiden.
+    @Test("Prioritätsziele bilden eine Reihe mit eindeutigen X-Werten")
+    func priorityTargetsFormOneRow() {
         let targets = PriorityTargetMapping.allTargets
-        let radius = InteractionConstants.dropTargetRadius
-        for i in targets.indices {
-            for j in targets.indices where j > i {
-                let dist = simd_distance(targets[i].position, targets[j].position)
-                #expect(
-                    dist > 2 * radius,
-                    "Ziele '\(targets[i].id)' und '\(targets[j].id)' überschneiden sich (Abstand \(dist) ≤ \(2*radius))"
-                )
-            }
+        let xs = targets.map(\.position.x)
+        #expect(Set(xs).count == targets.count, "X-Werte sind nicht eindeutig")
+
+        for target in targets {
+            #expect(target.position.y == PrioritizationConstants.targetPositionWichtig.y)
+            #expect(target.position.z == PrioritizationConstants.targetPositionWichtig.z)
         }
+
+        // Entscheidungsgrenze liegt mittig zwischen benachbarten Spalten.
+        let sorted = xs.sorted()
+        for i in 1..<sorted.count {
+            let spacing = sorted[i] - sorted[i - 1]
+            #expect(
+                abs(spacing - PrioritizationConstants.targetColumnSpacing) < 0.0001,
+                "Spaltenabstand \(spacing) weicht von targetColumnSpacing ab"
+            )
+        }
+    }
+
+    /// Kern der Regression: zuvor war nur „Wichtig" erreichbar, weil die äußeren Ziele
+    /// 0.38 m entfernt lagen und die Radiusprüfung 0.23 m Drag-Strecke verlangt hätte.
+    @Test("Alle drei Prioritäten sind per Spaltenauswertung erreichbar")
+    func everyPriorityIsReachable() {
+        let origin = PrioritizationConstants.monsterStartPosition
+        let lift = PrioritizationConstants.minimumDropLift
+        let spacing = PrioritizationConstants.targetColumnSpacing
+        let targets = PriorityTargetMapping.allTargets.map {
+            DropEvaluator.TargetDescriptor(
+                id: $0.id,
+                position: $0.position,
+                radius: InteractionConstants.dropTargetRadius
+            )
+        }
+
+        // Knapp jenseits der jeweiligen Entscheidungsgrenze abgelegt, minimal angehoben.
+        let cases: [(x: Float, expected: String)] = [
+            (-spacing, "priority_normal"),
+            (-spacing * 0.6, "priority_normal"),
+            (0, "priority_wichtig"),
+            (spacing * 0.4, "priority_wichtig"),
+            (spacing * 0.6, "priority_kritisch"),
+            (spacing, "priority_kritisch"),
+        ]
+
+        for testCase in cases {
+            let dropped = SIMD3<Float>(testCase.x, origin.y + lift, origin.z)
+            let result = DropEvaluator.evaluateColumn(
+                entityPosition: dropped,
+                origin: origin,
+                targets: targets,
+                minimumLift: lift
+            )
+            #expect(result == testCase.expected, "x=\(testCase.x) ergab \(result ?? "nil")")
+        }
+    }
+
+    // MARK: - Planare Zieh-Bewegung
+
+    /// Kernregression: die Tiefe darf sich durch Ziehen nie ändern. Zuvor wurde die
+    /// Z-Komponente der Zeigerposition direkt übernommen — Sprung nach vorne beim Greifen,
+    /// Stehenbleiben auf Handtiefe beim Loslassen.
+    /// Regression: `ticketCardMinScale` stand auf 0.45 und klemmte den Einpassfaktor nach
+    /// **oben**, wenn weniger Platz da war — die Karte ragte dann über ihre Spalte hinaus.
+    @Test("Ticketkarte passt bei realistischen Fenstergrößen ohne Überlauf hinein")
+    func ticketCardFitsWithoutOverflow() {
+        let design = CGSize(
+            width: LayoutConstants.ticketCardDesignWidth,
+            height: LayoutConstants.ticketCardDesignHeight
+        )
+
+        // Von sehr eng bis großzügig — überall darf nichts überstehen.
+        let boxes: [CGSize] = [
+            CGSize(width: 120, height: 240),
+            CGSize(width: 221, height: 385),
+            CGSize(width: 400, height: 600),
+            CGSize(width: 900, height: 1200),
+        ]
+
+        for box in boxes {
+            let raw = min(box.width / design.width, box.height / design.height)
+            let scale = min(
+                max(raw, LayoutConstants.ticketCardMinScale),
+                LayoutConstants.ticketCardMaxScale
+            )
+            #expect(
+                design.width * scale <= box.width + 0.001,
+                "Karte ist in \(box) zu breit (\(design.width * scale))"
+            )
+            #expect(
+                design.height * scale <= box.height + 0.001,
+                "Karte ist in \(box) zu hoch (\(design.height * scale))"
+            )
+        }
+    }
+
+    @Test("Ziehen verändert die Z-Tiefe nicht")
+    func planarDragKeepsDepthConstant() {
+        let start = PrioritizationConstants.monsterStartPosition
+        let moves: [CGSize] = [
+            .zero,
+            CGSize(width: 300, height: -200),
+            CGSize(width: -450, height: 120),
+            CGSize(width: 0, height: -1000),
+        ]
+        for move in moves {
+            let result = PlanarDrag.position(from: start, translation: move)
+            #expect(result.z == start.z, "Z hat sich bei \(move) verändert")
+        }
+    }
+
+    @Test("Ziehrichtungen werden korrekt auf die RealityKit-Achsen abgebildet")
+    func planarDragUsesCorrectAxisDirections() {
+        let start = SIMD3<Float>(0, 0, 0.06)
+
+        // SwiftUI zählt height nach unten positiv — nach oben ziehen heißt negatives height.
+        let up = PlanarDrag.position(from: start, translation: CGSize(width: 0, height: -100))
+        #expect(up.y > start.y, "Ziehen nach oben muss Y erhöhen")
+
+        let down = PlanarDrag.position(from: start, translation: CGSize(width: 0, height: 100))
+        #expect(down.y < start.y, "Ziehen nach unten muss Y senken")
+
+        let right = PlanarDrag.position(from: start, translation: CGSize(width: 100, height: 0))
+        #expect(right.x > start.x, "Ziehen nach rechts muss X erhöhen")
+
+        let left = PlanarDrag.position(from: start, translation: CGSize(width: -100, height: 0))
+        #expect(left.x < start.x, "Ziehen nach links muss X senken")
+    }
+
+    /// Die seitliche Entscheidungsgrenze muss mit realistischem Zieh-Aufwand erreichbar sein.
+    @Test("Entscheidungsgrenze und Mindestanhebung sind per Geste erreichbar")
+    func decisionThresholdsAreReachableByDragging() {
+        let start = PrioritizationConstants.monsterStartPosition
+        let boundary = PrioritizationConstants.targetColumnSpacing / 2
+
+        // Ziehbewegung von 200 Punkten zur Seite und 100 Punkten nach oben.
+        let dragged = PlanarDrag.position(from: start, translation: CGSize(width: -200, height: -100))
+        #expect(abs(dragged.x - start.x) > boundary, "Seitliche Grenze nicht erreichbar")
+        #expect(
+            dragged.y - start.y >= PrioritizationConstants.minimumDropLift,
+            "Mindestanhebung nicht erreichbar"
+        )
+    }
+
+    // MARK: - Spielfläche und Clipping
+
+    /// Kernregression zum Beschneiden am oberen Rand: egal wie weit gezogen wird, die
+    /// Modellhülle muss mit Sicherheitsabstand innerhalb des Volumes bleiben.
+    @Test("Ziehen kann das Monster nie über die Volume-Grenzen hinaus bewegen")
+    func draggingNeverLeavesTheVolume() {
+        let size = LayoutConstants.monsterDragDropTargetSize
+        let limits = PlanarDrag.playAreaLimits(forEntityOfSize: size)
+        let start = PrioritizationConstants.monsterStartPosition
+        let half = SIMD3<Float>(
+            Float(LayoutConstants.centralVolumeWidth / 2),
+            Float(LayoutConstants.centralVolumeHeight / 2),
+            Float(LayoutConstants.centralVolumeDepth / 2)
+        )
+
+        // Absichtlich weit über jedes sinnvolle Maß hinaus gezogen.
+        let extremes: [CGSize] = [
+            CGSize(width: 0, height: -5000),
+            CGSize(width: 0, height: 5000),
+            CGSize(width: -5000, height: -5000),
+            CGSize(width: 5000, height: 5000),
+        ]
+
+        for move in extremes {
+            let p = PlanarDrag.position(from: start, translation: move, limits: limits)
+            #expect(abs(p.x) + size / 2 <= half.x, "Modell ragt seitlich heraus bei \(move)")
+            #expect(abs(p.y) + size / 2 <= half.y, "Modell ragt oben/unten heraus bei \(move)")
+            #expect(p.z == start.z, "Z hat sich bei \(move) verändert")
+        }
+    }
+
+    /// Die Grenzen dürfen die Ziele nicht unerreichbar machen.
+    @Test("Alle Zielspalten und die Mindestanhebung liegen innerhalb der Spielfläche")
+    func targetsRemainReachableWithinPlayArea() {
+        let limits = PlanarDrag.playAreaLimits(
+            forEntityOfSize: LayoutConstants.monsterDragDropTargetSize
+        )
+        let start = PrioritizationConstants.monsterStartPosition
+
+        #expect(abs(start.x) <= limits.x)
+        #expect(abs(start.y) <= limits.y)
+
+        for target in PriorityTargetMapping.allTargets {
+            #expect(
+                abs(target.position.x) <= limits.x,
+                "Spalte \(target.id) liegt außerhalb der Spielfläche"
+            )
+        }
+
+        // Die für einen gültigen Drop nötige Höhe muss erreichbar bleiben.
+        #expect(start.y + PrioritizationConstants.minimumDropLift <= limits.y)
+    }
+
+    // MARK: - Snapback nach ungültigem Drop
+
+    /// Baut die Entity-Hierarchie so auf, wie `setupScene` sie erzeugt: eine Elternentity
+    /// (die Wurzel der `RealityView`) mit einem Monster-Wrapper darunter, der Skalierung
+    /// aus `MonsterAssetProvider.fit` und die Blender-Y-up-Korrektur trägt.
+    private func makeMonsterHierarchy() -> (parent: Entity, monster: Entity) {
+        let parent = Entity()
+        // Bewusst **nicht** identisch: nur so wird sichtbar, ob lokaler und
+        // Welt-Koordinatenraum vermischt werden.
+        parent.position = SIMD3<Float>(0.5, -0.3, 0.1)
+        parent.scale = SIMD3<Float>(repeating: 2)
+
+        let monster = Entity()
+        monster.orientation = simd_quatf(angle: -.pi / 2, axis: SIMD3<Float>(1, 0, 0))
+        monster.scale = SIMD3<Float>(repeating: 0.37)
+        monster.position = PrioritizationConstants.monsterStartPosition
+        parent.addChild(monster)
+
+        return (parent, monster)
+    }
+
+    /// Kernregression: `originTransform` wird als **lokaler** Transform gesichert
+    /// (`entity.transform`). Der Snapback setzte ihn zuvor mit `relativeTo: nil`, also als
+    /// Welt-Transform, zurück. Bei einer Elternentity mit eigenem Transform landet das
+    /// Monster dadurch an anderer Stelle und in anderer Größe.
+    @Test("Snapback im lokalen Raum stellt Position, Rotation und Scale exakt wieder her")
+    func snapbackRestoresFullLocalTransform() {
+        let (_, monster) = makeMonsterHierarchy()
+        let origin = monster.transform   // wie in setupScene gesichert
+
+        // Ziehen: nur die Translation ändert sich.
+        monster.position = SIMD3<Float>(0.42, 0.18, origin.translation.z)
+
+        // Snapback wie jetzt implementiert: relativ zur Elternentity.
+        monster.setTransformMatrix(origin.matrix, relativeTo: monster.parent)
+
+        let after = monster.transform
+        #expect(simd_distance(after.translation, origin.translation) < 0.0001, "Position weicht ab")
+        #expect(simd_distance(after.scale, origin.scale) < 0.0001, "Scale weicht ab")
+        #expect(simd_distance(after.rotation.vector, origin.rotation.vector) < 0.0001, "Rotation weicht ab")
+    }
+
+    /// Gegenprobe: dieselbe Wiederherstellung im Weltraum ergibt einen anderen Transform.
+    /// Genau das war der alte Code — der Test schlägt fehl, falls jemand ihn zurückbaut.
+    @Test("Snapback im Weltraum würde Position und Größe verfälschen")
+    func snapbackInWorldSpaceWouldDrift() {
+        let (_, monster) = makeMonsterHierarchy()
+        let origin = monster.transform
+
+        monster.position = SIMD3<Float>(0.42, 0.18, origin.translation.z)
+
+        // Alter Code: lokaler Transform, angewendet als Welt-Transform.
+        monster.setTransformMatrix(origin.matrix, relativeTo: nil)
+
+        let after = monster.transform
+        #expect(
+            simd_distance(after.translation, origin.translation) > 0.0001,
+            "Erwartet wurde eine Abweichung — die Elternentity hat einen eigenen Transform"
+        )
+        #expect(
+            simd_distance(after.scale, origin.scale) > 0.0001,
+            "Erwartet wurde eine Größenabweichung durch die skalierte Elternentity"
+        )
+    }
+
+    /// Fünf ungültige Drops hintereinander dürfen keine schrittweise Drift erzeugen.
+    @Test("Fünf aufeinanderfolgende Snapbacks driften nicht")
+    func repeatedSnapbacksDoNotDrift() {
+        let (_, monster) = makeMonsterHierarchy()
+        let origin = monster.transform
+
+        for step in 1...5 {
+            monster.position = SIMD3<Float>(
+                Float(step) * 0.05,
+                Float(step) * -0.03,
+                origin.translation.z
+            )
+            monster.setTransformMatrix(origin.matrix, relativeTo: monster.parent)
+
+            let after = monster.transform
+            #expect(
+                simd_distance(after.translation, origin.translation) < 0.0001,
+                "Drift nach Durchlauf \(step)"
+            )
+            #expect(simd_distance(after.scale, origin.scale) < 0.0001, "Scale-Drift nach \(step)")
+        }
+    }
+
+    // MARK: - Sichtabstand zur Label-Zeile
+
+    /// Regression: bei `targetLabelTopPadding = 120` lag die Label-Zeile auf der
+    /// Monsteroberkante und verdeckte dessen Silhouette.
+    @Test("Monster steht in der Startposition deutlich unter der Label-Zeile")
+    func monsterStartsClearlyBelowLabelBand() {
+        let height = LayoutConstants.monsterDragDropTargetSize
+        let monsterTop = PrioritizationConstants.monsterStartPosition.y + height / 2
+        let gap = PrioritizationConstants.labelBandBottomY - monsterTop
+
+        #expect(gap > 0, "Monster ragt in die Label-Zeile")
+        #expect(gap >= height, "Abstand unter einer Monsterhöhe — wirkt gedrängt (\(gap) m)")
+    }
+
+    /// Auch am höchsten erreichbaren Zieh-Punkt darf keine Überdeckung entstehen —
+    /// und zwar für unterschiedlich hohe Modelle.
+    @Test("Zieh-Obergrenze hält das Monster unter der Label-Zeile")
+    func dragCeilingKeepsMonsterBelowLabelBand() {
+        // Bandbreite plausibler Modellhöhen nach dem Einpassen.
+        for height in [Float(0.08), 0.11, 0.13, 0.16] {
+            let ceiling = PrioritizationConstants.monsterCeiling(forMonsterHeight: height)
+            let topAtCeiling = ceiling + height / 2
+
+            #expect(
+                topAtCeiling < PrioritizationConstants.labelBandBottomY,
+                "Modellhöhe \(height): Oberkante \(topAtCeiling) überdeckt die Label-Zeile"
+            )
+
+            // Die für einen gültigen Drop nötige Anhebung muss unter der Decke bleiben.
+            let requiredY = PrioritizationConstants.monsterStartPosition.y
+                + PrioritizationConstants.minimumDropLift
+            #expect(
+                requiredY < ceiling,
+                "Modellhöhe \(height): Mindestanhebung liegt über der Zieh-Obergrenze"
+            )
+        }
+    }
+
+    /// Die Decke darf die Volume-Grenze nicht überschreiten — sonst wäre sie wirkungslos.
+    @Test("Zieh-Obergrenze liegt innerhalb der Spielfläche")
+    func dragCeilingStaysInsidePlayArea() {
+        let height = LayoutConstants.monsterDragDropTargetSize
+        let limits = PlanarDrag.playAreaLimits(forEntityOfSize: height)
+        let ceiling = PrioritizationConstants.monsterCeiling(forMonsterHeight: height)
+
+        #expect(ceiling <= limits.y)
+        #expect(ceiling > PrioritizationConstants.monsterStartPosition.y)
+    }
+
+    @Test("Ablage ohne ausreichende Aufwärtsbewegung ist ungültig")
+    func dropWithoutLiftIsInvalid() {
+        let origin = PrioritizationConstants.monsterStartPosition
+        let lift = PrioritizationConstants.minimumDropLift
+        let targets = PriorityTargetMapping.allTargets.map {
+            DropEvaluator.TargetDescriptor(
+                id: $0.id,
+                position: $0.position,
+                radius: InteractionConstants.dropTargetRadius
+            )
+        }
+
+        // Direkt an der Ausgangsposition losgelassen.
+        #expect(
+            DropEvaluator.evaluateColumn(
+                entityPosition: origin,
+                origin: origin,
+                targets: targets,
+                minimumLift: lift
+            ) == nil
+        )
+
+        // Nach unten gezogen und losgelassen.
+        let below = SIMD3<Float>(origin.x, origin.y - 0.1, origin.z)
+        #expect(
+            DropEvaluator.evaluateColumn(
+                entityPosition: below,
+                origin: origin,
+                targets: targets,
+                minimumLift: lift
+            ) == nil
+        )
     }
 
     @Test("PrioritizationConstants: monsterStartPosition ist erreichbar (y < targetPositionNormal.y)")
@@ -979,6 +1341,61 @@ struct PrioritizationPhaseTests {
         let monsterY = PrioritizationConstants.monsterStartPosition.y
         let targetY  = PrioritizationConstants.targetPositionNormal.y
         #expect(monsterY < targetY)
+    }
+
+    // MARK: - Layout-Fix: Trefferbereiche ohne sichtbare Geometrie
+
+    /// Regressionstest zum „orangenen Halbkreis": der Trefferradius ist eine großzügige
+    /// Toleranz und darf nie als Anzeigegröße dienen. In der Priorisierungsansicht gibt es
+    /// inzwischen gar keine sichtbare Zielgeometrie mehr — in der Teamansicht ist der
+    /// Sichtradius strikt kleiner als der Trefferradius.
+    @Test("Sichtradius der Zielkugel ist kleiner als der Trefferradius")
+    func visualRadiusIsSmallerThanHitRadius() {
+        #expect(InteractionConstants.dropTargetVisualRadius > 0)
+        #expect(InteractionConstants.dropTargetVisualRadius < InteractionConstants.dropTargetRadius)
+    }
+
+    @Test("Prioritätsziele liegen innerhalb des zentralen Volumes")
+    func priorityTargetsStayInsideVolume() {
+        let half = SIMD3<Float>(
+            Float(LayoutConstants.centralVolumeWidth / 2),
+            Float(LayoutConstants.centralVolumeHeight / 2),
+            Float(LayoutConstants.centralVolumeDepth / 2)
+        )
+        for target in PriorityTargetMapping.allTargets {
+            let p = target.position
+            #expect(abs(p.x) <= half.x, "\(target.id) liegt seitlich außerhalb des Volumes")
+            #expect(abs(p.y) <= half.y, "\(target.id) liegt oben/unten außerhalb des Volumes")
+            #expect(abs(p.z) <= half.z, "\(target.id) liegt in der Tiefe außerhalb des Volumes")
+        }
+    }
+
+    /// Das Monster soll deutlich sichtbar stehen und nicht im Boden versinken:
+    /// Modellmitte oberhalb des unteren Volume-Drittels, Modell vollständig im Volume.
+    @Test("Monster-Startposition liegt zentriert und vollständig im Volume")
+    func monsterStartPositionIsCenteredAndFullyVisible() {
+        let start = PrioritizationConstants.monsterStartPosition
+        let halfModel = LayoutConstants.monsterDragDropTargetSize / 2
+        let halfVolumeY = Float(LayoutConstants.centralVolumeHeight / 2)
+
+        #expect(start.x == 0, "Monster ist nicht horizontal zentriert")
+        #expect(abs(start.y) + halfModel <= halfVolumeY, "Monster ragt oben/unten aus dem Volume")
+        #expect(start.y > -halfVolumeY / 3, "Monster steht zu tief in der Szene")
+    }
+
+    /// AK-10: das Monster darf zu Beginn in keinem Zielbereich liegen, sonst würde
+    /// ein Drop ohne echte Bewegung bereits als gültig gewertet.
+    @Test("Monster-Startposition liegt außerhalb aller Prioritätsziele")
+    func monsterStartPositionIsOutsideEveryTarget() {
+        let start = PrioritizationConstants.monsterStartPosition
+        let targets = PriorityTargetMapping.allTargets.map {
+            DropEvaluator.TargetDescriptor(
+                id: $0.id,
+                position: $0.position,
+                radius: InteractionConstants.dropTargetRadius
+            )
+        }
+        #expect(DropEvaluator.evaluate(entityPosition: start, targets: targets) == nil)
     }
 }
 
@@ -1218,6 +1635,55 @@ struct TeamAssignmentPhaseTests {
         #expect(TeamTargetMapping.team(for: "unbekannt") == nil)
         #expect(TeamTargetMapping.team(for: "") == nil)
         #expect(TeamTargetMapping.team(for: "priority_normal") == nil)
+    }
+
+    /// Nach der Vergrößerung des Volumes werden Teamstationen über
+    /// `DropEvaluator.evaluateNearest` ausgewertet. Alle vier müssen innerhalb der
+    /// Zieh-Grenzen liegen und aus ihrer jeweiligen Ecke heraus eindeutig gewinnen.
+    @Test("Alle vier Teamstationen sind innerhalb der Spielfläche erreichbar")
+    func teamTargetsAreReachableWithinPlayArea() {
+        let limits = PlanarDrag.playAreaLimits(
+            forEntityOfSize: LayoutConstants.monsterDragDropTargetSize
+        )
+        let origin = TeamAssignmentConstants.monsterStartPosition
+        let targets = TeamTargetMapping.allTargets.map {
+            DropEvaluator.TargetDescriptor(
+                id: $0.id,
+                position: $0.position,
+                radius: InteractionConstants.dropTargetRadius
+            )
+        }
+
+        for target in TeamTargetMapping.allTargets {
+            #expect(abs(target.position.x) <= limits.x, "\(target.id) außerhalb in X")
+            #expect(abs(target.position.y) <= limits.y, "\(target.id) außerhalb in Y")
+        }
+
+        // Aus jeder Ecke der Spielfläche heraus muss die dortige Station gewinnen.
+        for target in TeamTargetMapping.allTargets {
+            let corner = SIMD3<Float>(
+                target.position.x < 0 ? -limits.x : limits.x,
+                target.position.y < 0 ? -limits.y : limits.y,
+                origin.z
+            )
+            let result = DropEvaluator.evaluateNearest(
+                entityPosition: corner,
+                origin: origin,
+                targets: targets,
+                minimumDistance: TeamAssignmentConstants.minimumDropDistance
+            )
+            #expect(result == target.id, "Ecke \(corner) ergab \(result ?? "nil")")
+        }
+
+        // Ohne nennenswerte Bewegung bleibt die Ablage ungültig.
+        #expect(
+            DropEvaluator.evaluateNearest(
+                entityPosition: origin,
+                origin: origin,
+                targets: targets,
+                minimumDistance: TeamAssignmentConstants.minimumDropDistance
+            ) == nil
+        )
     }
 
     @Test("Teamziel-Abstände sind größer als 2 × dropTargetRadius (keine Überschneidung)")
@@ -1824,5 +2290,903 @@ struct ScoringAndFeedbackTests {
         model.startSession(using: { $0 })
         #expect(model.selectedPriority == nil)
         #expect(model.selectedTeam == nil)
+    }
+}
+
+// MARK: - Modul 013: sicherer Zieh-Bereich, Zielpanels und 50-%-Drop
+
+/// Tests der messwertbasierten Drag-/Drop-Grundlage.
+///
+/// Alle geprüften Typen sind bewusst frei von SwiftUI und von einem laufenden
+/// RealityKit-Render-Loop: `VolumeMetrics`, `DragBounds`, `TargetPanelLayout` und
+/// `DropEvaluator` arbeiten mit reinen Werten und sind dadurch ohne Simulator prüfbar.
+///
+/// Insbesondere ist die Überlappungsprüfung damit auch im Test **perspektivunabhängig**:
+/// es gibt keine Kamera, keine Projektionsmatrix, keinen Blickwinkel — nur zwei
+/// achsenparallele Boxen in Szenen-Koordinaten.
+@Suite("Modul 013 — Zielpanels und 50-%-Drop")
+struct TargetPanelAndOverlapTests {
+
+    // MARK: - Hilfswerte
+
+    /// Volume von 1.0 × 1.0 × 0.4 m, zentriert im Ursprung.
+    private var volume: BoundingBox {
+        BoundingBox(min: SIMD3<Float>(-0.5, -0.5, -0.2), max: SIMD3<Float>(0.5, 0.5, 0.2))
+    }
+
+    /// Symmetrisches Monster von 0.13 m Kantenlänge um seinen Root.
+    private var symmetricMonster: BoundingBox {
+        BoundingBox(min: SIMD3<Float>(-0.065, -0.065, -0.065), max: SIMD3<Float>(0.065, 0.065, 0.065))
+    }
+
+    /// Asymmetrisches Monster: links 0.08, rechts 0.12, oben 0.18, unten 0.06.
+    private var asymmetricMonster: BoundingBox {
+        BoundingBox(min: SIMD3<Float>(-0.08, -0.06, -0.05), max: SIMD3<Float>(0.12, 0.18, 0.05))
+    }
+
+    /// Monsterhülle an einer gegebenen Root-Position.
+    private func hull(_ monster: BoundingBox, at position: SIMD3<Float>) -> BoundingBox {
+        BoundingBox(min: monster.min + position, max: monster.max + position)
+    }
+
+    private var safeBounds: DragBounds {
+        DragBounds.safeRegion(
+            volume: volume,
+            monsterBounds: symmetricMonster,
+            padding: InteractionConstants.dragSafetyPadding
+        )
+    }
+
+    // MARK: - DragBounds (Clipping-Schutz, Anforderung A)
+
+    @Test("Der sichere Bereich haelt ein symmetrisches Monster vollstaendig im Volume")
+    func safeRegionKeepsSymmetricMonsterInside() {
+        let safe = safeBounds
+        #expect(safe.maximum.x + symmetricMonster.max.x <= volume.max.x)
+        #expect(safe.minimum.x + symmetricMonster.min.x >= volume.min.x)
+        #expect(safe.maximum.y + symmetricMonster.max.y <= volume.max.y)
+        #expect(safe.minimum.y + symmetricMonster.min.y >= volume.min.y)
+    }
+
+    @Test("Der sichere Bereich beruecksichtigt unterschiedliche Ausdehnungen je Seite")
+    func safeRegionRespectsAsymmetry() {
+        let safe = DragBounds.safeRegion(volume: volume, monsterBounds: asymmetricMonster, padding: 0.02)
+
+        // Rechts ragt das Modell weiter heraus als links ⇒ rechte Grenze liegt weiter innen.
+        #expect(volume.max.x - safe.maximum.x > safe.minimum.x - volume.min.x)
+        // Oben ragt das Modell deutlich weiter heraus als unten.
+        #expect(volume.max.y - safe.maximum.y > safe.minimum.y - volume.min.y)
+
+        #expect(safe.maximum.x + asymmetricMonster.max.x <= volume.max.x)
+        #expect(safe.minimum.x + asymmetricMonster.min.x >= volume.min.x)
+        #expect(safe.maximum.y + asymmetricMonster.max.y <= volume.max.y)
+        #expect(safe.minimum.y + asymmetricMonster.min.y >= volume.min.y)
+    }
+
+    @Test("Clamp begrenzt an allen vier Raendern und an den Ecken")
+    func clampCoversAllEdgesAndCorners() {
+        let safe = safeBounds
+        let farOutside: [SIMD3<Float>] = [
+            SIMD3<Float>(-10, 0, 0), SIMD3<Float>(10, 0, 0),
+            SIMD3<Float>(0, 10, 0), SIMD3<Float>(0, -10, 0),
+            SIMD3<Float>(-10, 10, 0), SIMD3<Float>(10, 10, 0),
+            SIMD3<Float>(-10, -10, 0), SIMD3<Float>(10, -10, 0),
+        ]
+
+        for requested in farOutside {
+            let allowed = safe.clamp(requested)
+            let box = hull(symmetricMonster, at: allowed)
+            #expect(box.min.x >= volume.min.x)
+            #expect(box.max.x <= volume.max.x)
+            #expect(box.min.y >= volume.min.y)
+            #expect(box.max.y <= volume.max.y)
+        }
+    }
+
+    @Test("Eine Position innerhalb des sicheren Bereichs bleibt unveraendert")
+    func clampLeavesInteriorUntouched() {
+        let inside = SIMD3<Float>(0.1, -0.05, 0.06)
+        #expect(safeBounds.clamp(inside) == inside)
+    }
+
+    @Test("Ein Monster groesser als das Volume kollabiert auf die Mitte")
+    func oversizedMonsterCollapsesToCenter() {
+        let huge = BoundingBox(min: SIMD3<Float>(-2, -2, -0.05), max: SIMD3<Float>(2, 2, 0.05))
+        let safe = DragBounds.safeRegion(volume: volume, monsterBounds: huge, padding: 0.02)
+        #expect(safe.hasCollapsedAxis)
+        #expect(safe.minimum.x == safe.maximum.x)
+        #expect(safe.minimum.y == safe.maximum.y)
+    }
+
+    // MARK: - VolumeMetrics
+
+    @Test("Layoutpunkte werden linear und Y-gespiegelt in Szenenmeter abgebildet")
+    func layoutPointsMapToSceneMeters() {
+        let metrics = VolumeMetrics(
+            volume: volume,
+            layoutFrame: CGRect(x: 0, y: 0, width: 1000, height: 1000)
+        )
+        #expect(metrics.isUsable)
+
+        let topLeft = metrics.scenePoint(fromLayout: CGPoint(x: 0, y: 0))
+        #expect(abs(topLeft.x - volume.min.x) < 0.0001)
+        #expect(abs(topLeft.y - volume.max.y) < 0.0001)
+
+        let bottomRight = metrics.scenePoint(fromLayout: CGPoint(x: 1000, y: 1000))
+        #expect(abs(bottomRight.x - volume.max.x) < 0.0001)
+        #expect(abs(bottomRight.y - volume.min.y) < 0.0001)
+    }
+
+    @Test("Unbrauchbare Messungen werden erkannt")
+    func degenerateMetricsAreRejected() {
+        #expect(!VolumeMetrics(volume: volume, layoutFrame: .zero).isUsable)
+        #expect(
+            !VolumeMetrics(
+                volume: BoundingBox(min: .zero, max: .zero),
+                layoutFrame: CGRect(x: 0, y: 0, width: 1000, height: 1000)
+            ).isUsable
+        )
+    }
+
+    // MARK: - Panelraster (Anforderung B / D / 18)
+
+    private func resolvedPriority(
+        monster: BoundingBox? = nil,
+        planeZ: Float = 0.06
+    ) -> TargetPanelLayout.Resolved {
+        PriorityTargetMapping.panelLayout.resolve(
+            volume: volume,
+            monsterBounds: monster ?? symmetricMonster,
+            monsterPlaneZ: planeZ
+        )
+    }
+
+    private func resolvedTeam(planeZ: Float = 0) -> TargetPanelLayout.Resolved {
+        TeamTargetMapping.panelLayout.resolve(
+            volume: volume,
+            monsterBounds: symmetricMonster,
+            monsterPlaneZ: planeZ
+        )
+    }
+
+    @Test("Die drei Prioritaetspanels liegen nebeneinander und bleiben am Rand")
+    func priorityPanelsStayInARowAtTheEdge() {
+        let resolved = resolvedPriority()
+
+        guard
+            let normal = resolved.centers[PriorityTargetMapping.ID.normal],
+            let wichtig = resolved.centers[PriorityTargetMapping.ID.wichtig],
+            let kritisch = resolved.centers[PriorityTargetMapping.ID.kritisch]
+        else {
+            Issue.record("Panelzentren fehlen")
+            return
+        }
+
+        // Reihenfolge links → Mitte → rechts.
+        #expect(normal.x < wichtig.x)
+        #expect(wichtig.x < kritisch.x)
+
+        // Alle drei auf derselben Hoehe (eine Reihe).
+        #expect(abs(normal.y - wichtig.y) < 0.0001)
+        #expect(abs(wichtig.y - kritisch.y) < 0.0001)
+
+        // Aussenkanten buendig am Volume-Rand, nicht Richtung Mitte verschoben.
+        // Der Randabstand ist `dragSafetyPadding` — damit faellt die Panelkante mit der
+        // Aussenkante der Monsterhuelle am Anschlag der Zieh-Begrenzung zusammen.
+        let half = resolved.panelSize / 2
+        let margin = InteractionConstants.dragSafetyPadding
+        #expect(abs((normal.x - half.x) - (volume.min.x + margin)) < 0.0001)
+        #expect(abs((kritisch.x + half.x) - (volume.max.x - margin)) < 0.0001)
+        #expect(abs((normal.y + half.y) - (volume.max.y - margin)) < 0.0001)
+
+        // Mittleres Panel bleibt mittig.
+        #expect(abs(wichtig.x) < 0.0001)
+    }
+
+    @Test("Die vier Teampanels behalten die 2x2-Struktur")
+    func teamPanelsKeepTwoByTwoGrid() {
+        let resolved = resolvedTeam()
+
+        guard
+            let netzwerk = resolved.centers[TeamTargetMapping.ID.netzwerk],
+            let konto = resolved.centers[TeamTargetMapping.ID.konto],
+            let software = resolved.centers[TeamTargetMapping.ID.software],
+            let hardware = resolved.centers[TeamTargetMapping.ID.hardware]
+        else {
+            Issue.record("Panelzentren fehlen")
+            return
+        }
+
+        // Obere Reihe: Netzwerk links, Konto rechts.
+        #expect(netzwerk.x < konto.x)
+        #expect(abs(netzwerk.y - konto.y) < 0.0001)
+
+        // Untere Reihe: Software links, Hardware rechts.
+        #expect(software.x < hardware.x)
+        #expect(abs(software.y - hardware.y) < 0.0001)
+
+        // Zwei getrennte Reihen, obere ueber unterer — keine vertikale Liste.
+        #expect(netzwerk.y > software.y)
+        #expect(abs(netzwerk.x - software.x) < 0.0001)
+        #expect(abs(konto.x - hardware.x) < 0.0001)
+
+        // Reihen an Ober- und Unterkante verankert.
+        let half = resolved.panelSize / 2
+        let margin = InteractionConstants.dragSafetyPadding
+        #expect(abs((netzwerk.y + half.y) - (volume.max.y - margin)) < 0.0001)
+        #expect(abs((software.y - half.y) - (volume.min.y + margin)) < 0.0001)
+    }
+
+    @Test("Panels bleiben flach: Tiefe deutlich kleiner als Breite und Hoehe")
+    func panelsStayFlat() {
+        let size = resolvedPriority().panelSize
+        #expect(size.z == LayoutConstants.targetPanelDepth)
+        #expect(size.z < size.x / 4)
+        #expect(size.z < size.y / 2)
+    }
+
+    @Test("Die Panelhoehe folgt der gemessenen Monsterhoehe")
+    func panelHeightFollowsMonsterHeight() {
+        let flat = BoundingBox(min: SIMD3<Float>(-0.065, -0.05, -0.065), max: SIMD3<Float>(0.065, 0.05, 0.065))
+        let tall = BoundingBox(min: SIMD3<Float>(-0.065, -0.10, -0.065), max: SIMD3<Float>(0.065, 0.10, 0.065))
+
+        let flatHeight = resolvedPriority(monster: flat).panelSize.y
+        let tallHeight = resolvedPriority(monster: tall).panelSize.y
+        #expect(tallHeight > flatHeight)
+
+        // Untere Schranke greift, wenn das Monster sehr flach ist.
+        let tiny = BoundingBox(min: SIMD3<Float>(-0.02, -0.01, -0.02), max: SIMD3<Float>(0.02, 0.01, 0.02))
+        #expect(resolvedPriority(monster: tiny).panelSize.y == LayoutConstants.targetPanelMinimumHeight)
+
+        // Obere Schranke: das Panel passt immer ins Volume. Die **gestalterische** Grenze
+        // (`targetPanelMaximumHeightFraction`) darf dabei überschritten werden, wenn die
+        // Erreichbarkeit der 50-%-Schwelle es verlangt — die **geometrische** nicht.
+        let giant = BoundingBox(min: SIMD3<Float>(-0.065, -0.5, -0.065), max: SIMD3<Float>(0.065, 0.5, 0.065))
+        let hardMax = volume.extents.y - 2 * InteractionConstants.dragSafetyPadding
+        #expect(resolvedPriority(monster: giant).panelSize.y <= hardMax + 0.0001)
+    }
+
+    @Test("Bei zwei Reihen ueberlappen sich obere und untere Panelreihe nie")
+    func twoRowsNeverOverlap() {
+        let shapes = [
+            symmetricMonster,
+            BoundingBox(min: SIMD3<Float>(-0.049, -0.065, -0.046), max: SIMD3<Float>(0.049, 0.065, 0.046)),
+            BoundingBox(min: SIMD3<Float>(-0.065, -0.5, -0.065), max: SIMD3<Float>(0.065, 0.5, 0.065)),
+        ]
+        for volumeUnderTest in [volume, measuredVolume] {
+            for shape in shapes {
+                let resolved = TeamTargetMapping.panelLayout.resolve(
+                    volume: volumeUnderTest,
+                    monsterBounds: shape,
+                    monsterPlaneZ: 0
+                )
+                guard
+                    let top = resolved.centers[TeamTargetMapping.ID.netzwerk],
+                    let bottom = resolved.centers[TeamTargetMapping.ID.software]
+                else {
+                    Issue.record("Panelzentren fehlen")
+                    continue
+                }
+                let half = resolved.panelSize.y / 2
+                #expect(top.y - half >= bottom.y + half - 0.0001, "Reihen ueberlappen")
+                #expect(top.y + half <= volumeUnderTest.max.y + 0.0001, "obere Reihe ragt heraus")
+                #expect(bottom.y - half >= volumeUnderTest.min.y - 0.0001, "untere Reihe ragt heraus")
+            }
+        }
+    }
+
+    @Test("Das Panel steht hinter dem Monster, mit genau dem vorgesehenen Abstand")
+    func panelSitsBehindTheMonsterPlane() {
+        let planeZ: Float = 0.06
+        let resolved = resolvedPriority(planeZ: planeZ)
+
+        guard let center = resolved.centers[PriorityTargetMapping.ID.wichtig] else {
+            Issue.record("Panelzentrum fehlt")
+            return
+        }
+
+        let panelFront = center.z + resolved.panelSize.z / 2
+        let monsterBack = planeZ + symmetricMonster.min.z
+
+        #expect(panelFront < monsterBack)
+        #expect(abs((monsterBack - panelFront) - LayoutConstants.targetPanelStandoff) < 0.0001)
+        // Der regulaere Abstand muss innerhalb der Toleranz liegen, sonst waere kein Drop
+        // jemals gueltig.
+        #expect(LayoutConstants.targetPanelStandoff < InteractionConstants.dropDepthTolerance)
+    }
+
+    // MARK: - Überlappungsmaß (Anforderung C)
+
+    /// Zielbox aus dem Prioritaetsraster.
+    private func priorityTarget(_ id: String) -> DropEvaluator.BoxTarget {
+        DropEvaluator.BoxTarget(id: id, bounds: resolvedPriority().bounds(for: id)!)
+    }
+
+    /// Bewertet eine Monsterposition gegen alle drei Prioritaetsziele.
+    private func evaluatePriority(at position: SIMD3<Float>) -> [DropEvaluator.OverlapResult] {
+        DropEvaluator.evaluateTargets(
+            monsterBounds: hull(symmetricMonster, at: position),
+            targets: PriorityTargetMapping.allTargets.map { priorityTarget($0.id) },
+            minimumOverlapRatio: InteractionConstants.minimumDropOverlapRatio,
+            depthTolerance: InteractionConstants.dropDepthTolerance
+        )
+    }
+
+    private func bestPriorityTarget(at position: SIMD3<Float>) -> DropEvaluator.OverlapResult? {
+        DropEvaluator.bestTarget(
+            monsterBounds: hull(symmetricMonster, at: position),
+            targets: PriorityTargetMapping.allTargets.map { priorityTarget($0.id) },
+            minimumOverlapRatio: InteractionConstants.minimumDropOverlapRatio,
+            depthTolerance: InteractionConstants.dropDepthTolerance
+        )
+    }
+
+    @Test("Die Ratio bezieht sich auf die Monsterflaeche, nicht auf die kleinere Flaeche")
+    func ratioIsRelativeToMonsterArea() {
+        // Winziges Ziel, vollstaendig vom Monster ueberdeckt: bezogen auf die Zielflaeche
+        // waere das 100 %, bezogen auf die Monsterflaeche sind es rund 6 %.
+        let monster = hull(symmetricMonster, at: .zero)
+        let tinyTarget = BoundingBox(
+            min: SIMD3<Float>(-0.02, -0.02, -0.01),
+            max: SIMD3<Float>(0.02, 0.02, 0.01)
+        )
+        let ratio = DropEvaluator.overlapRatio(monsterBounds: monster, targetBounds: tinyTarget)
+        #expect(ratio < 0.1)
+        #expect(ratio > 0.05)
+    }
+
+    @Test("Minimale Beruehrung und 25 Prozent sind ungueltig, 50 Prozent und mehr gueltig")
+    func fiftyPercentThresholdBehavesAsSpecified() {
+        // Volle X-Ueberdeckung ueber dem mittleren Panel; nur die Hoehe variiert.
+        // Bei diesem Raster gilt ratio = (cy - panelBottom + halbe Monsterhoehe) / Monsterhoehe.
+        let cases: [(y: Float, expectedValid: Bool, label: String)] = [
+            (0.311, false, "ca. 10 %"),
+            (0.3305, false, "ca. 25 %"),
+            (0.360, false, "knapp unter 50 %"),
+            (0.366, true, "knapp ueber 50 %"),
+            (0.415, true, "deutlich ueber 50 %"),
+        ]
+
+        for testCase in cases {
+            let results = evaluatePriority(at: SIMD3<Float>(0, testCase.y, 0.06))
+            guard let middle = results.first(where: { $0.id == PriorityTargetMapping.ID.wichtig }) else {
+                Issue.record("Ergebnis fuer das mittlere Ziel fehlt")
+                return
+            }
+            #expect(
+                middle.isValid == testCase.expectedValid,
+                "\(testCase.label): ratio=\(middle.overlapRatio), erwartet gueltig=\(testCase.expectedValid)"
+            )
+        }
+    }
+
+    @Test("Die 50-Prozent-Grenze liegt dort, wo das Monster halb auf dem Panel liegt")
+    func thresholdMatchesHalfTheMonster() {
+        let resolved = resolvedPriority()
+        guard let center = resolved.centers[PriorityTargetMapping.ID.wichtig] else {
+            Issue.record("Panelzentrum fehlt")
+            return
+        }
+        // Monstermitte exakt auf der Unterkante des Panels ⇒ genau die Haelfte liegt darauf.
+        let panelBottom = center.y - resolved.panelSize.y / 2
+        let results = evaluatePriority(at: SIMD3<Float>(0, panelBottom, 0.06))
+        guard let middle = results.first(where: { $0.id == PriorityTargetMapping.ID.wichtig }) else {
+            Issue.record("Ergebnis fehlt")
+            return
+        }
+        #expect(abs(middle.overlapRatio - 0.5) < 0.01)
+    }
+
+    @Test("Zwischen zwei Panels abgelegt wird kein Ziel ausgeloest")
+    func droppingBetweenTwoPanelsHitsNothing() {
+        let resolved = resolvedPriority()
+        guard
+            let wichtig = resolved.centers[PriorityTargetMapping.ID.wichtig],
+            let kritisch = resolved.centers[PriorityTargetMapping.ID.kritisch]
+        else {
+            Issue.record("Panelzentren fehlen")
+            return
+        }
+
+        let between = (wichtig.x + kritisch.x) / 2
+        let position = SIMD3<Float>(between, safeBounds.maximum.y, 0.06)
+
+        #expect(bestPriorityTarget(at: position) == nil)
+        for result in evaluatePriority(at: position) {
+            #expect(!result.isValid, "\(result.id) sollte ungueltig sein: \(result.overlapRatio)")
+        }
+    }
+
+    @Test("Ausserhalb jeder Zielzone ist kein Drop gueltig")
+    func droppingInFreeSpaceHitsNothing() {
+        // Mitte des Volumes — weit unterhalb der Panelreihe.
+        #expect(bestPriorityTarget(at: SIMD3<Float>(0, 0, 0.06)) == nil)
+        // Untere Ecken.
+        #expect(bestPriorityTarget(at: SIMD3<Float>(safeBounds.minimum.x, safeBounds.minimum.y, 0.06)) == nil)
+        #expect(bestPriorityTarget(at: SIMD3<Float>(safeBounds.maximum.x, safeBounds.minimum.y, 0.06)) == nil)
+    }
+
+    @Test("Hoechstens ein Ziel ist gleichzeitig gueltig")
+    func atMostOneTargetIsValidAtATime() {
+        // Gesamte erreichbare Flaeche in einem groben Raster abtasten.
+        var samples = 0
+        var x = safeBounds.minimum.x
+        while x <= safeBounds.maximum.x {
+            var y = safeBounds.minimum.y
+            while y <= safeBounds.maximum.y {
+                let valid = evaluatePriority(at: SIMD3<Float>(x, y, 0.06)).filter(\.isValid)
+                #expect(valid.count <= 1, "Mehrere gueltige Ziele bei (\(x), \(y)): \(valid.map(\.id))")
+                samples += 1
+                y += 0.01
+            }
+            x += 0.01
+        }
+        #expect(samples > 100)
+    }
+
+    // MARK: - Z-Nähe (Anforderung 9)
+
+    @Test("Ein zu weit vorne oder hinten liegendes Monster ist trotz voller Ueberlappung ungueltig")
+    func depthGapInvalidatesOtherwisePerfectOverlap() {
+        let resolved = resolvedPriority()
+        guard let center = resolved.centers[PriorityTargetMapping.ID.wichtig] else {
+            Issue.record("Panelzentrum fehlt")
+            return
+        }
+        let target = DropEvaluator.BoxTarget(
+            id: PriorityTargetMapping.ID.wichtig,
+            bounds: resolved.bounds(for: PriorityTargetMapping.ID.wichtig)!
+        )
+
+        // Perfekte X/Y-Lage, aber weit vor dem Panel.
+        let farInFront = hull(symmetricMonster, at: SIMD3<Float>(center.x, center.y, 0.06 + 0.5))
+        let result = DropEvaluator.evaluateTargets(
+            monsterBounds: farInFront,
+            targets: [target],
+            minimumOverlapRatio: InteractionConstants.minimumDropOverlapRatio,
+            depthTolerance: InteractionConstants.dropDepthTolerance
+        ).first
+
+        #expect((result?.overlapRatio ?? 0) >= 0.85)
+        #expect(result?.isDepthValid == false)
+        #expect(result?.isValid == false)
+    }
+
+    @Test("Der Z-Abstand wird zwischen Oberflaechen gemessen, nicht zwischen Mittelpunkten")
+    func depthGapMeasuresSurfaces() {
+        // Zwei Boxen, deren Z-Bereiche sich ueberlappen ⇒ Spalt 0, obwohl die
+        // Mittelpunkte auseinanderliegen.
+        let a = BoundingBox(min: SIMD3<Float>(0, 0, -0.10), max: SIMD3<Float>(1, 1, 0.10))
+        let b = BoundingBox(min: SIMD3<Float>(0, 0, 0.05), max: SIMD3<Float>(1, 1, 0.15))
+        #expect(DropEvaluator.depthGap(a, b) == 0)
+
+        let c = BoundingBox(min: SIMD3<Float>(0, 0, 0.30), max: SIMD3<Float>(1, 1, 0.40))
+        #expect(abs(DropEvaluator.depthGap(a, c) - 0.20) < 0.0001)
+    }
+
+    // MARK: - Erreichbarkeit trotz Clipping-Schutz (A + C + D gleichzeitig)
+
+    @Test("Jedes Prioritaetsziel ist erreichbar, ohne dass das Monster abgeschnitten wird")
+    func everyPriorityTargetIsReachableWithoutClipping() {
+        let resolved = resolvedPriority()
+        let safe = safeBounds
+
+        for target in PriorityTargetMapping.allTargets {
+            guard let center = resolved.centers[target.id] else {
+                Issue.record("Panelzentrum fehlt: \(target.id)")
+                continue
+            }
+            // Der Nutzer zieht in Richtung Panelmitte und stoesst dabei an die sichere Grenze.
+            let position = safe.clamp(SIMD3<Float>(center.x, center.y, 0.06))
+            let box = hull(symmetricMonster, at: position)
+
+            // Kein Clipping.
+            #expect(box.min.x >= volume.min.x)
+            #expect(box.max.x <= volume.max.x)
+            #expect(box.min.y >= volume.min.y)
+            #expect(box.max.y <= volume.max.y)
+
+            // Und trotzdem gueltiger Drop auf genau diesem Ziel.
+            let best = bestPriorityTarget(at: position)
+            #expect(best?.id == target.id, "\(target.id) nicht erreichbar, best=\(best?.id ?? "-")")
+            #expect((best?.overlapRatio ?? 0) >= InteractionConstants.minimumDropOverlapRatio)
+        }
+    }
+
+    @Test("Jedes Teamziel ist erreichbar, ohne dass das Monster abgeschnitten wird")
+    func everyTeamTargetIsReachableWithoutClipping() {
+        let resolved = resolvedTeam()
+        let safe = safeBounds
+        let targets = TeamTargetMapping.allTargets.map {
+            DropEvaluator.BoxTarget(id: $0.id, bounds: resolved.bounds(for: $0.id)!)
+        }
+
+        for target in TeamTargetMapping.allTargets {
+            guard let center = resolved.centers[target.id] else {
+                Issue.record("Panelzentrum fehlt: \(target.id)")
+                continue
+            }
+            let position = safe.clamp(SIMD3<Float>(center.x, center.y, 0))
+            let box = hull(symmetricMonster, at: position)
+
+            #expect(box.min.x >= volume.min.x)
+            #expect(box.max.x <= volume.max.x)
+            #expect(box.min.y >= volume.min.y)
+            #expect(box.max.y <= volume.max.y)
+
+            let best = DropEvaluator.bestTarget(
+                monsterBounds: box,
+                targets: targets,
+                minimumOverlapRatio: InteractionConstants.minimumDropOverlapRatio,
+                depthTolerance: InteractionConstants.dropDepthTolerance
+            )
+            #expect(best?.id == target.id, "\(target.id) nicht erreichbar, best=\(best?.id ?? "-")")
+        }
+    }
+
+    @Test("Die Startposition liegt in keiner Zielzone")
+    func startPositionIsNotOnAnyTarget() {
+        #expect(bestPriorityTarget(at: PrioritizationConstants.monsterStartPosition) == nil)
+
+        let resolved = resolvedTeam()
+        let targets = TeamTargetMapping.allTargets.map {
+            DropEvaluator.BoxTarget(id: $0.id, bounds: resolved.bounds(for: $0.id)!)
+        }
+        let best = DropEvaluator.bestTarget(
+            monsterBounds: hull(symmetricMonster, at: TeamAssignmentConstants.monsterStartPosition),
+            targets: targets,
+            minimumOverlapRatio: InteractionConstants.minimumDropOverlapRatio,
+            depthTolerance: InteractionConstants.dropDepthTolerance
+        )
+        #expect(best == nil)
+    }
+
+    // MARK: - Verschieden geformte Monster (Anforderung 31)
+
+    @Test("Die 50-Prozent-Regel bleibt fuer unterschiedlich geformte Monster erreichbar")
+    func ruleRemainsReachableForDifferentMonsterShapes() {
+        // Vier Stellvertreter fuer monster01 … monster04: schmal/hoch, breit/flach,
+        // wuerfelig und mit versetztem Origin.
+        let shapes: [(name: String, bounds: BoundingBox)] = [
+            ("schmal-hoch", BoundingBox(min: SIMD3<Float>(-0.04, -0.065, -0.04), max: SIMD3<Float>(0.04, 0.065, 0.04))),
+            ("breit-flach", BoundingBox(min: SIMD3<Float>(-0.065, -0.035, -0.03), max: SIMD3<Float>(0.065, 0.035, 0.03))),
+            ("wuerfelig", BoundingBox(min: SIMD3<Float>(-0.06, -0.06, -0.06), max: SIMD3<Float>(0.06, 0.06, 0.06))),
+            ("origin-versetzt", BoundingBox(min: SIMD3<Float>(-0.03, -0.02, -0.05), max: SIMD3<Float>(0.09, 0.11, 0.05))),
+        ]
+
+        for shape in shapes {
+            let resolved = PriorityTargetMapping.panelLayout.resolve(
+                volume: volume,
+                monsterBounds: shape.bounds,
+                monsterPlaneZ: 0.06
+            )
+            let safe = DragBounds.safeRegion(
+                volume: volume,
+                monsterBounds: shape.bounds,
+                padding: InteractionConstants.dragSafetyPadding
+            )
+            let targets = PriorityTargetMapping.allTargets.map {
+                DropEvaluator.BoxTarget(id: $0.id, bounds: resolved.bounds(for: $0.id)!)
+            }
+
+            for target in PriorityTargetMapping.allTargets {
+                guard let center = resolved.centers[target.id] else { continue }
+                let position = safe.clamp(SIMD3<Float>(center.x, center.y, 0.06))
+                let box = BoundingBox(min: shape.bounds.min + position, max: shape.bounds.max + position)
+
+                // Kein Clipping.
+                #expect(box.min.x >= volume.min.x - 0.0001, "\(shape.name)/\(target.id) links")
+                #expect(box.max.x <= volume.max.x + 0.0001, "\(shape.name)/\(target.id) rechts")
+                #expect(box.min.y >= volume.min.y - 0.0001, "\(shape.name)/\(target.id) unten")
+                #expect(box.max.y <= volume.max.y + 0.0001, "\(shape.name)/\(target.id) oben")
+
+                // Ziel erreichbar.
+                let best = DropEvaluator.bestTarget(
+                    monsterBounds: box,
+                    targets: targets,
+                    minimumOverlapRatio: InteractionConstants.minimumDropOverlapRatio,
+                    depthTolerance: InteractionConstants.dropDepthTolerance
+                )
+                #expect(best?.id == target.id, "\(shape.name): \(target.id) nicht erreichbar")
+            }
+        }
+    }
+
+    // MARK: - Regression: tatsaechlich gemessenes Volume (Log vom 27.08.)
+
+    /// Das im Simulator **gemessene** Volume — deutlich kleiner als die deklarierten
+    /// 1.0 × 1.0 × 0.4 m aus `LayoutConstants.centralVolume*`.
+    ///
+    /// Rekonstruiert aus den geloggten `Safe drag bounds` und den Monster-Bounds:
+    /// 0.284 × 0.236 × 0.235 m. Genau in diesem Volume war die 50-%-Schwelle
+    /// unerreichbar, weil `0.28 × Volume-Höhe = 0.066 m` gegen ein 0.130 m hohes Monster
+    /// stand.
+    private var measuredVolume: BoundingBox {
+        BoundingBox(min: SIMD3<Float>(-0.142, -0.1176, 0.0), max: SIMD3<Float>(0.142, 0.1184, 0.2348))
+    }
+
+    /// Die vier Assets nach `fit(toMaxExtent: 0.13)`, zentriert.
+    ///
+    /// Breite und Tiefe aus den USDC-Extents, monster04 aus dem Trace-Log — dessen Werte
+    /// bestätigen die Ableitung (0.070 × 0.130 × 0.088).
+    private var allMonsterShapes: [(name: String, bounds: BoundingBox)] {
+        [
+            ("monster01", BoundingBox(min: SIMD3<Float>(-0.0351, -0.065, -0.0364), max: SIMD3<Float>(0.0351, 0.065, 0.0364))),
+            ("monster02", BoundingBox(min: SIMD3<Float>(-0.0225, -0.065, -0.0258), max: SIMD3<Float>(0.0225, 0.065, 0.0258))),
+            ("monster03", BoundingBox(min: SIMD3<Float>(-0.0491, -0.065, -0.0455), max: SIMD3<Float>(0.0491, 0.065, 0.0455))),
+            ("monster04", BoundingBox(min: SIMD3<Float>(-0.0350, -0.0646, -0.0442), max: SIMD3<Float>(0.0350, 0.0654, 0.0438))),
+        ]
+    }
+
+    @Test("Im gemessenen Volume erreicht jedes Asset jedes Ziel in beiden Phasen")
+    func everyAssetReachesEveryTargetInTheMeasuredVolume() {
+        let phases: [(name: String, layout: TargetPanelLayout, planeZ: Float, ids: [String])] = [
+            ("Priorisierung", PriorityTargetMapping.panelLayout, 0.06, PriorityTargetMapping.allTargets.map(\.id)),
+            ("Teamzuordnung", TeamTargetMapping.panelLayout, 0.0, TeamTargetMapping.allTargets.map(\.id)),
+        ]
+
+        for phase in phases {
+            for shape in allMonsterShapes {
+                let safe = DragBounds.safeRegion(
+                    volume: measuredVolume,
+                    monsterBounds: shape.bounds,
+                    padding: InteractionConstants.dragSafetyPadding
+                )
+                let effective = safe.clamp(SIMD3<Float>(0, 0, phase.planeZ)).z
+                let resolved = phase.layout.resolve(
+                    volume: measuredVolume,
+                    monsterBounds: shape.bounds,
+                    monsterPlaneZ: effective
+                )
+                let targets = phase.ids.map {
+                    DropEvaluator.BoxTarget(id: $0, bounds: resolved.bounds(for: $0)!)
+                }
+
+                for id in phase.ids {
+                    let box = resolved.bounds(for: id)!
+                    let position = safe.clamp(SIMD3<Float>(box.center.x, box.center.y, effective))
+                    let box3 = BoundingBox(
+                        min: shape.bounds.min + position,
+                        max: shape.bounds.max + position
+                    )
+
+                    // Kein Clipping — der Sicherheitsrand bleibt unangetastet.
+                    #expect(box3.min.x >= measuredVolume.min.x - 0.0001, "\(phase.name)/\(shape.name)/\(id) links")
+                    #expect(box3.max.x <= measuredVolume.max.x + 0.0001, "\(phase.name)/\(shape.name)/\(id) rechts")
+                    #expect(box3.min.y >= measuredVolume.min.y - 0.0001, "\(phase.name)/\(shape.name)/\(id) unten")
+                    #expect(box3.max.y <= measuredVolume.max.y + 0.0001, "\(phase.name)/\(shape.name)/\(id) oben")
+
+                    // Und die Schwelle ist mit Reserve erreichbar.
+                    let ratio = DropEvaluator.overlapRatio(monsterBounds: box3, targetBounds: box)
+                    #expect(
+                        ratio >= InteractionConstants.minimumDropOverlapRatio,
+                        "\(phase.name)/\(shape.name)/\(id): nur \(ratio)"
+                    )
+
+                    let best = DropEvaluator.bestTarget(
+                        monsterBounds: box3,
+                        targets: targets,
+                        minimumOverlapRatio: InteractionConstants.minimumDropOverlapRatio,
+                        depthTolerance: InteractionConstants.dropDepthTolerance
+                    )
+                    #expect(best?.id == id, "\(phase.name)/\(shape.name): \(id) nicht getroffen")
+                }
+            }
+        }
+    }
+
+    @Test("Die Erreichbarkeit schlaegt die gestalterische Hoehenbegrenzung")
+    func reachabilityBeatsTheStylisticHeightCap() {
+        // Im gemessenen Volume liegt die gestalterische Grenze bei 0.066 m — zu flach fuer
+        // ein 0.130 m hohes Monster. Das Panel muss darueber hinausgehen duerfen.
+        let stylisticCap = measuredVolume.extents.y * LayoutConstants.targetPanelMaximumHeightFraction
+        let resolved = PriorityTargetMapping.panelLayout.resolve(
+            volume: measuredVolume,
+            monsterBounds: symmetricMonster,
+            monsterPlaneZ: 0.06
+        )
+        #expect(resolved.panelSize.y > stylisticCap)
+        #expect(resolved.panelSize.y >= symmetricMonster.extents.y * InteractionConstants.minimumDropOverlapRatio)
+    }
+
+    // MARK: - Regression: Zieh-Ebene und Panel-Tiefe (Teamphase-Bug)
+
+    /// Volume, dessen Z-Bereich **nicht** um 0 zentriert ist.
+    ///
+    /// Genau diese Situation liess in der Teamphase jeden Drop scheitern: der sichere
+    /// Bereich schob das Monster in der Tiefe nach vorn, die Panels blieben aber auf der
+    /// Ebene stehen, die sich aus der Phasenkonstante ergab.
+    private var offCenterVolume: BoundingBox {
+        BoundingBox(min: SIMD3<Float>(-0.5, -0.5, 0), max: SIMD3<Float>(0.5, 0.5, 0.4))
+    }
+
+    /// Die Ebene, die das Monster nach der Klemmung tatsaechlich erreicht.
+    private func effectivePlaneZ(volume: BoundingBox, wished: Float) -> Float {
+        DragBounds.safeRegion(
+            volume: volume,
+            monsterBounds: symmetricMonster,
+            padding: InteractionConstants.dragSafetyPadding
+        )
+        .clamp(SIMD3<Float>(0, 0, wished)).z
+    }
+
+    @Test("Ein nicht zentrierter Z-Bereich verschiebt die Zieh-Ebene")
+    func offCenterVolumeShiftsTheDragPlane() {
+        // Der Wunschwert der Teamphase liegt ausserhalb des sicheren Z-Bereichs.
+        let effective = effectivePlaneZ(volume: offCenterVolume, wished: 0)
+        #expect(effective != 0)
+        #expect(effective > 0)
+    }
+
+    /// Volume, das vollstaendig hinter dem Ursprung liegt.
+    ///
+    /// Zeigt den Fehler in Reinform: der sichere Bereich zwingt das Monster weit nach
+    /// hinten, waehrend die Phasenkonstante eine Ebene nahe 0 vorgibt.
+    private var farBackVolume: BoundingBox {
+        BoundingBox(min: SIMD3<Float>(-0.5, -0.5, -0.6), max: SIMD3<Float>(0.5, 0.5, -0.2))
+    }
+
+    @Test("Aus der Phasenkonstante platzierte Panels scheitern an der Tiefenpruefung")
+    func panelsPlacedFromTheRawConstantFailTheDepthCheck() {
+        // Reproduktion des Fehlers: Panel-Z aus dem Wunschwert, Monster auf der geklemmten Ebene.
+        let wished: Float = 0
+        let effective = effectivePlaneZ(volume: farBackVolume, wished: wished)
+        #expect(effective < wished)
+
+        let resolved = TeamTargetMapping.panelLayout.resolve(
+            volume: farBackVolume,
+            monsterBounds: symmetricMonster,
+            monsterPlaneZ: wished          // ← der alte, falsche Wert
+        )
+        let box = resolved.bounds(for: TeamTargetMapping.ID.netzwerk)!
+        let safe = DragBounds.safeRegion(
+            volume: farBackVolume,
+            monsterBounds: symmetricMonster,
+            padding: InteractionConstants.dragSafetyPadding
+        )
+        let position = safe.clamp(SIMD3<Float>(box.center.x, box.center.y, effective))
+        let hull = self.hull(symmetricMonster, at: position)
+
+        // Die Flaeche stimmt — nur die Tiefe nicht. Genau dieses Bild zeigte die Teamphase:
+        // Monster sichtbar auf der Box, Drop trotzdem ungueltig.
+        #expect(DropEvaluator.overlapRatio(monsterBounds: hull, targetBounds: box) >= InteractionConstants.minimumDropOverlapRatio)
+        #expect(DropEvaluator.depthGap(hull, box) > InteractionConstants.dropDepthTolerance)
+    }
+
+    @Test("Mit der geklemmten Ebene ist auch ein weit hinten liegendes Volume gueltig")
+    func farBackVolumeWorksWithTheEffectivePlane() {
+        let effective = effectivePlaneZ(volume: farBackVolume, wished: 0)
+        let resolved = TeamTargetMapping.panelLayout.resolve(
+            volume: farBackVolume,
+            monsterBounds: symmetricMonster,
+            monsterPlaneZ: effective
+        )
+        let safe = DragBounds.safeRegion(
+            volume: farBackVolume,
+            monsterBounds: symmetricMonster,
+            padding: InteractionConstants.dragSafetyPadding
+        )
+        let targets = TeamTargetMapping.allTargets.map {
+            DropEvaluator.BoxTarget(id: $0.id, bounds: resolved.bounds(for: $0.id)!)
+        }
+        for target in TeamTargetMapping.allTargets {
+            let box = resolved.bounds(for: target.id)!
+            let position = safe.clamp(SIMD3<Float>(box.center.x, box.center.y, effective))
+            let hull = self.hull(symmetricMonster, at: position)
+            let best = DropEvaluator.bestTarget(
+                monsterBounds: hull,
+                targets: targets,
+                minimumOverlapRatio: InteractionConstants.minimumDropOverlapRatio,
+                depthTolerance: InteractionConstants.dropDepthTolerance
+            )
+            #expect(best?.id == target.id, "\(target.id) nicht erreichbar")
+        }
+    }
+
+    @Test("Das Panel rutscht nie hinter die Rueckwand des Volumes")
+    func panelNeverSlipsBehindTheBackWall() {
+        for volumeUnderTest in [volume, offCenterVolume, farBackVolume] {
+            let effective = effectivePlaneZ(volume: volumeUnderTest, wished: 0)
+            let resolved = TeamTargetMapping.panelLayout.resolve(
+                volume: volumeUnderTest,
+                monsterBounds: symmetricMonster,
+                monsterPlaneZ: effective
+            )
+            for target in TeamTargetMapping.allTargets {
+                let box = resolved.bounds(for: target.id)!
+                #expect(box.min.z >= volumeUnderTest.min.z - 0.0001, "\(target.id) ragt hinten heraus")
+            }
+        }
+    }
+
+    @Test("Mit der geklemmten Zieh-Ebene stimmt die Tiefe wieder — in beiden Phasen")
+    func panelsPlacedFromTheEffectivePlaneKeepTheStandoff() {
+        for (layout, wished, ids) in [
+            (TeamTargetMapping.panelLayout, Float(0), TeamTargetMapping.allTargets.map(\.id)),
+            (PriorityTargetMapping.panelLayout, Float(0.06), PriorityTargetMapping.allTargets.map(\.id)),
+        ] {
+            let effective = effectivePlaneZ(volume: offCenterVolume, wished: wished)
+            let resolved = layout.resolve(
+                volume: offCenterVolume,
+                monsterBounds: symmetricMonster,
+                monsterPlaneZ: effective        // ← der korrigierte Wert
+            )
+            let safe = DragBounds.safeRegion(
+                volume: offCenterVolume,
+                monsterBounds: symmetricMonster,
+                padding: InteractionConstants.dragSafetyPadding
+            )
+            let targets = ids.map { DropEvaluator.BoxTarget(id: $0, bounds: resolved.bounds(for: $0)!) }
+
+            for id in ids {
+                let box = resolved.bounds(for: id)!
+                let position = safe.clamp(SIMD3<Float>(box.center.x, box.center.y, effective))
+                let hull = self.hull(symmetricMonster, at: position)
+
+                // Der Z-Spalt ist hoechstens der vorgesehene Standoff — und damit sicher
+                // innerhalb der Toleranz. (Kleiner wird er, wenn das Panel nach vorne
+                // ruecken muss, um nicht hinter der Volume-Rueckwand zu verschwinden.)
+                let gap = DropEvaluator.depthGap(hull, box)
+                #expect(gap <= LayoutConstants.targetPanelStandoff + 0.0001, "\(id): Spalt \(gap)")
+                #expect(gap <= InteractionConstants.dropDepthTolerance, "\(id): Spalt \(gap)")
+
+                let best = DropEvaluator.bestTarget(
+                    monsterBounds: hull,
+                    targets: targets,
+                    minimumOverlapRatio: InteractionConstants.minimumDropOverlapRatio,
+                    depthTolerance: InteractionConstants.dropDepthTolerance
+                )
+                #expect(best?.id == id, "\(id) nicht erreichbar, best=\(best?.id ?? "-")")
+            }
+        }
+    }
+
+    @Test("Der maximal erreichbare Overlap liegt in beiden Phasen ueber der Schwelle")
+    func maximumReachableOverlapExceedsThresholdInBothPhases() {
+        for (layout, planeZ, ids) in [
+            (PriorityTargetMapping.panelLayout, Float(0.06), PriorityTargetMapping.allTargets.map(\.id)),
+            (TeamTargetMapping.panelLayout, Float(0), TeamTargetMapping.allTargets.map(\.id)),
+        ] {
+            let effective = effectivePlaneZ(volume: volume, wished: planeZ)
+            let resolved = layout.resolve(
+                volume: volume,
+                monsterBounds: symmetricMonster,
+                monsterPlaneZ: effective
+            )
+            let safe = DragBounds.safeRegion(
+                volume: volume,
+                monsterBounds: symmetricMonster,
+                padding: InteractionConstants.dragSafetyPadding
+            )
+            for id in ids {
+                let box = resolved.bounds(for: id)!
+                let position = safe.clamp(SIMD3<Float>(box.center.x, box.center.y, effective))
+                let hull = self.hull(symmetricMonster, at: position)
+                let ratio = DropEvaluator.overlapRatio(monsterBounds: hull, targetBounds: box)
+                #expect(
+                    ratio >= InteractionConstants.minimumDropOverlapRatio,
+                    "\(id): maximal erreichbarer Overlap nur \(ratio)"
+                )
+            }
+        }
+    }
+
+    // MARK: - Konstanten
+
+    @Test("Die zentralen Schwellen sind gesetzt und plausibel")
+    func centralConstantsAreSane() {
+        #expect(InteractionConstants.minimumDropOverlapRatio == 0.50)
+        #expect(InteractionConstants.dropDepthTolerance > 0)
+        #expect(InteractionConstants.dropDepthTolerance < 0.15)
+        #expect(InteractionConstants.dragSafetyPadding > 0)
+        #expect(InteractionConstants.dragSafetyPadding < 0.1)
+        #expect(LayoutConstants.targetPanelDepth > 0)
+        #expect(LayoutConstants.targetPanelDepth < 0.05)
+        #expect(LayoutConstants.targetHighlightScale > 1)
+        #expect(LayoutConstants.targetHighlightScale < 1.2)
+        #expect(LayoutConstants.targetPanelHighlightOpacity > LayoutConstants.targetPanelOpacity)
+        // Die Panelhoehe muss deutlich ueber der Schwelle liegen, sonst waere 50 % nur
+        // exakt am Anschlag der Zieh-Begrenzung erreichbar.
+        #expect(LayoutConstants.targetPanelHeightFactor > InteractionConstants.minimumDropOverlapRatio)
     }
 }

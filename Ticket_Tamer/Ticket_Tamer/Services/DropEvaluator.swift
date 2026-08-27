@@ -180,7 +180,7 @@ enum DropEvaluator {
     }
 }
 
-// MARK: - Überlappungsbasierte Auswertung (Modul 013 — Drag-/Drop-Randfix)
+// MARK: - Flächenbasierte Auswertung (Modul 013 — 3D-Zielstationen)
 
 extension DropEvaluator {
 
@@ -188,9 +188,10 @@ extension DropEvaluator {
 
     /// Zielbereich als achsenparallele Box statt als Punkt mit Radius.
     ///
-    /// `bounds` liegt räumlich auf der **sichtbaren** Zielfläche; die Views leiten den
-    /// Wert aus dem gemessenen Rahmen des sichtbaren Labels ab (`VolumeMetrics`).
-    /// Es gibt damit keine unsichtbare, nach innen verschobene Trefferfläche mehr.
+    /// `bounds` ist exakt die Box des **sichtbaren** 3D-Panels: beide entstehen in
+    /// `TargetPanelFactory.updateGeometry(of:size:center:tint:highlighted:)` aus derselben
+    /// Größe. Eine unsichtbare, nach innen verschobene Trefferfläche kann deshalb gar
+    /// nicht mehr entstehen.
     struct BoxTarget {
         /// Fachlich neutrale Ziel-ID.
         let id: String
@@ -198,100 +199,159 @@ extension DropEvaluator {
         let bounds: BoundingBox
     }
 
-    // MARK: - Überlappungsmaß
+    // MARK: - Ergebnis einer Einzelprüfung
 
-    /// Anteil der X/Y-Schnittfläche zweier Boxen an der **kleineren** der beiden Flächen.
+    /// Vollständiges Prüfergebnis für **ein** Ziel — inklusive aller Zwischenwerte.
     ///
-    /// ## Warum nur X und Y
-    ///
-    /// Beide Phasen sind planare Anordnungen: das Monster zieht auf einer festen
-    /// Tiefenebene (`PlanarDrag` hält Z konstant), die Ziele sind flache Beschriftungen
-    /// am Volume-Rand. Eine Z-Prüfung würde nur Rauschen aus zwei unterschiedlich tiefen
-    /// Ebenen einbringen und gültige Drops verhindern.
-    ///
-    /// ## Warum die kleinere Fläche als Bezug
-    ///
-    /// Monster und Zielfläche haben sehr unterschiedliche Formate — ein annähernd
-    /// quadratisches Modell gegen ein breites, flaches Label. Bezöge man die
-    /// Überlappung auf die Monsterfläche, wäre ein flaches Label nie „ausreichend"
-    /// überdeckt; bezöge man sie auf die Zielfläche, würde ein sehr kleines Ziel schon
-    /// bei Streifkontakt auslösen. Der Bezug auf die kleinere der beiden Flächen ist
-    /// gegen beide Formatunterschiede robust.
-    ///
-    /// - Returns: 0 bei fehlender Überlappung, 1 bei vollständiger Überdeckung der
-    ///   kleineren Fläche.
-    static func overlapRatioXY(_ a: BoundingBox, _ b: BoundingBox) -> Float {
-        let overlapWidth  = Swift.min(a.max.x, b.max.x) - Swift.max(a.min.x, b.min.x)
-        let overlapHeight = Swift.min(a.max.y, b.max.y) - Swift.max(a.min.y, b.min.y)
+    /// Die Zwischenwerte sind bewusst Teil des Ergebnisses und nicht nur Debug-Ausgabe:
+    /// Die 50-%-Regel soll nachvollziehbar sein, nicht geglaubt werden müssen.
+    struct OverlapResult {
+        /// Fachlich neutrale Ziel-ID.
+        let id: String
+        /// Projizierte Monsterfläche in m² (X/Y).
+        let monsterArea: Float
+        /// Schnittfläche von Monster und Ziel in m² (X/Y).
+        let intersectionArea: Float
+        /// `intersectionArea / monsterArea`.
+        let overlapRatio: Float
+        /// Abstand der Oberflächen in Z, 0 bei Überlappung der Z-Bereiche.
+        let depthGap: Float
+        /// Ob der Z-Abstand innerhalb der Toleranz liegt.
+        let isDepthValid: Bool
+        /// Ob dieses Ziel für sich genommen ein gültiger Drop wäre.
+        let isValid: Bool
 
-        guard overlapWidth > 0, overlapHeight > 0 else { return 0 }
+        /// Eine Zeile je Ziel für `DebugManager`-Ausgaben.
+        var debugSummary: String {
+            String(
+                format: "Target: %@ | Projected monster area: %.5f | Intersection area: %.5f | Overlap ratio: %.3f | Depth distance: %.3f (%@) | Is valid: %@",
+                id,
+                monsterArea,
+                intersectionArea,
+                overlapRatio,
+                depthGap,
+                isDepthValid ? "valid" : "invalid",
+                isValid ? "true" : "false"
+            )
+        }
+    }
 
-        let intersection = overlapWidth * overlapHeight
-        let areaA = Swift.max((a.max.x - a.min.x) * (a.max.y - a.min.y), .leastNormalMagnitude)
-        let areaB = Swift.max((b.max.x - b.min.x) * (b.max.y - b.min.y), .leastNormalMagnitude)
+    // MARK: - Geometrische Grundoperationen
 
-        return intersection / Swift.min(areaA, areaB)
+    /// Projizierte Fläche einer Box auf die X/Y-Ebene in m².
+    ///
+    /// **Projektion auf die Zielebene, nicht auf die Bildebene.** Beide Boxen liegen
+    /// achsenparallel in Szenen-Koordinaten; die Rechnung ist damit unabhängig davon, aus
+    /// welchem Winkel die Nutzerin gerade schaut. Derselbe räumliche Zustand ergibt immer
+    /// dasselbe Ergebnis.
+    static func projectedAreaXY(_ box: BoundingBox) -> Float {
+        Swift.max(box.max.x - box.min.x, 0) * Swift.max(box.max.y - box.min.y, 0)
+    }
+
+    /// Schnittfläche zweier Boxen auf der X/Y-Ebene in m².
+    static func intersectionAreaXY(_ a: BoundingBox, _ b: BoundingBox) -> Float {
+        let width  = Swift.min(a.max.x, b.max.x) - Swift.max(a.min.x, b.min.x)
+        let height = Swift.min(a.max.y, b.max.y) - Swift.max(a.min.y, b.min.y)
+        guard width > 0, height > 0 else { return 0 }
+        return width * height
+    }
+
+    /// Anteil der **Monsterfläche**, der innerhalb der Zielfläche liegt.
+    ///
+    /// ```text
+    /// overlapRatio = Schnittfläche / projizierte Monsterfläche
+    /// ```
+    ///
+    /// Der Nenner ist bewusst die Monsterfläche und nicht die kleinere der beiden Flächen.
+    /// Nur so entspricht der Wert dem, was man sieht: *wie viel vom Monster liegt auf dem
+    /// Ziel?* Mit der kleineren Fläche als Nenner reichte ein schmaler Monsterstreifen, der
+    /// ein kleines Ziel vollständig überdeckt, für eine hohe Ratio — genau daher kamen die
+    /// gültigen Drops bei rund 10 % sichtbarer Überlappung.
+    ///
+    /// - Returns: 0 bei fehlender Überlappung, 1 wenn das Monster vollständig innerhalb
+    ///   der Zielfläche liegt.
+    static func overlapRatio(monsterBounds: BoundingBox, targetBounds: BoundingBox) -> Float {
+        let area = projectedAreaXY(monsterBounds)
+        guard area > .leastNormalMagnitude else { return 0 }
+        return intersectionAreaXY(monsterBounds, targetBounds) / area
+    }
+
+    /// Abstand zweier Boxen entlang Z, gemessen zwischen den **Oberflächen**.
+    ///
+    /// ```text
+    /// gap = max(0, max(aMinZ, bMinZ) - min(aMaxZ, bMaxZ))
+    /// ```
+    ///
+    /// Überlappen sich die Z-Bereiche, ist der Spalt 0. Bewusst nicht der Abstand der
+    /// Mittelpunkte: der würde mit der Tiefe des Monsters mitwachsen und die Prüfung je
+    /// Asset unterschiedlich streng machen. Das Spaltmaß ist davon unabhängig.
+    static func depthGap(_ a: BoundingBox, _ b: BoundingBox) -> Float {
+        Swift.max(0, Swift.max(a.min.z, b.min.z) - Swift.min(a.max.z, b.max.z))
     }
 
     // MARK: - Auswertung
 
-    /// Wählt das Ziel, mit dem die sichtbare Monsterhülle am stärksten überlappt.
+    /// Prüft die Monsterhülle gegen **alle** Ziele und liefert die vollständige Diagnose.
     ///
-    /// ## Abgrenzung gegen die beiden bisherigen Verfahren
-    ///
-    /// * `evaluate(entityPosition:targets:)` verlangt, dass der **Root** des Monsters
-    ///   innerhalb eines Radius um das **Zentrum** des Ziels landet. Sobald die
-    ///   Zieh-Bewegung korrekt auf den sicheren Bereich begrenzt ist, kann der Root ein
-    ///   randnahes Ziel-Zentrum aber gar nicht mehr erreichen — ein visuell eindeutiger
-    ///   Drop würde als ungültig gewertet.
-    /// * `evaluateColumn` / `evaluateNearest` teilen umgekehrt die **gesamte** erreichbare
-    ///   Fläche unter den Zielen auf. Jede Ablage jenseits einer Mindestbewegung trifft
-    ///   dadurch zwangsläufig irgendein Ziel — auch eine Ablage genau zwischen zwei
-    ///   Boxen. Beide Verfahren bleiben für die bestehenden Tests erhalten, werden von
-    ///   den Views aber nicht mehr verwendet.
-    ///
-    /// Dieses Verfahren orientiert sich stattdessen an dem, was die Nutzerin sieht: die
-    /// Hülle des Monsters muss die sichtbare Zielfläche ausreichend überdecken. Der Root
-    /// muss dafür kein Zentrum erreichen, und zwischen zwei Zielen abgelegt wird nichts
-    /// ausgelöst, weil dort keine Fläche ausreichend überdeckt ist.
-    ///
-    /// - Parameters:
-    ///   - monsterBounds: Sichtbare Hülle des Monsters in Szenen-Koordinaten, an der
-    ///     Position beim Loslassen.
-    ///   - targets: Zielflächen, räumlich deckungsgleich mit den sichtbaren Zielboxen.
-    ///   - minimumOverlapRatio: Mindestüberdeckung (siehe `overlapRatioXY`). Kleinere
-    ///     Werte machen Drops leichter, größere strenger.
-    /// - Returns: ID des Ziels mit der größten Überdeckung oberhalb der Schwelle,
-    ///   sonst `nil` (ungültiger Drop ⇒ Snapback, F-10 / AK-10).
-    static func evaluateOverlap(
+    /// Die Reihenfolge folgt der Ziel-ID, damit Debug-Ausgaben zwischen zwei Durchläufen
+    /// vergleichbar bleiben.
+    static func evaluateTargets(
         monsterBounds: BoundingBox,
         targets: [BoxTarget],
-        minimumOverlapRatio: Float
-    ) -> String? {
-        var bestID: String?
-        var bestRatio: Float = 0
+        minimumOverlapRatio: Float,
+        depthTolerance: Float
+    ) -> [OverlapResult] {
+        let monsterArea = projectedAreaXY(monsterBounds)
 
-        for target in targets {
-            let ratio = overlapRatioXY(monsterBounds, target.bounds)
-            if ratio >= minimumOverlapRatio, ratio > bestRatio {
-                bestRatio = ratio
-                bestID = target.id
+        return targets
+            .sorted { $0.id < $1.id }
+            .map { target in
+                let intersection = intersectionAreaXY(monsterBounds, target.bounds)
+                let ratio = monsterArea > .leastNormalMagnitude ? intersection / monsterArea : 0
+                let gap = depthGap(monsterBounds, target.bounds)
+                let depthValid = gap <= depthTolerance
+
+                return OverlapResult(
+                    id: target.id,
+                    monsterArea: monsterArea,
+                    intersectionArea: intersection,
+                    overlapRatio: ratio,
+                    depthGap: gap,
+                    isDepthValid: depthValid,
+                    isValid: depthValid && ratio >= minimumOverlapRatio
+                )
             }
-        }
-
-        return bestID
     }
 
-    /// Alle Überdeckungsgrade als Text — ausschließlich für `DebugManager`-Ausgaben.
+    /// Bestimmt das **eine** Ziel, das gerade gewählt würde.
     ///
-    /// Enthält bewusst nur Ziel-IDs und Geometrie, keine fachlichen Bezeichnungen und
-    /// keine Referenzlösungen.
-    static func overlapDebugSummary(
+    /// ## Warum höchstens eines
+    ///
+    /// Die Panels sind innerhalb einer Reihe in X disjunkt und zwischen den Reihen in Y
+    /// disjunkt. Die X-Anteile eines Monsters können sich also über alle Ziele hinweg zu
+    /// höchstens 1 summieren — zwei Ziele gleichzeitig über 50 % sind damit geometrisch
+    /// ausgeschlossen. Die Auswahl nach größter Ratio ist trotzdem implementiert, damit
+    /// das Verhalten auch bei einem künftig geänderten Raster deterministisch bleibt; bei
+    /// exakt gleicher Ratio entscheidet die Ziel-ID.
+    ///
+    /// Dieselbe Funktion liefert das Hover-Highlight **und** den Drop beim Loslassen.
+    /// Dadurch kann das Highlight nie etwas anderes anzeigen, als der Drop dann tut.
+    static func bestTarget(
         monsterBounds: BoundingBox,
-        targets: [BoxTarget]
-    ) -> String {
-        targets
-            .map { String(format: "%@=%.3f", $0.id, overlapRatioXY(monsterBounds, $0.bounds)) }
-            .joined(separator: " ")
+        targets: [BoxTarget],
+        minimumOverlapRatio: Float,
+        depthTolerance: Float
+    ) -> OverlapResult? {
+        evaluateTargets(
+            monsterBounds: monsterBounds,
+            targets: targets,
+            minimumOverlapRatio: minimumOverlapRatio,
+            depthTolerance: depthTolerance
+        )
+        .filter(\.isValid)
+        .max { lhs, rhs in
+            if lhs.overlapRatio == rhs.overlapRatio { return lhs.id > rhs.id }
+            return lhs.overlapRatio < rhs.overlapRatio
+        }
     }
 }

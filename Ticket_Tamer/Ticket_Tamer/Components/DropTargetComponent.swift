@@ -20,7 +20,7 @@ struct DropTargetComponent: Component {
     ///
     /// **Nur noch für die radiusbasierte Auswertung** (`DropEvaluator.evaluate`) und die
     /// bestehenden Tests. Die Views werten seit dem Modul-013-Randfix über die
-    /// X/Y-Überlappung von `halfExtents` aus — siehe `DropEvaluator.evaluateOverlap`.
+    /// X/Y-Überlappung von `halfExtents` aus — siehe `DropEvaluator.bestTarget`.
     let radius: Float
 
     /// Halbe Kantenlängen der **sichtbaren** Zielfläche in Metern.

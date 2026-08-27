@@ -195,7 +195,7 @@ extension MonsterAssetProvider {
     /// Sichtbare Ausdehnung des Monsters **relativ zu seinem Root**, inklusive Skalierung.
     ///
     /// Grundlage für `DragBounds.safeRegion(volume:monsterBounds:padding:)` und für die
-    /// Überlappungsprüfung in `DropEvaluator.evaluateOverlap`.
+    /// Überlappungsprüfung in `DropEvaluator.bestTarget`.
     ///
     /// ## Warum nicht das Nennmaß `LayoutConstants.monsterDragDropTargetSize`
     ///
@@ -215,26 +215,19 @@ extension MonsterAssetProvider {
     ///   Für ein über `wrapAndCenter` zentriertes Modell liegt sie annähernd symmetrisch
     ///   um den Ursprung; für ein Modell mit Ursprung am Fuß entsprechend verschoben.
     static func localVisualBounds(of entity: Entity) -> BoundingBox {
-        // `relativeTo: entity` misst im Eigenraum und schließt die eigene Skalierung aus.
-        // Deshalb wird sie anschließend explizit angewendet — so ist das Ergebnis
-        // unabhängig davon, ob die Entity bereits einer Szene hinzugefügt wurde.
+        // `relativeTo: entity` misst im Eigenraum und schließt die eigene Transformation
+        // aus. Anschließend wird sie explizit angewendet — aber ohne Translation, denn
+        // gesucht sind die Offsets **relativ zum Root**.
+        //
+        // Bewusst über die volle Matrix statt nur über `entity.scale`: so gehen auch eine
+        // Eigenrotation der Entity und eine ungleichmäßige Skalierung korrekt ein.
+        // `BoundingBox.transformed(by:)` transformiert alle acht Ecken und bildet daraus
+        // wieder eine achsenparallele Box — genau das, was die Überlappungsprüfung braucht.
         let raw = entity.visualBounds(recursive: true, relativeTo: entity)
-        let scale = entity.scale
 
-        let cornerA = raw.min * scale
-        let cornerB = raw.max * scale
+        var matrix = entity.transform.matrix
+        matrix.columns.3 = SIMD4<Float>(0, 0, 0, 1)
 
-        return BoundingBox(
-            min: SIMD3<Float>(
-                Swift.min(cornerA.x, cornerB.x),
-                Swift.min(cornerA.y, cornerB.y),
-                Swift.min(cornerA.z, cornerB.z)
-            ),
-            max: SIMD3<Float>(
-                Swift.max(cornerA.x, cornerB.x),
-                Swift.max(cornerA.y, cornerB.y),
-                Swift.max(cornerA.z, cornerB.z)
-            )
-        )
+        return raw.transformed(by: matrix)
     }
 }

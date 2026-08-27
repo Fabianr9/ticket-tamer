@@ -5,6 +5,7 @@
 //  Created by Fabian Raczkowski on 15.07.26.
 //
 
+import CoreGraphics
 import Foundation
 
 /// Layoutwerte, die das Modul-001-Grundvolume direkt verwendet.
@@ -254,6 +255,85 @@ enum LayoutConstants {
     /// Kleiner als `monsterScale`, damit der Entity vollständig im Volume sichtbar bleibt
     /// und genug Platz für die Drop-Zielkugeln verbleibt. Wert: ca. 8 cm Kantenlänge.
     static let monsterScaleDragDrop: Float = 0.08
+
+    // MARK: - Zielpanels (flache 3D-Zielstationen)
+
+    /// Tiefe eines Zielpanels in Metern.
+    ///
+    /// Flach genug, um nicht als Würfel zu wirken, tief genug, damit die Seitenflächen aus
+    /// schräger Perspektive sichtbar sind und das Panel als räumliche Ablagefläche gelesen
+    /// wird.
+    static let targetPanelDepth: Float = 0.02
+
+    /// Eckenradius eines Zielpanels in Metern.
+    static let targetPanelCornerRadius: Float = 0.012
+
+    /// Abstand zwischen zwei benachbarten Panels und zur Volume-Kante in Metern.
+    ///
+    /// Bestimmt zugleich die Panelbreite: die verfügbare Volume-Breite wird abzüglich der
+    /// Zwischenräume gleichmäßig auf die Spalten verteilt.
+    static let targetPanelGap: Float = 0.02
+
+    /// Panelhöhe als Vielfaches der **gemessenen** Monsterhöhe.
+    ///
+    /// Muss deutlich über `minimumDropOverlapRatio` liegen, sonst ist die Schwelle nur
+    /// exakt am Anschlag der Zieh-Begrenzung erreichbar. Bei 0.9 ist die maximal
+    /// erreichbare Ratio rund 0.9 — die 50 % werden also spürbar vor dem Anschlag
+    /// erreicht, und der Nutzer muss das Monster nicht in die Ecke pressen.
+    static let targetPanelHeightFactor: Float = 0.9
+
+    /// Sicherheitsaufschlag auf `minimumDropOverlapRatio` bei der Panelbemaßung.
+    ///
+    /// Die Panelhöhe wird so gewählt, dass der **maximal erreichbare** Überlappungsanteil
+    /// mindestens `minimumDropOverlapRatio + dieser Aufschlag` beträgt. Ohne Aufschlag
+    /// wäre die Schwelle nur exakt am Anschlag der Zieh-Begrenzung erreichbar, und der
+    /// Nutzer müsste das Monster in die Ecke pressen.
+    ///
+    /// Greift nur als Untergrenze — normalerweise bestimmt `targetPanelHeightFactor` die
+    /// Höhe. Der Aufschlag wird erst relevant, wenn ein Panel schmaler als das Monster ist
+    /// und die Höhe das ausgleichen muss.
+    static let targetPanelReachabilityHeadroom: Float = 0.15
+
+    /// Untere Schranke der Panelhöhe in Metern, falls die Monstermessung ausfällt.
+    static let targetPanelMinimumHeight: Float = 0.08
+
+    /// Obere Schranke der Panelhöhe als Anteil der Volume-Höhe.
+    ///
+    /// Verhindert, dass die Panels bei einem sehr großen Monster oder einem sehr flachen
+    /// Volume die Spielfläche dominieren.
+    static let targetPanelMaximumHeightFraction: Float = 0.28
+
+    /// Freier Abstand zwischen Monsterrückseite und Panelvorderseite in Metern.
+    ///
+    /// Das Monster schwebt dadurch sichtbar **vor** dem Panel statt darin zu stecken.
+    /// Der Wert ist zugleich der reguläre Z-Spalt und muss deshalb kleiner als
+    /// `dropDepthTolerance` bleiben.
+    static let targetPanelStandoff: Float = 0.01
+
+    /// Abstand des Textes vor der Panelvorderseite in Metern.
+    ///
+    /// Verhindert Z-Fighting und ein Versenken der Schrift im Mesh.
+    static let targetLabelStandoff: Float = 0.006
+
+    // MARK: - Hover-/Valid-Feedback
+
+    /// Skalierung eines Zielpanels, solange es das aktuell gültige Ziel wäre.
+    ///
+    /// Dezent: 5 % Vergrößerung sind wahrnehmbar, ohne dass das Layout springt.
+    static let targetHighlightScale: Float = 1.05
+
+    /// Deckkraft eines Zielpanels im Normalzustand.
+    static let targetPanelOpacity: CGFloat = 0.55
+
+    /// Deckkraft eines Zielpanels im hervorgehobenen Zustand.
+    ///
+    /// Das Highlight sagt ausschließlich: „Wenn du jetzt loslässt, wird dieses Ziel
+    /// gewählt." Es trifft **keine** Aussage über richtig oder falsch — die fachliche
+    /// Bewertung passiert unverändert erst nach dem Drop.
+    static let targetPanelHighlightOpacity: CGFloat = 0.9
+
+    /// Dauer der Übergangsanimation beim Hervorheben in Sekunden.
+    static let targetHighlightDuration: Double = 0.12
 }
 
 /// Spielweite Grundwerte aus der SPEC, ohne Sitzungslogik vorwegzunehmen.
@@ -317,25 +397,44 @@ enum InteractionConstants {
 
     // MARK: - Drop-Erkennung über Überlappung
 
-    /// Mindestüberdeckung zwischen Monsterhülle und sichtbarer Zielfläche, damit ein Drop
-    /// als gültig gilt (siehe `DropEvaluator.overlapRatioXY`).
+    /// Mindestanteil der **Monsterfläche**, der in der Zielzone liegen muss, damit ein Drop
+    /// gültig ist.
     ///
-    /// Bezugsgröße ist die **kleinere** der beiden X/Y-Flächen. `0.25` bedeutet also:
-    /// ein Viertel der kleineren Fläche muss überdeckt sein.
+    /// ```text
+    /// overlapRatio = Schnittfläche(Monster, Ziel) / projizierte Monsterfläche
+    /// ```
     ///
-    /// Die Schwelle ersetzt beide bisherigen Extreme — weder muss der Monster-Root das
-    /// Ziel-Zentrum erreichen (bei randnahen Zielen unmöglich), noch löst jede Ablage
-    /// jenseits einer Mindestbewegung irgendein Ziel aus (Ablage zwischen zwei Boxen).
+    /// Bezugsgröße ist bewusst die Monsterfläche, nicht die kleinere der beiden Flächen:
+    /// Nur so bedeutet der Wert das, was man sieht — *„wie viel vom Monster liegt auf dem
+    /// Ziel?"*. Mit der kleineren Fläche als Nenner genügte ein schmaler Monsterstreifen,
+    /// der ein kleines Ziel vollständig überdeckt, für eine hohe Ratio; genau daher kam der
+    /// gültige Drop bei rund 10 % sichtbarer Überlappung.
     ///
-    /// Zu klein ⇒ Streifkontakt genügt; zu groß ⇒ randnahe Ziele werden unerreichbar.
-    static let minimumDropOverlapRatio: Float = 0.25
+    /// 0.50 heißt: das Monster muss mindestens zur Hälfte auf der Zielzone liegen.
+    ///
+    /// **Wichtig:** Die Zielpanels müssen dafür hoch genug sein. Bei einem Panel, das nur
+    /// halb so hoch ist wie das Monster, ist 0.50 mathematisch unerreichbar. Deshalb leitet
+    /// `TargetPanelLayout` die Panelhöhe aus der gemessenen Monsterhöhe ab
+    /// (`targetPanelHeightFactor`) statt aus einem festen Wert.
+    static let minimumDropOverlapRatio: Float = 0.50
 
-    /// Tiefe der aus einem sichtbaren Label abgeleiteten Zielfläche in Metern.
+    /// Größter erlaubter **Spalt in Z** zwischen Monsterhülle und Zielpanel in Metern.
     ///
-    /// Die Drop-Auswertung prüft ausschließlich die X/Y-Überlappung; dieser Wert dient
-    /// nur dazu, den Zielbereichen eine plausible, endliche Tiefe für Debug-Ausgaben zu
-    /// geben.
-    static let dropTargetPlaneDepth: Float = 0.10
+    /// Gemessen wird nicht der Abstand der Mittelpunkte, sondern der Abstand der
+    /// Oberflächen:
+    ///
+    /// ```text
+    /// gap = max(0, max(monsterMinZ, panelMinZ) - min(monsterMaxZ, panelMaxZ))
+    /// ```
+    ///
+    /// Überlappen sich die Z-Bereiche, ist der Spalt 0. Ein Mittelpunktsabstand würde mit
+    /// der Monstertiefe mitwachsen und wäre je Asset unterschiedlich streng — das
+    /// Spaltmaß ist davon unabhängig.
+    ///
+    /// Bewusst knapp: das Monster steht konstruktiv `targetPanelStandoff` vor dem Panel,
+    /// der reguläre Spalt beträgt also genau diesen Wert. Die Toleranz lässt darüber
+    /// hinaus nur wenig Spielraum.
+    static let dropDepthTolerance: Float = 0.05
 
     // MARK: - Rückkehr-Animation
 

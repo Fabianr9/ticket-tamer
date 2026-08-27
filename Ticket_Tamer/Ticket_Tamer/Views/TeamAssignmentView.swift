@@ -1,7 +1,8 @@
 import RealityKit
-import simd
 import Spatial
 import SwiftUI
+import UIKit
+import simd
 
 // MARK: - Ziel-ID → SupportTeam Mapping (Modul 009 — F-09 / AK-09)
 
@@ -12,6 +13,17 @@ import SwiftUI
 /// sichtbar sind ausschließlich die deutschen `SupportTeam.displayName`-Werte.
 enum TeamTargetMapping {
 
+    // MARK: - Technische Ziel-IDs
+
+    /// Die vier Ziel-IDs als Konstanten — identisch verwendet in `DropTargetComponent`,
+    /// Panelraster und RealityView-Attachment.
+    enum ID {
+        static let netzwerk = "team_netzwerk"
+        static let konto = "team_konto"
+        static let software = "team_software"
+        static let hardware = "team_hardware"
+    }
+
     // MARK: - Ziel-Descriptor
 
     struct TargetDefinition {
@@ -20,21 +32,43 @@ enum TeamTargetMapping {
         /// Fachlicher Team-Wert.
         let team: SupportTeam
         /// Räumliche Position im Volume-Koordinatensystem.
+        ///
+        /// **Nur noch Rückfallwert** — die tatsächliche Panelposition entsteht aus dem
+        /// gemessenen Volume (`TargetPanelLayout`).
         let position: SIMD3<Float>
     }
 
     // MARK: - Vollständige Zielliste
 
     /// Genau vier Teamstationen — nicht mehr, nicht weniger.
-    ///
-    /// Positionen aus `TeamAssignmentConstants`: 2×2-Layout.
-    /// Alle Abstände > 2 × `InteractionConstants.dropTargetRadius` — keine Überschneidung.
     static let allTargets: [TargetDefinition] = [
-        .init(id: "team_netzwerk",  team: .netzwerk,  position: TeamAssignmentConstants.targetPositionNetzwerk),
-        .init(id: "team_konto",     team: .konto,     position: TeamAssignmentConstants.targetPositionKonto),
-        .init(id: "team_software",  team: .software,  position: TeamAssignmentConstants.targetPositionSoftware),
-        .init(id: "team_hardware",  team: .hardware,  position: TeamAssignmentConstants.targetPositionHardware),
+        .init(id: ID.netzwerk, team: .netzwerk, position: TeamAssignmentConstants.targetPositionNetzwerk),
+        .init(id: ID.konto,    team: .konto,    position: TeamAssignmentConstants.targetPositionKonto),
+        .init(id: ID.software, team: .software, position: TeamAssignmentConstants.targetPositionSoftware),
+        .init(id: ID.hardware, team: .hardware, position: TeamAssignmentConstants.targetPositionHardware),
     ]
+
+    // MARK: - Panelraster
+
+    /// Zwei Reihen, zwei Spalten — die 2×2-Struktur bleibt exakt erhalten:
+    ///
+    /// ```text
+    /// Netzwerk             Konto
+    ///
+    /// Software             Hardware
+    /// ```
+    ///
+    /// Reihe 0 ist bündig an der Oberkante, Reihe 1 bündig an der Unterkante.
+    static let panelLayout = TargetPanelLayout(
+        columns: 2,
+        rows: 2,
+        slots: [
+            .init(id: ID.netzwerk, column: 0, row: 0),
+            .init(id: ID.konto,    column: 1, row: 0),
+            .init(id: ID.software, column: 0, row: 1),
+            .init(id: ID.hardware, column: 1, row: 1),
+        ]
+    )
 
     // MARK: - Mapping
 
@@ -44,9 +78,6 @@ enum TeamTargetMapping {
     }
 
     /// Gibt die technische Ziel-ID für ein `SupportTeam` zurück.
-    ///
-    /// Nötig, damit das sichtbare Label seinen gemessenen Rahmen unter derselben ID
-    /// meldet, unter der die zugehörige `DropTargetComponent` registriert ist.
     static func targetID(for team: SupportTeam) -> String? {
         allTargets.first { $0.team == team }?.id
     }
@@ -56,9 +87,9 @@ enum TeamTargetMapping {
 
 /// Räumliche Teamzuordnungsansicht für `GamePhase.teamZuordnen`.
 ///
-/// Zeigt das Monster des aktuellen Tickets und vier klar mit deutschen Bezeichnungen
-/// beschriftete Teamstationen (Netzwerk, Konto, Software, Hardware) in einem 2×2-Layout.
-/// Das Monster ist per Blickfokus, Pinch und Drag interaktiv.
+/// Zeigt das Monster des aktuellen Tickets und vier flache 3D-Zielstationen mit deutschen
+/// Beschriftungen (Netzwerk, Konto, Software, Hardware) im 2×2-Layout. Das Monster ist per
+/// Blickfokus, Pinch und Drag interaktiv.
 ///
 /// - Gültiger Drop: `SessionModel.saveTeam(_:)` speichert die Teamentscheidung genau einmal.
 /// - Ungültiger Drop: Monster kehrt zur Ausgangsposition zurück, kein Zustandswechsel.
@@ -78,28 +109,8 @@ struct TeamAssignmentView: View {
     @State private var originTransform: Transform? = nil
 
     /// Position des Monsters zu Beginn der laufenden Zieh-Geste.
-    ///
-    /// Die Bewegung wird relativ zu diesem Wert berechnet (`PlanarDrag`), damit die
-    /// Tiefenebene erhalten bleibt. `nil`, solange keine Geste läuft.
     @State private var dragStartPosition: SIMD3<Float>? = nil
     @State private var loadError: String? = nil
-
-    // MARK: - Modul 013: gemessene Drag-/Drop-Geometrie
-
-    /// Gemeinsame Geometriequelle beider Zieh-Phasen — identisch zur Priorisierungsphase.
-    ///
-    /// Beide Ansichten hatten dieselbe technische Ursache (geratene statt gemessener
-    /// Grenzen) und teilen sich deshalb bewusst dieselbe Lösung.
-    @State private var geometry = MonsterDragGeometry()
-
-    /// Rahmen der sichtbaren Team-Labels in Punkten, je Ziel-ID.
-    @State private var labelFrames: [String: CGRect] = [:]
-
-    /// Verhindert, dass die Grenz-Debugausgabe während einer Geste in jedem Frame erscheint.
-    @State private var clampLogged: Bool = false
-
-    /// Benannter Koordinatenraum, in dem die Label-Rahmen gemessen werden.
-    private static let layoutSpace = "teamAssignmentLayout"
 
     // MARK: - Modul 010: Feedback-Zustand
 
@@ -107,6 +118,20 @@ struct TeamAssignmentView: View {
     @State private var feedbackTaskStarted: Bool = false
     /// Lokale Audio-Kapselung — kein globaler Service-Locator.
     @State private var audioService = AudioService()
+
+    // MARK: - Modul 013: gemessene Drag-/Drop-Geometrie
+
+    /// Gemeinsame Geometriequelle beider Zieh-Phasen — identisch zur Priorisierungsphase.
+    @State private var geometry = MonsterDragGeometry(
+        layout: TeamTargetMapping.panelLayout,
+        monsterPlaneZ: TeamAssignmentConstants.monsterStartPosition.z
+    )
+
+    /// Das aktuell hervorgehobene Ziel, oder `nil`. Reines Anzeigefeedback.
+    @State private var highlightedTargetID: String? = nil
+
+    /// Verhindert, dass die Grenz-Debugausgabe während einer Geste in jedem Frame erscheint.
+    @State private var clampLogged: Bool = false
 
     // MARK: - Body
 
@@ -116,14 +141,12 @@ struct TeamAssignmentView: View {
         GeometryReader3D { proxy in
         ZStack(alignment: .top) {
             // 3D-Szene
-            // update: liest monsterEntity und targetEntities direkt — notwendig damit
-            // RealityKit den Closure nach @State-Änderungen erneut ausführt (AK-09 Fix).
-            RealityView { content in
+            RealityView { content, _ in
                 measureVolume(proxy: proxy, content: content)
-            } update: { content in
+            } update: { content, attachments in
                 // Direkte Reads stellen SwiftUI-Dependency-Tracking sicher.
-                let currentMonster  = monsterEntity
-                let currentTargets  = targetEntities
+                let currentMonster = monsterEntity
+                let currentTargets = targetEntities
 
                 for entity in currentTargets where entity.scene == nil {
                     content.add(entity)
@@ -133,6 +156,22 @@ struct TeamAssignmentView: View {
                 }
 
                 measureVolume(proxy: proxy, content: content)
+                attachPanelLabels(attachments)
+            } attachments: {
+                // Beschriftung der Panels als RealityView-Attachment — siehe
+                // `PrioritizationView` zur Begründung.
+                Attachment(id: TeamTargetMapping.ID.netzwerk) {
+                    panelLabel(SupportTeam.netzwerk.displayName)
+                }
+                Attachment(id: TeamTargetMapping.ID.konto) {
+                    panelLabel(SupportTeam.konto.displayName)
+                }
+                Attachment(id: TeamTargetMapping.ID.software) {
+                    panelLabel(SupportTeam.software.displayName)
+                }
+                Attachment(id: TeamTargetMapping.ID.hardware) {
+                    panelLabel(SupportTeam.hardware.displayName)
+                }
             }
             .gesture(
                 DragGesture()
@@ -140,24 +179,6 @@ struct TeamAssignmentView: View {
                     .onChanged { value in handleDragChanged(value: value) }
                     .onEnded { value in handleDragEnded(value: value) }
             )
-
-            // Deutsche Labels für die vier Teamstationen.
-            // Als ZStack-Overlay — zuverlässig ohne Attachment-API (analog zu 008-Fix).
-            // 2×2-Grid: oben Netzwerk/Konto, unten Software/Hardware.
-            VStack(spacing: 8) {
-                HStack(spacing: 8) {
-                    teamLabel(for: .netzwerk)
-                    teamLabel(for: .konto)
-                }
-                Spacer()
-                HStack(spacing: 8) {
-                    teamLabel(for: .software)
-                    teamLabel(for: .hardware)
-                }
-            }
-            .padding(.top, 16)
-            .padding(.bottom, 16)
-            .padding(.horizontal, 16)
 
             // Ladeindikator — liest monsterEntity im Body (SwiftUI-Dependency-Tracking).
             if monsterEntity == nil && loadError == nil {
@@ -176,19 +197,11 @@ struct TeamAssignmentView: View {
                     .padding(.top, 80)
             }
         }
-        .coordinateSpace(.named(Self.layoutSpace))
-        .onPreferenceChange(TargetFramePreferenceKey.self) { frames in
-            Task { @MainActor in
-                labelFrames = frames
-                syncTargetGeometry()
-            }
-        }
         .task {
             await setupScene()
         }
         .onAppear {
             // Eingabe nur freigeben, wenn noch keine Teamentscheidung getroffen wurde.
-            // Kein Unlock nach View-Refresh bei bereits gespeichertem Team (AK-10).
             // beginTeamAssignmentPhase() übernimmt das initiale Unlock; dieser Guard
             // schützt vor erneutem Entsperren bei View-Refresh nach saveTeam(_:).
             if model.selectedTeam != nil {
@@ -226,81 +239,50 @@ struct TeamAssignmentView: View {
         }
     }
 
-    // MARK: - Label-Subview
+    // MARK: - Panel-Beschriftung
 
-    /// Sichtbares deutsches Label für eine Teamstation.
-    ///
-    /// `lineLimit(1)` + `minimumScaleFactor` verhindern Silbentrennung in schmalen Spalten.
+    /// Beschriftung eines Zielpanels — identisch zur Priorisierungsphase.
     @ViewBuilder
-    private func teamLabel(for team: SupportTeam) -> some View {
-        Text(team.displayName)
-            .font(.title3)
+    private func panelLabel(_ text: String) -> some View {
+        Text(text)
+            .font(.title2)
             .fontWeight(.semibold)
             .foregroundStyle(.white)
             .lineLimit(1)
             .minimumScaleFactor(LayoutConstants.targetLabelMinimumScaleFactor)
             .allowsTightening(true)
+            .shadow(radius: 3)
             .padding(.horizontal, LayoutConstants.targetLabelHorizontalPadding)
-            .padding(.vertical, LayoutConstants.targetLabelVerticalPadding)
-            .background(
-                labelColor(for: team).opacity(LayoutConstants.targetLabelBackgroundOpacity),
-                in: RoundedRectangle(cornerRadius: LayoutConstants.targetLabelCornerRadius)
-            )
-            // Bewusst **vor** `.frame(maxWidth: .infinity)`: gemeldet wird der Rahmen der
-            // sichtbaren farbigen Fläche, nicht der der unsichtbaren Spaltenbreite. Die
-            // Beschriftung bleibt an ihrer Layoutposition, nur das DropTarget richtet sich
-            // danach aus.
-            .reportTargetFrame(
-                id: TeamTargetMapping.targetID(for: team) ?? team.rawValue,
-                in: .named(Self.layoutSpace)
-            )
-            .frame(maxWidth: .infinity)
+            .allowsHitTesting(false)
     }
 
-    /// Hintergrundfarbe je Team — visuell unterscheidbar, keine Bewertungssignale.
+    /// Farbe eines Zielpanels — neutral, keine Ampelfarben.
     ///
-    /// Keine Ampelfarben: keine Farbe suggeriert richtig/falsch oder besser/schlechter.
-    private func labelColor(for team: SupportTeam) -> Color {
-        switch team {
-        case .netzwerk:  return .blue
-        case .konto:     return .purple
-        case .software:  return .teal
-        case .hardware:  return .indigo
+    /// Keine Farbe suggeriert richtig/falsch oder besser/schlechter; sie dient
+    /// ausschließlich der Unterscheidbarkeit der vier Stationen.
+    private func panelTint(for targetID: String) -> UIColor {
+        switch TeamTargetMapping.team(for: targetID) {
+        case .netzwerk: return .systemBlue
+        case .konto:    return .systemPurple
+        case .software: return .systemTeal
+        case .hardware: return .systemIndigo
+        case .none:     return .systemGray
         }
     }
 
     // MARK: - Szenenaufbau
 
-    /// Erzeugt die vier Teamstationen und lädt das Monster asynchron.
+    /// Erzeugt die vier Zielpanels und lädt das Monster asynchron.
     private func setupScene() async {
-        // Vier Teamstationen aufbauen.
         for targetDef in TeamTargetMapping.allTargets {
-            let entity = Entity()
-            entity.name = "teamTarget_\(targetDef.id)"
-            entity.position = targetDef.position
-            entity.components.set(
-                DropTargetComponent(
-                    id: targetDef.id,
-                    radius: InteractionConstants.dropTargetRadius,
-                    debugName: targetDef.team.displayName
-                )
+            let entity = TargetPanelFactory.makeTarget(
+                id: targetDef.id,
+                debugName: targetDef.team.displayName
             )
-
-            // Bewusst KEINE sichtbare Zielkugel mehr.
-            //
-            // Hier hing eine halbtransparente Kugel am Zielentity. Solange die Zielentity
-            // bei festen Meterwerten stand, war das ein eigenständiges drittes Element:
-            // sichtbare Beschriftung oben/unten, farbige Kugel in der Mitte, unsichtbarer
-            // Trefferbereich um die Kugel. Für die Nutzerin war damit nicht erkennbar,
-            // worauf sie das Monster eigentlich ziehen soll.
-            //
-            // Seit dem Modul-013-Randfix liegt die Trefferfläche deckungsgleich auf der
-            // sichtbaren Beschriftung (siehe `MonsterDragGeometry.updateTargets`). Die
-            // Kugel würde jetzt mitten auf dem Label sitzen und dessen Text verdecken.
-            // Sichtbares Ziel ist deshalb — wie in der Priorisierungsphase — allein die
-            // Beschriftung. Damit verhalten sich beide Phasen identisch.
+            // Rückfallposition, bis Volume und Monster vermessen sind.
+            entity.position = targetDef.position
             targetEntities.append(entity)
-            DebugManager.log(.spawning, "Teamstation bereit: \(targetDef.id) an \(targetDef.position)")
+            DebugManager.log(.spawning, "Teamstation bereit: \(targetDef.id)")
         }
 
         // Monster laden.
@@ -320,9 +302,9 @@ struct TeamAssignmentView: View {
             monsterEntity = entity
 
             // Tatsächliche sichtbare Hülle messen — Grundlage für den sicheren
-            // Zieh-Bereich und für die Überlappungsprüfung beim Loslassen.
+            // Zieh-Bereich, für die Panelhöhe und für die 50-%-Prüfung.
             geometry.measureMonster(entity, assetID: ticket.monsterAssetId)
-            syncTargetGeometry()
+            syncPanels()
 
             DebugManager.log(.spawning, "Monster bereit: \(ticket.monsterAssetId), Modus: dragDrop")
         } catch {
@@ -331,15 +313,9 @@ struct TeamAssignmentView: View {
         }
     }
 
-    // Hinweis: `uiColor(for:)` ist entfallen. Die Funktion lieferte ausschließlich den
-    // Tint für das `SimpleMaterial` der entfernten Zielkugeln. Die sichtbaren Teamfarben
-    // kommen aus `labelColor(for:)`.
-
-    // MARK: - Geometrie (Modul 013 — Drag-/Drop-Randfix)
+    // MARK: - Geometrie (Modul 013)
 
     /// Misst das tatsächliche Volume und die Layoutebene.
-    ///
-    /// Identisch zur Priorisierungsphase — dieselbe Ursache, dieselbe Lösung.
     private func measureVolume(proxy: GeometryProxy3D, content: RealityViewContent) {
         let localFrame = proxy.frame(in: .local)
 
@@ -361,18 +337,66 @@ struct TeamAssignmentView: View {
 
         Task { @MainActor in
             geometry.update(metrics: measured)
-            syncTargetGeometry()
+            syncPanels()
         }
     }
 
-    /// Richtet die technischen DropTargets auf die gemessenen Rahmen der sichtbaren
-    /// Labels aus. Die Labels selbst werden nicht bewegt.
-    private func syncTargetGeometry() {
-        geometry.updateTargets(
-            labelFrames: labelFrames,
-            entities: targetEntities,
-            dropPlaneZ: TeamAssignmentConstants.monsterStartPosition.z
+    /// Bemaßt und platziert die Zielpanels aus der aktuellen Messung.
+    private func syncPanels() {
+        geometry.applyPanelGeometry(
+            to: targetEntities,
+            tint: panelTint(for:),
+            highlightedID: highlightedTargetID
         )
+    }
+
+    /// Hängt die Text-Attachments an ihre Panels und setzt sie vor die Vorderfläche.
+    private func attachPanelLabels(_ attachments: RealityViewAttachments) {
+        guard let panelSize = geometry.panelSize else { return }
+        let labelZ = panelSize.z / 2 + LayoutConstants.targetLabelStandoff
+
+        for targetDef in TeamTargetMapping.allTargets {
+            guard let root = targetEntity(for: targetDef.id),
+                  let label = attachments.entity(for: targetDef.id)
+            else { continue }
+
+            if label.parent !== root {
+                root.addChild(label)
+            }
+            label.position = SIMD3<Float>(0, 0, labelZ)
+        }
+    }
+
+    /// Ziel-Entity zu einer Ziel-ID.
+    private func targetEntity(for targetID: String) -> Entity? {
+        targetEntities.first { $0.components[DropTargetComponent.self]?.id == targetID }
+    }
+
+    // MARK: - Hover-/Valid-Feedback
+
+    /// Hebt genau das Ziel hervor, das bei einem Loslassen gewählt würde — oder keines.
+    private func updateHighlight(at position: SIMD3<Float>) {
+        let candidate = geometry.bestTarget(at: position)?.id
+        guard candidate != highlightedTargetID else { return }
+
+        if let previous = highlightedTargetID, let entity = targetEntity(for: previous) {
+            TargetPanelFactory.setHighlighted(false, target: entity, tint: panelTint(for: previous))
+        }
+        if let candidate, let entity = targetEntity(for: candidate) {
+            TargetPanelFactory.setHighlighted(true, target: entity, tint: panelTint(for: candidate))
+        }
+
+        highlightedTargetID = candidate
+        DebugManager.log(.input, "Highlight: \(candidate ?? "-")")
+    }
+
+    /// Nimmt jede Hervorhebung zurück.
+    private func clearHighlight() {
+        guard let previous = highlightedTargetID else { return }
+        if let entity = targetEntity(for: previous) {
+            TargetPanelFactory.setHighlighted(false, target: entity, tint: panelTint(for: previous))
+        }
+        highlightedTargetID = nil
     }
 
     // MARK: - Gesture-Handler
@@ -384,11 +408,6 @@ struct TeamAssignmentView: View {
         }
         guard let entity = monsterEntity, value.entity === entity else { return }
 
-        // Position bei Gestenbeginn merken — Grundlage für die relative Bewegung.
-        //
-        // Lokaler Raum (`entity.position`) statt Weltraum, identisch zur Priorisierungsphase:
-        // Start- und Zielpositionen dieser Phase sind ebenfalls lokal gesetzt. Die frühere
-        // Mischung beider Räume verursachte den fehlerhaften Rücksprung.
         let start = dragStartPosition ?? entity.position
         if dragStartPosition == nil {
             dragStartPosition = start
@@ -402,17 +421,12 @@ struct TeamAssignmentView: View {
         }
 
         // Planare Bewegung auf konstanter Tiefe — identisch zur Priorisierungsphase.
-        // Die frühere Übernahme der absoluten Zeigerposition (`location3D` → `.scene`)
-        // schrieb die Handtiefe direkt in die Entity: Sprung nach vorne beim Greifen,
-        // Stehenbleiben auf Handtiefe beim Loslassen, kaum horizontaler Weg.
-        // Nur die Translation wird geschrieben — Rotation und Scale bleiben unangetastet.
         let requested = PlanarDrag.requestedPosition(
             from: start,
             translation: value.gestureValue.translation
         )
 
         if let allowed = geometry.clamped(requested) {
-            // Einmal je Geste protokollieren, sobald die Grenze tatsächlich greift.
             if !clampLogged, simd_distance(allowed, requested) > 0.0005 {
                 clampLogged = true
                 DebugManager.log(
@@ -423,10 +437,6 @@ struct TeamAssignmentView: View {
                     DebugManager.log(.physics, safe.debugSummary)
                 }
             }
-
-            // Grenze aus gemessenem Volume minus gemessener Monsterhülle minus Padding.
-            // Wirkt an allen vier Rändern und achsenweise unabhängig — an einer Ecke
-            // gleitet das Monster entlang der jeweils freien Achse weiter.
             entity.position = allowed
         } else {
             // Rückfallebene, solange Volume oder Monster noch nicht vermessen sind.
@@ -438,6 +448,9 @@ struct TeamAssignmentView: View {
                 )
             )
         }
+
+        // Feedback, aber noch keine Entscheidung (Anforderung 15).
+        updateHighlight(at: entity.position)
     }
 
     private func handleDragEnded(value: EntityTargetValue<DragGesture.Value>) {
@@ -447,47 +460,38 @@ struct TeamAssignmentView: View {
 
         guard !model.isInputLocked else {
             DebugManager.log(.input, "Release ignoriert: Input bereits gesperrt (AK-10)")
+            clearHighlight()
             return
         }
         guard let entity = monsterEntity, value.entity === entity else { return }
 
-        // Überlappungsbasierte Auswertung — identisch zur Priorisierungsphase.
-        //
-        // `evaluateNearest` teilte zuvor die gesamte erreichbare Fläche unter den vier
-        // Stationen auf: jede Ablage jenseits von 0.15 m Bewegung traf zwangsläufig eine
-        // davon, auch eine Ablage genau zwischen zwei Stationen. `evaluateOverlap` verlangt
-        // stattdessen, dass die sichtbare Monsterhülle die sichtbare Zielfläche
-        // ausreichend überdeckt.
-        let origin = originTransform?.translation ?? TeamAssignmentConstants.monsterStartPosition
         let dropped = entity.position
-
         DebugManager.log(.physics, "[Monster Transform AT RELEASE] \(entity.dragStateSummary)")
-        DebugManager.log(.physics, "Drop bei \(dropped), Start \(origin)")
 
-        let hit: String?
+        // Der Zustand, den das Highlight zuletzt angezeigt hat — vor jedem Zurücksetzen
+        // gesichert, damit der Trace „vor dem Release" und „beim Release" vergleichen kann.
+        let highlightBeforeRelease = highlightedTargetID
+
+        var hit: String? = nil
         if geometry.canEvaluateOverlap {
-            hit = geometry.hitTarget(at: dropped)
+            hit = geometry.logDropTrace(
+                view: "Teamzuordnung",
+                monster: entity,
+                at: dropped,
+                highlightBeforeRelease: highlightBeforeRelease,
+                inputLocked: model.isInputLocked,
+                alreadyCommitted: model.selectedTeam != nil
+            )?.id
         } else {
-            // Rückfallebene, solange die Label-Rahmen noch nicht gemessen sind.
-            let descriptors: [DropEvaluator.TargetDescriptor] = targetEntities.compactMap { e in
-                guard let comp = e.components[DropTargetComponent.self] else { return nil }
-                return DropEvaluator.TargetDescriptor(
-                    id: comp.id,
-                    position: e.position,
-                    radius: comp.radius
-                )
-            }
-            hit = DropEvaluator.evaluateNearest(
-                entityPosition: dropped,
-                origin: origin,
-                targets: descriptors,
-                minimumDistance: TeamAssignmentConstants.minimumDropDistance
+            DebugManager.log(
+                .physics,
+                "=== DROP DEBUG === Teamzuordnung: Geometrie noch nicht vermessen (metrics oder Monster-Bounds fehlen) — Kette bricht vor der Auswertung ab, Drop ungueltig"
             )
-            DebugManager.log(.physics, "Fallback-Auswertung (Geometrie noch nicht vermessen)")
         }
 
+        clearHighlight()
+
         if let hitID = hit {
-            DebugManager.log(.physics, "Gueltiger Drop: Ziel=\(hitID)")
             if let team = TeamTargetMapping.team(for: hitID) {
                 model.saveTeam(team)
                 DebugManager.log(.state, "Team gespeichert: \(team.rawValue), isInputLocked=\(model.isInputLocked)")
@@ -501,11 +505,8 @@ struct TeamAssignmentView: View {
         }
     }
 
+    /// Stellt nach einem ungültigen Drop exakt den Zustand vom Phasenbeginn wieder her.
     private func returnMonsterToOrigin(entity: Entity) {
-        // `originTransform` ist der lokale Transform aus `setupScene` (Position, Rotation,
-        // Skalierung). Deshalb auch relativ zur Elternentity zurücksetzen — vorher stand
-        // hier `relativeTo: nil`, also der Weltraum. Identischer Fix wie in der
-        // Priorisierungsphase; beide Ansichten hatten dieselbe Ursache.
         guard let origin = originTransform else { return }
         entity.move(
             to: origin,

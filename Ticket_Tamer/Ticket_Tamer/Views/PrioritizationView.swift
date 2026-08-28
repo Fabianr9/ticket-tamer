@@ -456,9 +456,23 @@ struct PrioritizationView: View {
         if dragStartPosition == nil {
             dragStartPosition = start
             DebugManager.log(.input, "[Monster Transform BEFORE DRAG] \(entity.dragStateSummary)")
-            // Kontrollausgabe: lokale und Weltposition müssen übereinstimmen, sonst ist die
-            // Annahme falsch, dass `content.add(_:)` an der Szenenwurzel einhängt — und die
-            // gemessenen Volume-Grenzen lägen in einem anderen Raum als `entity.position`.
+            // Kontrollausgabe zum Koordinatenraum (Modul 014 / Phase 6 geprüft).
+            //
+            // Erwartet wird **kein** identisches Wertepaar: `entity.position` ist die
+            // Position im Raum der Elternentity (Szenenwurzel des `RealityView`),
+            // `position(relativeTo: nil)` die im Weltraum. Beide unterscheiden sich um
+            // die Platzierung des volumetrischen Fensters — im Simulatortrace vom
+            // 27.08.2026 konstant um +0.1176 m in Z, X und Y identisch.
+            //
+            // Entscheidend ist nur, dass **beide Seiten derselben Rechnung** im selben
+            // Raum liegen: `content.convert(_:from: .local, to: .scene)` liefert die
+            // Volume-Grenzen im Raum der Szenenwurzel, und dort liegt wegen
+            // `content.add(_:)` auch `entity.position`. Weltkoordinaten werden in
+            // produktivem Code nirgends mit Volume-Grenzen verrechnet — sie erscheinen
+            // ausschließlich in dieser Ausgabe und im DROP-DEBUG-Trace.
+            //
+            // Ein Z-Versatz zwischen local und world ist deshalb erwartungsgemäß und
+            // **kein** Fehler, der „korrigiert" werden dürfte.
             DebugManager.log(
                 .physics,
                 "Raumprobe: local=\(entity.position) world=\(entity.position(relativeTo: nil))"

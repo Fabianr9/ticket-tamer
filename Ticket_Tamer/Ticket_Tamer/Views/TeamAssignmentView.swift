@@ -412,8 +412,10 @@ struct TeamAssignmentView: View {
         if dragStartPosition == nil {
             dragStartPosition = start
             DebugManager.log(.input, "[Monster Transform BEFORE DRAG] \(entity.dragStateSummary)")
-            // Kontrollausgabe: lokale und Weltposition müssen übereinstimmen — siehe
-            // gleichnamige Ausgabe in `PrioritizationView`.
+            // Kontrollausgabe zum Koordinatenraum — siehe die ausführliche Begründung
+            // an der gleichnamigen Ausgabe in `PrioritizationView`: local und world
+            // unterscheiden sich erwartungsgemäß um die Platzierung des Volumes; in
+            // produktivem Code wird ausschließlich im Raum der Szenenwurzel gerechnet.
             DebugManager.log(
                 .physics,
                 "Raumprobe: local=\(entity.position) world=\(entity.position(relativeTo: nil))"

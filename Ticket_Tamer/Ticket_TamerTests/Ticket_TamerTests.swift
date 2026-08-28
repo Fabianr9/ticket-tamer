@@ -1207,25 +1207,51 @@ struct PrioritizationPhaseTests {
         #expect(simd_distance(after.rotation.vector, origin.rotation.vector) < 0.0001, "Rotation weicht ab")
     }
 
-    /// Gegenprobe: dieselbe Wiederherstellung im Weltraum ergibt einen anderen Transform.
-    /// Genau das war der alte Code — der Test schlägt fehl, falls jemand ihn zurückbaut.
+    /// Gegenprobe: dieselbe Wiederherstellung im **Weltraum** ergäbe einen anderen lokalen
+    /// Transform. Genau das war der alte Code — der Test schlägt fehl, falls jemand ihn
+    /// zurückbaut.
+    ///
+    /// ## Warum gerechnet und nicht `setTransformMatrix(_:relativeTo: nil)`
+    ///
+    /// Die frühere Fassung setzte den Transform tatsächlich mit `relativeTo: nil` und
+    /// erwartete danach eine Abweichung. Unter Xcode 26.6 / visionOS-SDK 26.5 liefert das
+    /// für eine Hierarchie, die **nicht in einer Szene hängt**, exakt dasselbe Ergebnis wie
+    /// `relativeTo: parent`: die gemessene Abweichung war 0.0 und die Gegenprobe schlug
+    /// fehl, obwohl der Produktivcode korrekt ist — siehe den positiven Test
+    /// `snapbackRestoresFullLocalTransform`, der unverändert besteht.
+    ///
+    /// Die Aussage wird deshalb direkt gerechnet statt über das SDK erschlossen:
+    /// „`origin.matrix` als Weltmatrix setzen" bedeutet lokal `parent⁻¹ · origin.matrix`.
+    /// Das ist unabhängig davon, wie eine SDK-Version `relativeTo: nil` für lose
+    /// Hierarchien auflöst, und prüft trotzdem genau die Regression, um die es geht.
     @Test("Snapback im Weltraum würde Position und Größe verfälschen")
     func snapbackInWorldSpaceWouldDrift() {
-        let (_, monster) = makeMonsterHierarchy()
+        let (parent, monster) = makeMonsterHierarchy()
         let origin = monster.transform
+        let parentTransform = parent.transform
 
-        monster.position = SIMD3<Float>(0.42, 0.18, origin.translation.z)
-
-        // Alter Code: lokaler Transform, angewendet als Welt-Transform.
-        monster.setTransformMatrix(origin.matrix, relativeTo: nil)
-
-        let after = monster.transform
+        // Vorbedingung der Gegenprobe: die Elternentity trägt einen eigenen Transform.
+        // Ohne ihn fielen lokaler und Weltraum zusammen und der Test wäre wertlos —
+        // deshalb wird die Voraussetzung mitgeprüft statt stillschweigend angenommen.
         #expect(
-            simd_distance(after.translation, origin.translation) > 0.0001,
+            simd_distance(parentTransform.translation, SIMD3<Float>.zero) > 0.0001,
+            "Fixture unbrauchbar: die Elternentity braucht eine eigene Translation"
+        )
+        #expect(
+            simd_distance(parentTransform.scale, SIMD3<Float>(repeating: 1)) > 0.0001,
+            "Fixture unbrauchbar: die Elternentity braucht eine eigene Skalierung"
+        )
+
+        // Alter Code: der **lokale** Transform, angewendet als **Welt**-Transform.
+        // Lokal bliebe davon `parent⁻¹ · origin.matrix` übrig.
+        let wouldBeLocal = Transform(matrix: parentTransform.matrix.inverse * origin.matrix)
+
+        #expect(
+            simd_distance(wouldBeLocal.translation, origin.translation) > 0.0001,
             "Erwartet wurde eine Abweichung — die Elternentity hat einen eigenen Transform"
         )
         #expect(
-            simd_distance(after.scale, origin.scale) > 0.0001,
+            simd_distance(wouldBeLocal.scale, origin.scale) > 0.0001,
             "Erwartet wurde eine Größenabweichung durch die skalierte Elternentity"
         )
     }

@@ -1,119 +1,223 @@
 # Projektlogbuch — Ticket Tamer
 
-**Stand:** Modul `013` — Integration, Zielpanels und Drop-Erkennung; Abschlussnachtests offen
-**Eingearbeitet am:** 2026-08-27
-**Branch laut Report:** `main`
-**Commit vor Modul 013:** `b94e0ed feat: add docs modul 11`
-**Modul-011-Commit:** `209aff2 feat:Modul011`
-**Modul-012:** bewusst ohne Codeänderung ausgelassen
-**Modul-013-Commit:** noch offen
-**Letzter bestätigter Build:** nach Fix 5 PASS
-**Build nach Fix 8:** offen
-**Testdeklarationen:** 208
-**Vollständiger Testlauf:** offen
+**Stand:** Modul `014` — Abschlussdokumentation und Cleanup, abgeschlossen
+**Eingearbeitet am:** 2026-08-28
+**Aktiver Branch:** `side`
+**HEAD:** `cc5a4a20c4cdfaa42ad33645d72d0f4cbb0a7439 — feat: Modul 13`
+**Modul-013-Commit:** `cc5a4a20c4cdfaa42ad33645d72d0f4cbb0a7439` — committed, identisch mit `origin/main`
+**Lokaler `main`:** `bdb444a6f05be1f912e713ec32e5db1b0821ae43` (hinter `origin/main`)
+**Modul-012:** bewusst ohne Codeänderung ausgelassen (F-17 ist Kann)
+**Build nach Fix 8:** **PASS** — Xcode 26.6, visionOS-SDK 26.5, Deployment Target 26.5, Simulator Apple Vision Pro 26.5 (230470)
+**Testlauf:** **208 von 208 bestanden**, 0 Failed, 0 Skipped, 3.682 s
 
-## Kernergebnis
+**Abschlussstatus: B — nicht vollständig abgabebereit. 15 von 16 Pflicht-AKs sind PASS.**
 
-Modul 013 ersetzt angenommene Geometriewerte durch Laufzeitmessung. Tatsächliches Volume und tatsächliche Monster-Bounds werden verwendet, Drag-Grenzen werden daraus berechnet, Prioritäts- und Teamziele sind flache 3D-Panels und ein Drop ist nur gültig, wenn mindestens 50 % der projizierten Monsterfläche auf dem Ziel liegen und die Z-Nähe passt.
+## Kernergebnis von Modul 014
 
-## Monsterintegration
+Der Fix-8-Stand wurde gebaut, die vollständige Testsuite ausgeführt und die offenen
+013-Nachtests im visionOS-Simulator nachgeholt. **Fix 8 ist real belegt:** der maximal
+erreichbare Überlappungsanteil liegt in beiden Phasen und für beide geprüften Assets bei
+0.650 gegen die Schwelle 0.50. Der Fehler aus dem Vor-Fix-8-Trace ist behoben.
 
-| Asset-ID | USDC |
+Die Testsuite läuft nach einer Korrektur an einer Gegenprobe **vollständig grün: 208 von
+208 in 10 Suiten**.
+
+Neu auf PASS gehoben — jeweils mit realer Evidenz: AK-05, AK-07, AK-08, AK-09, AK-10,
+AK-11, AK-12, AK-14, AK-16.
+
+**Offen geblieben ist allein AK-06:** das rote Monster wird in der Untersuchungsansicht
+abgeschnitten. Dazu der Gerätetest als dokumentiertes Abgaberisiko.
+
+## Gemessene Laufzeitwerte
+
+| Größe | Wert |
 |---|---|
-| `monster01` | `Monster_1_blue.usdc` |
-| `monster02` | `Monster_2_green.usdc` |
-| `monster03` | `Monster_3_yellow.usdc` |
-| `monster04` | `Monster_4_red.usdc` |
+| Volume | `0.282 × 0.236 × 0.235 m` |
+| Layoutebene | 384 × 320 pt, 1360 pt/m |
+| Panel Priorisierung | `0.067 × 0.089 × 0.020 m` / `0.067 × 0.087 × 0.020 m` |
+| Panel Teamzuordnung | `0.111 × 0.084 × 0.020 m` |
+| Max. erreichbarer Overlap | **0.650** für alle sieben Ziele |
+| Z-Abstand | `0.000 m` (valid) durchgehend |
 
-Gemessene Abmessungen nach `fit(toMaxExtent: 0.13)`:
+Gemessene Schwellenkurve: 0.470 / 0.479 / 0.482 → ungültig; 0.555 / 0.608 / 0.613 / 0.650
+→ gültig. Die Grenze liegt exakt bei 0.50.
 
-| Asset | Breite | Höhe | Tiefe |
-|---|---:|---:|---:|
-| monster01 | 0.070 | 0.130 | 0.073 |
-| monster02 | 0.045 | 0.130 | 0.052 |
-| monster03 | 0.098 | 0.130 | 0.091 |
-| monster04 | 0.070 | 0.130 | 0.088 |
+20 vollständige DROP-DEBUG-Traces: 16 × `INVALID -> Snapback`, 4 × `VALID`.
 
-Die USDA-Wrapper referenzieren die USDC-Dateien. Das Ticket-Mapping blieb unverändert.
+## Testlauf im Detail
 
-## AK-14
+**Erster Lauf:** 10 Suiten, 208 Tests, 207 bestanden. Neun Suiten grün,
+`PrioritizationPhaseTests` rot mit 2 Issues aus **einem** Test.
 
-Der Report bezeichnet die Dateien als echte Blender-USDC-Exporte und bestätigt ihre Darstellung im Simulator. `.blend`-Quelldateien liegen im geprüften Ordner nicht vor.
+**Zweiter Lauf nach der Korrektur (maßgeblich):** 208 von 208 bestanden, 0 Failed,
+0 Skipped, 3.682 s, alle zehn Suiten grün.
 
-Für den Abschluss muss deshalb weiterhin dokumentiert werden, wodurch „eigene Blender-Monster“ nachgewiesen sind. Außerdem fehlen noch der vollständige Gesten-Nachtest aller vier echten Meshes sowie die finale Skalierungs-/Orientierungsprüfung.
+Fehlschlagend: `Snapback im Weltraum würde Position und Größe verfälschen`
+(`Ticket_TamerTests.swift:1223` / `:1227`).
 
-**AK-14 bleibt OPEN.**
+Es ist eine **Gegenprobe**: sie soll belegen, dass der alte Code — lokaler Transform mit
+`relativeTo: nil` angewendet — das Monster verschöbe und verzerrte. `makeMonsterHierarchy()`
+gibt der Elternentity dafür bewusst `position = (0.5, −0.3, 0.1)` und `scale = 2`.
+Erwartet wird eine Abweichung > 0.0001, gemessen wurde **exakt 0.0**.
 
-## Neue Interaktionsarchitektur
+Bewertung: der positive Test `Snapback im lokalen Raum stellt Position, Rotation und Scale
+exakt wieder her` ist grün, und der Snapback wurde im Simulator ohne Drift geprüft. Unter
+Xcode 26.6 / visionOS-SDK 26.5 verhält sich `setTransformMatrix(_:relativeTo: nil)` für
+eine Hierarchie, die **nicht in einer Szene hängt**, offenbar wie `relativeTo: parent` —
+die Prämisse der Gegenprobe trägt nicht mehr.
 
-Neue Services:
+→ **Defekt im Test, nicht im Produkt.**
 
-- `Services/VolumeMetrics.swift`
-- `Services/DragBounds.swift`
-- `Services/MonsterDragGeometry.swift`
-- `Services/TargetPanelLayout.swift`
-- `Services/TargetPanelFactory.swift`
+**In Modul 014 korrigiert und verifiziert.** Die Gegenprobe wurde umgebaut, nicht entfernt: sie rechnet die
+Aussage jetzt direkt, statt sie über das SDK zu erschließen. „`origin.matrix` als
+Weltmatrix setzen" bedeutet lokal `parent⁻¹ · origin.matrix`:
 
-Geändert:
+```swift
+let wouldBeLocal = Transform(matrix: parentTransform.matrix.inverse * origin.matrix)
+```
 
-- `Services/PlanarDrag.swift`
-- `Services/DropEvaluator.swift`
-- `Components/DropTargetComponent.swift`
-- `Assets/MonsterAssetProvider.swift`
-- `Views/PrioritizationView.swift`
-- `Views/TeamAssignmentView.swift`
-- `Support/AppConstants.swift`
+Zusätzlich prüft der Test jetzt seine eigene Vorbedingung — dass die Elternentity
+überhaupt einen eigenen Transform trägt. Rechnerische Kontrolle mit den Fixture-Werten:
+Abweichung 0.307 (Translation) und 0.320 (Skalierung) gegen die Schwelle 0.0001. Testzahl
+unverändert 208.
 
-Abgelöst:
+Die Regressionsabsicherung bleibt erhalten: baut jemand den Snapback auf Weltraum zurück,
+schlägt der Test an — nur eben unabhängig davon, wie eine SDK-Version `relativeTo: nil`
+für lose Hierarchien auflöst.
 
-- `Views/Components/TargetFrameReporter.swift` liegt noch in `_abgeloest/` und soll beim Cleanup entfernt werden.
+**Verifiziert.** Der Wiederholungslauf bestätigt die Korrektur:
 
-## Geometrische Regeln
+```text
+✔ Test "Snapback im Weltraum würde Position und Größe verfälschen" passed after 2.572 seconds.
+✔ Suite PrioritizationPhaseTests passed after 3.676 seconds.
+✔ Test run with 208 tests in 10 suites passed after 3.682 seconds.
+```
 
-### Drag-Grenzen
+Der positive Gegenpart und `Fünf aufeinanderfolgende Snapbacks driften nicht` bestehen
+weiterhin. Die Regressionsabsicherung ist intakt.
 
-Sicherer Root-Bereich = gemessenes Volume minus gemessene Monsterhülle minus Sicherheitsrand.
+**Lehre:** Eine Gegenprobe, die ihre eigene Vorbedingung nicht mitprüft, kann still
+wertlos werden. Der Test verifiziert jetzt vorab, dass die Elternentity überhaupt einen
+eigenen Transform trägt.
 
-Ziel:
+## Ergebnisse der Nachtests
 
-- kein Clipping
-- asymmetrische Monster korrekt
-- keine Verwendung von `defaultSize` als reale Metergröße
+| Prüfung | Ergebnis |
+|---|---|
+| AK-06/07 Sichtprüfung Inhalte | PASS |
+| AK-08 Priorisierung, 10/25/48/55 % je Ziel | PASS |
+| AK-09 Teamzuordnung, 10/25/48/55 % je Ziel | PASS |
+| AK-10 Exactly-once, Snapback, Lock | PASS |
+| AK-11 Scoring 200/100/100/0 | PASS |
+| AK-12 beide Sounds, genau einmal | PASS |
+| Clipping Priorisierung/Teamzuordnung | PASS |
+| Clipping Untersuchungsansicht, rotes Monster | **OPEN** |
+| AK-16 fünf Neustarts | PASS |
+| Stabilität 1/2/6/12 Tickets | PASS |
+| Gerätetest Apple Vision Pro | **OPEN** |
 
-### Drop-Erkennung
+## AK-09 — geklärt
 
-Gültig nur wenn:
+**AK-09** stand zunächst auf OPEN, weil der Prüfeintrag für Konto, Software und Hardware
+beim 55-%-Fall abbrach (`55 %..`). Die Prüfung wurde vom Projektverantwortlichen als
+durchgeführt bestätigt; gestützt wird das durch zwei gültige Teamdrops im Log
+(`team_konto`, `team_software`) und alle vier Teamziele mit `erreichbar: ja` bei Overlap
+0.650. **AK-09: PASS.**
 
-1. projizierte Überlappung / Monsterfläche >= 0.50
-2. Oberflächenabstand in Z <= 0.05 m
+## AK-14, Teil Ownership — geklärt
 
-Zentrale Konstanten:
+Der Projektverantwortliche hat bestätigt, dass die vier Monster selbst erstellte
+Blender-Modelle sind. Damit ist die Herkunftsfrage durch die Erklärung des Autors
+beantwortet; ein Dateinachweis wird nicht verlangt. `.blend`-Quellen liegen nicht im
+Projektraum — für spätere Änderungen an den Modellen sollten sie an einem dokumentierten
+Ort abgelegt werden.
 
-| Konstante | Wert |
-|---|---:|
-| `minimumDropOverlapRatio` | 0.50 |
-| `dropDepthTolerance` | 0.05 m |
-| `dragSafetyPadding` | 0.02 m |
-| `targetPanelDepth` | 0.02 m |
-| `targetPanelGap` | 0.02 m |
-| `targetPanelHeightFactor` | 0.9 |
-| `targetPanelReachabilityHeadroom` | 0.15 |
-| `targetPanelMaximumHeightFraction` | 0.28 |
-| `targetPanelStandoff` | 0.01 m |
-| `targetHighlightScale` | 1.05 |
+## AK-14 — vollständig belegt
 
-## Gemessenes Simulator-Volume
+`monster01` und `monster02` wurden nachträglich durchgespielt. Alle vier Assets sind damit
+zur Laufzeit belegt:
 
-Trace vom 27.08.2026:
+| Asset | B | H | T | gemessen |
+|---|---:|---:|---:|---|
+| monster01 | 0.0643 | 0.1300 | 0.0709 | 28.08. |
+| monster02 | 0.0450 | 0.1300 | 0.0584 | 28.08. |
+| monster03 | 0.0708 | 0.1300 | 0.0732 | 27.08. |
+| monster04 | 0.0690 | 0.1300 | 0.0880 | 27.08. |
 
-- tatsächlich: `0.284 × 0.236 × 0.235 m`
-- deklariertes `defaultSize`: `1.0 × 1.0 × 0.4 m`
+`monster01` mit gültigem Drop in beiden Phasen (`VALID -> priority_wichtig` bei Overlap
+0.650, `VALID -> team_netzwerk` bei 0.595), `monster02` gezogen mit korrektem Snapback bei
+0.148 Overlap. Für jedes Asset melden alle drei Prioritäts- und alle vier Teamziele
+`Maximum reachable overlap: 0.650 | erreichbar: ja`. Höhe 0.1300 bei allen vier,
+`rot=(0.000, 0.000, 0.000, 1.000)` nach dem Wrapper.
 
-Entscheidung:
+**Nebenbefund:** Die Breitenmaße aus Modul 013 stimmten für `monster01` (0.070 statt
+0.0643) und `monster03` (0.098 statt 0.0708) nicht. Praktisch folgenlos, weil die
+Erreichbarkeit je Asset einzeln gemessen wurde — aber Zahlen aus 013 nicht ungeprüft
+weiterverwenden.
 
-`LayoutConstants.centralVolumeWidth/Height/Depth` dürfen nicht mehr als reale Geometriegrundlage verwendet werden.
+**AK-14: PASS.**
 
-## Fix-Historie
+## Der verbliebene offene Punkt
+
+### AK-06 — rotes Monster in der Untersuchungsansicht
+
+`monster04` / `Monster_4_red.usdc` wird dort zusammen mit dem Tickettext nicht vollständig
+korrekt dargestellt und teilweise abgeschnitten. Der Clipping-Schutz über `DragBounds`
+greift in den Zieh-Phasen und ist dort bestätigt; die Untersuchungsansicht zieht nicht,
+sie stellt nur dar. Zuständig sind `InvestigationView`, `ScaledToFitView` und die
+Einpassung über `MonsterAssetProvider.fit`.
+
+Weil „Monster sichtbar“ eine AK-06-Anforderung ist, steht AK-06 trotz bestandener
+Inhaltsprüfung auf OPEN.
+
+## Phase 6 — Z-Frame-Restpunkt: geprüft und geschlossen
+
+`local=(0, −0.02, 0.06)` → `world=(0, −0.02, 0.17765)`, konstant +0.1176 m in Z.
+
+Volume-Grenzen entstehen über `content.convert(_:from: .local, to: .scene)` im Raum der
+Szenenwurzel; Monster und Panels hängen über `content.add(_:)` genau dort. Weltkoordinaten
+werden in produktivem Code nirgends mit Volume-Grenzen verrechnet — sie erscheinen nur in
+`Raumprobe`, im DROP-DEBUG-Trace und in `DropEvaluator.evaluate(entity:targets:)`, das
+ausschließlich der `#if DEBUG`-Harness aufruft.
+
+→ Kein Fehler, keine Architekturänderung, keine neuen Regressiontests. Restpunkt
+geschlossen. Die irreführenden Kommentare („local und world müssen übereinstimmen“) wurden
+in beiden Views richtiggestellt — kein Verhalten geändert.
+
+Der Lauf bestätigt außerdem Fix 6: bei nicht zentriertem Z-Bereich (`minZ=0.000
+maxZ=0.235`) klemmt `effectiveMonsterPlaneZ` die Zieh-Ebene (`0.060 → 0.053` bzw. `0.064`),
+die Panels folgen, Z-Abstand bleibt 0.000.
+
+## Korrigierte Falschaussagen aus dem Altstand
+
+| bisherige Aussage | tatsächlich |
+|---|---|
+| Branch `main` | aktiv ist `side`; `origin/main` == HEAD von `side` |
+| Modul-013-Commit „offen“ | committed als `cc5a4a2 feat: Modul 13` |
+| 155 Tests | 208 Tests, alle bestanden |
+| Kugel-Platzhalter als aktuelle Monster | vier echte USDC-Meshes integriert |
+| Radius-/Column-/Nearest-Drop-Logik produktiv | **nicht** produktiv — nur DEBUG-Harness und Tests |
+| `defaultSize` = tatsächliches Volume | gemessen `0.282 × 0.236 × 0.235 m` |
+| F-17 = Highscore/Persistenz | F-17 = optionale Monsterreaktion (Kann) |
+| Ergebnis zeigt Ticketanzahl | `ResultView` zeigt nur Score und „Erneut spielen“ |
+| `incorrect.wav` fehlt/ungeprüft | vorhanden, hörbar geprüft, korrekt zugeordnet |
+| Build nach Fix 8 offen | PASS unter Xcode 26.6 / visionOS-SDK 26.5 |
+
+## Cleanup (Phase 14) — ausgeführt
+
+Entfernt: `_abgeloest/TargetFrameReporter.swift` samt Ordner,
+`.git/index.lock.stale-bitte-loeschen`, sechs `.DS_Store`.
+`.gitignore` ergänzt um `.DS_Store` und `rot-debug.txt`.
+
+Unter `Dokumentation/05_Aktueller-Stand/` liegen genau `Projekt-Stand.md` und
+`Logbuch-Stand.md`.
+
+`rot-debug.txt` wurde bewusst **nicht** gelöscht: der Trace stammt von 18:42/18:44 Uhr,
+`TargetPanelLayout.swift` wurde zuletzt um 18:59 Uhr geändert. Er zeigt den Zustand vor
+Fix 8 (erreichbarer Anteil 0.462/0.494) und ist damit die Ursachen-Evidenz für Fix 8 —
+aber **kein** Nachweis über den aktuellen Stand.
+
+## Fix-Historie (unverändert)
 
 1. Blender Z-up → RealityKit Y-up
 2. RealityView Dependency Tracking
@@ -122,89 +226,44 @@ Entscheidung:
 5. Konstanten korrekt nach Layout/Interaction getrennt
 6. Paneltiefe aus tatsächlicher geklemmter Zieh-Ebene
 7. DROP-DEBUG-Trace
-8. Panelhöhe so berechnet, dass die 50-%-Schwelle geometrisch erreichbar bleibt
+8. Panelhöhe so berechnet, dass die 50-%-Schwelle geometrisch erreichbar bleibt — **belegt**
 
-## Teststand
-
-Vor Interaktionsüberarbeitung: 155 Testdeklarationen.
-Aktuell: **208 Testdeklarationen**.
-
-Neu: 53 Tests, davon 34 in der Suite `Modul 013 — Zielpanels und 50-%-Drop`.
-
-Abgedeckt werden u. a.:
-
-- DragBounds für symmetrische/asymmetrische Monster
-- Punkt↔Meter-Abbildung
-- Panelraster
-- 10/25/<50/≥50-%-Kurve
-- freie Zwischenräume
-- höchstens ein gültiges Ziel
-- Z-Prüfung
-- Fix-6-Regression
-- Fix-8-Regression mit gemessenem Volume und allen vier Assets
-
-**Die 208 Tests wurden noch nicht ausgeführt.**
-
-## Korrigierte Pflicht-Abnahmematrix
+## Pflicht-Abnahmematrix (Stand Ende Modul 014)
 
 | AK | Inhalt | Status |
 |---|---|---|
 | AK-01 | Startansicht | PASS |
-| AK-02 | 12 lokale Tickets / Abdeckung | PASS |
+| AK-02 | 12 lokale Tickets | PASS |
 | AK-03 | Ticketdaten | PASS |
 | AK-04 | Sitzungsauswahl | PASS |
-| AK-05 | vollständiger linearer Ablauf, ein Volume | OPEN |
+| AK-05 | linearer Ablauf, ein Volume | PASS |
 | AK-06 | Untersuchungsansicht | OPEN |
-| AK-07 | Weiter zur Priorisierung | OPEN |
-| AK-08 | Priorisierung, alle drei Ziele | OPEN — Nachtest nach Fix 8 |
-| AK-09 | Teamzuordnung, alle vier Ziele | OPEN — Nachtest nach Fix 8 |
-| AK-10 | Invalid/Valid/Lock/Exactly-once | OPEN — Regression nach Fix 8 |
-| AK-11 | Scoring 200/100/100/0, genau einmal | OPEN |
-| AK-12 | beide Sounds, genau einmal | OPEN — `incorrect.wav` ungeprüft |
-| AK-13 | kein Lösungsfeedback + ~1,5 s | PASS, regressionsprüfen |
-| AK-14 | vier eigene Blender-Monster | OPEN |
-| AK-15 | nur Scorezahl + „Erneut spielen“ | PASS |
-| AK-16 | Reset, mindestens fünf Neustarts | OPEN |
+| AK-07 | Weiter zur Priorisierung | PASS |
+| AK-08 | Priorisierung, drei Ziele | PASS |
+| AK-09 | Teamzuordnung, vier Ziele | PASS |
+| AK-10 | Invalid/Valid/Lock/Exactly-once | PASS |
+| AK-11 | Scoring 200/100/100/0 | PASS |
+| AK-12 | beide Sounds, genau einmal | PASS |
+| AK-13 | kein Lösungsfeedback + ~1,5 s | PASS |
+| AK-14 | vier eigene Blender-Monster | PASS |
+| AK-15 | nur Score + „Erneut spielen“ | PASS |
+| AK-16 | Reset, fünf Neustarts | PASS |
 
-## Noch zwingend vor Modul 014
+## Bekanntes Restrisiko
 
-- Build nach Fix 8
-- vollständige 208 Tests
-- AK-06/07
-- AK-08/09 mit 10 %, 25 %, <50 %, >=50 %
-- alle vier Monsterassets
-- kein Clipping
-- Invalid-Drop Snapback ohne Drift
-- Exactly-once
-- Scoring 200/100/100/0
-- `incorrect.wav`
-- mindestens fünf Neustarts
-- 1-/2-/6-/12-Ticket-Sitzungen
-- Apple Vision Pro oder als offenes Risiko dokumentieren
-
-## Bekannter technischer Restpunkt
-
-Der Report nennt einen latenten Z-Frame-Versatz:
-
-`local=0.06 → world=0.178`
-
-Aktuell hebt er sich in Panel-Z und Clamp auf. Vor Abschluss prüfen, damit lokale und Scene-Koordinaten nicht später vermischt werden.
-
-## Cleanup vor 014
-
-Zu entfernen:
-
-- `_abgeloest/TargetFrameReporter.swift`
-- `.git/index.lock.stale-bitte-loeschen`
-
-## Git
-
-Vorgesehener Commit:
-
-`013: Integration, Zielpanels und Drop-Erkennung`
-
-Hash noch offen.
+Die Panelhöhe in der Teamphase liegt bei 0.084 m gegen eine geometrische Obergrenze von
+0.088 m — rund 4 mm Reserve. Bei Änderungen an Volumegröße, `targetPanelGap` oder
+`dragSafetyPadding` erneut prüfen.
 
 ## Nächster Schritt
 
-Erst die offenen 013-Nachtests abschließen. Danach `014-Eingangsprompt.md` ausführen. Modul 014 darf offene Nachweise nicht durch Dokumentation zu PASS erklären.
+Ein kurzes **Restpunkte-Modul**, kein weiteres Fachmodul:
+
+1. Rotes Monster in der Untersuchungsansicht korrigieren, Nachtest → AK-06 PASS
+2. Gerätetest, sofern Hardware verfügbar
+
+Mehr steht nicht offen. Nach Punkt 1 stehen **alle 16 Pflicht-AKs auf PASS** und nur der
+Gerätetest bleibt als bewusst dokumentiertes Abgaberisiko. Erst dann darf der
+Abschlussstatus von B auf A wechseln.
+
+Der Abstand zur Abgabebereitschaft beträgt **einen Darstellungsfehler**.

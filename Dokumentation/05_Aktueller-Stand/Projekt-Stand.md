@@ -3,7 +3,8 @@
 **Stand:** nach Restpunkte-Bearbeitung AK-06 — Fix implementiert, Nachtest ausstehend
 **Eingearbeitet am:** 2026-08-28
 **Aktiver Branch:** `side`
-**HEAD / `origin/main` / `main`:** `e8b289a` — feat: Modul 14
+**HEAD (`side`):** `b56179b` — Restpunkte: AK-06 Clippingfix (Nachtest ausstehend)
+**`origin/main` / `main`:** `e8b289a` — feat: Modul 14
 **Lokaler `main`:** auf `origin/main` angeglichen (Fast-Forward, keine History-Umschreibung)
 **`origin/side`:** `745d45e` — 8 Commits hinter `side`
 **Modul-014-Commit:** erledigt (`235262b`, `21456e7`, `e8b289a`)
@@ -198,7 +199,7 @@ Entfernt:
 ## Git
 
 - Abgabebranch: `main` = `origin/main` = `e8b289a`
-- Arbeitsbranch `side` zeigt auf denselben Commit und traegt die Fix-Aenderungen
+- Arbeitsbranch `side`: `b56179b` — traegt den AK-06-Fix, aufgesetzt auf `e8b289a`
 - lokaler `main` per Fast-Forward angeglichen
 - offen: `origin/side` nachziehen, falls `side` erhalten bleiben soll
 - offen: Fix nach erfolgreichem Nachtest nach `main` uebernehmen und pushen

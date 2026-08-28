@@ -5,7 +5,8 @@
 **Stand:** Restpunkte — AK-06-Fix implementiert, Nachtest ausstehend, **Abschlussstatus B**  
 **Eingearbeitet am:** 2026-08-28  
 **Aktiver Branch:** `side`  
-**HEAD / `origin/main` / `main`:** `e8b289a — feat: Modul 14`  
+**HEAD (`side`):** `b56179b` — Restpunkte: AK-06 Clippingfix (Nachtest ausstehend)  
+**`origin/main` / `main`:** `e8b289a — feat: Modul 14`  
 **`origin/side`:** `745d45e` — 8 Commits hinter `side`  
 **Lokaler main:** auf `origin/main` angeglichen (Fast-Forward)  
 **Modul-014-Commit:** erledigt  

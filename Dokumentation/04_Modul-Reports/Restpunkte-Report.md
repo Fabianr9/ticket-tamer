@@ -230,7 +230,8 @@ PASS gewertet.
 
 - **Abgabebranch:** `main`
 - **Stand vor diesem Fix:** `e8b289a` — feat: Modul 14 (identisch mit `origin/main` und `side`)
-- **Fix-Commit:** siehe Git-Historie auf `side`; nach erfolgreichem Nachtest nach `main` uebernehmen
+- **Fix-Commit:** `b56179b` auf `side` — Restpunkte: AK-06 Clippingfix (Nachtest ausstehend)
+- Nach erfolgreichem Nachtest nach `main` uebernehmen und pushen
 - Working Tree vor dem Fix: sauber
 
 ## Abschlussstatus

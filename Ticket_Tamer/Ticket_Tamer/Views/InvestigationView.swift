@@ -28,6 +28,12 @@ struct InvestigationView: View {
     /// Enthält den Ladefehler, falls der Monster-Load fehlgeschlagen ist.
     @State private var monsterLoadError: MonsterAssetProvider.LoadError? = nil
 
+    /// Gemessener Quader des Monster-Panels (Restpunkt AK-06).
+    ///
+    /// Nil, solange noch keine brauchbare Messung vorliegt; die Einpassung faellt dann
+    /// auf die bisherige Schaetzung zurueck.
+    @State private var framing: InvestigationFraming? = nil
+
     // MARK: - Body
 
     var body: some View {
@@ -91,9 +97,11 @@ struct InvestigationView: View {
 
     /// Zeigt das Monster mittig im zugewiesenen Bereich, vollständig und unverzerrt.
     ///
-    /// - Parameter availableSize: Vom Layout zugewiesene Panelfläche in Punkten.
-    ///   Wird zusammen mit `LayoutConstants.monsterPanelDepth` in einen physischen
-    ///   Rahmen umgerechnet, in den das Modell eingepasst wird.
+    /// Der reale Panelquader wird gemessen (`measurePanel(proxy:content:)`), nicht
+    /// gerechnet. `availableSize` dient nur noch der Rueckfallebene im ersten
+    /// Layoutdurchlauf.
+    ///
+    /// - Parameter availableSize: Vom Layout zugewiesene Panelflaeche in Punkten.
     @ViewBuilder
     private func monsterPanel(availableSize: CGSize) -> some View {
         if isLoadingMonster {
@@ -106,15 +114,23 @@ struct InvestigationView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if let entity = monsterEntity {
-            RealityView { content in
-                fitMonster(entity, into: availableSize)
-                content.add(entity)
-            } update: { _ in
-                // Fenster- oder Layoutänderung: Einpassung neu berechnen.
-                fitMonster(entity, into: availableSize)
+            // `GeometryReader3D` liefert den tatsaechlichen Rahmen des Panels; zusammen
+            // mit `content.convert(_:from:to:)` ergibt sich daraus der reale Quader in
+            // Metern. Groesse und Position des Monsters leiten sich allein daraus ab.
+            GeometryReader3D { proxy in
+                RealityView { content in
+                    measurePanel(proxy: proxy, content: content)
+                    fitMonster(entity, fallback: availableSize)
+                    content.add(entity)
+                } update: { content in
+                    // Fenster- oder Layoutaenderung: neu messen, neu einpassen.
+                    measurePanel(proxy: proxy, content: content)
+                    fitMonster(entity, fallback: availableSize)
+                }
             }
-            // Ohne explizite Tiefe hätte die RealityView praktisch keine Z-Ausdehnung
-            // und würde Modellteile vor/hinter der Ebene beschneiden.
+            // Ohne explizite Tiefe haette die RealityView praktisch keine Z-Ausdehnung
+            // und wuerde Modellteile vor/hinter der Ebene beschneiden. Wieviel Tiefe
+            // real gewaehrt wird, misst `measurePanel(proxy:content:)`.
             .frame(depth: LayoutConstants.monsterPanelDepth)
         } else if monsterLoadError != nil {
             VStack(spacing: LayoutConstants.investigationCardSpacing) {
@@ -146,52 +162,117 @@ struct InvestigationView: View {
         }
     }
 
+    // MARK: - Panel vermessen (Restpunkt AK-06)
+
+    /// Misst den tatsaechlichen Quader des Monster-Panels in Szenen-Metern.
+    ///
+    /// Wird beim Aufbau **und** bei jedem `RealityView`-Update aufgerufen, damit eine
+    /// Groessenaenderung des Volumes sofort in die Einpassung einfliesst. Zustand wird
+    /// nur geschrieben, wenn sich die Messung geaendert hat — sonst entstuende eine
+    /// Update-Schleife.
+    ///
+    /// Die Entity wird per `content.add(_:)` an dieselbe Szenenwurzel gehaengt;
+    /// `entity.position` und die gemessene Box beschreiben deshalb denselben Raum.
+    private func measurePanel(proxy: GeometryProxy3D, content: RealityViewContent) {
+        let localFrame = proxy.frame(in: .local)
+        let panel = content.convert(localFrame, from: .local, to: .scene)
+        let measured = InvestigationFraming(panel: panel)
+
+        guard measured.isUsable, framing != measured else { return }
+
+        DebugManager.log(
+            .spawning,
+            "Monster-Panel gemessen: " + measured.debugSummary(
+                assumedDepth: Float(LayoutConstants.monsterPanelDepth)
+            )
+        )
+
+        Task { @MainActor in
+            framing = measured
+        }
+    }
+
     // MARK: - Monster einpassen (Framing)
 
-    /// Skaliert und positioniert das Monster so, dass es vollständig im Panel liegt.
+    /// Skaliert und positioniert das Monster so, dass es vollstaendig im Panel liegt.
     ///
     /// Warum dynamisch statt fester Faktor: die vier Blender-Exporte haben unterschiedliche
-    /// Rohmaße. Ein konstanter `scale` (früher 0.2) ergibt deshalb je Asset eine andere
-    /// physische Größe — ein Monster passte, ein anderes ragte über die Panelgrenzen hinaus
-    /// und wurde von der `RealityView` beschnitten.
+    /// Rohmasse. Ein konstanter `scale` (frueher 0.2) ergibt deshalb je Asset eine andere
+    /// physische Groesse — ein Monster passte, ein anderes ragte ueber die Panelgrenzen
+    /// hinaus und wurde von der `RealityView` beschnitten.
     ///
-    /// Vorgehen:
-    /// 1. Verfügbaren Quader aus Panelbreite, Panelhöhe und `monsterPanelDepth` bilden,
-    ///    abzüglich `monsterFramingInset` als Sicherheitsrand zu allen Begrenzungen.
-    /// 2. Die *größte* Modellausdehnung auf die *kleinste* Quaderkante abbilden —
-    ///    erledigt `MonsterAssetProvider.fit(_:toMaxExtent:)` über `visualBounds`.
-    ///    Ein einziger Faktor für X, Y und Z ⇒ keine Streckung, keine Verzerrung.
-    /// 3. Modell mittig setzen und so weit nach vorne schieben, wie die Tiefe es zulässt.
-    private func fitMonster(_ entity: Entity, into availableSize: CGSize) {
-        // 1. Verfügbarer Quader in Metern, abzüglich Sicherheitsrand.
-        // `layoutPointsPerMeter` statt `pointsPerMeter`: letzterer steuert die Empfindlichkeit
-        // der Zieh-Geste und ist dafür eingestellt, wie sich die Interaktion anfühlt. Für die
-        // Umrechnung einer Panelfläche in Meter ist die am Simulator kalibrierte Größe der
-        // SwiftUI-Ebene maßgeblich. Mit dem falschen Wert wurde das Monster auf 0.08 m statt
-        // 0.24 m eingepasst — dreimal zu klein.
-        let inset = 1 - LayoutConstants.monsterFramingInset
-        let widthMeters = Float(availableSize.width / LayoutConstants.layoutPointsPerMeter) * inset
-        let heightMeters = Float(availableSize.height / LayoutConstants.layoutPointsPerMeter) * inset
-        let depthMeters = Float(LayoutConstants.monsterPanelDepth) * inset
+    /// Warum **gemessen** statt gerechnet (Restpunkt AK-06): der verfuegbare Quader wurde
+    /// bisher aus `layoutPointsPerMeter` und `monsterPanelDepth` geschaetzt. Beide Werte
+    /// beschreiben das Panel nicht: der erste ist gegen eine Volume-Hoehe von 0.8 m
+    /// kalibriert (heute 1.0 m), der zweite ist das *angeforderte*, nicht das gewaehrte
+    /// Tiefenmass in einem nur 0.4 m tiefen Volume. Da `fit(_:toMaxExtent:)` die
+    /// **groesste** Modellausdehnung auf die Grenze abbildet, traf der Fehler zuerst das
+    /// Asset, dessen groesste Ausdehnung in der Tiefe liegt — sichtbar als Anschnitt bei
+    /// `monster04`. `InvestigationFraming` ersetzt beide Annahmen durch die Messung aus
+    /// `measurePanel(proxy:content:)`.
+    ///
+    /// Solange keine brauchbare Messung vorliegt (erster Layoutdurchlauf), greift die
+    /// bisherige Schaetzung als Rueckfallebene — nie Nullwerte.
+    ///
+    /// - Parameters:
+    ///   - entity: Der Wrapper aus `MonsterAssetProvider.loadMonster(assetID:)`.
+    ///   - fallback: Vom 2D-Layout zugewiesene Panelflaeche in Punkten, nur fuer die
+    ///     Rueckfallebene.
+    private func fitMonster(_ entity: Entity, fallback availableSize: CGSize) {
+        let inset = LayoutConstants.monsterFramingInset
+        let cap = LayoutConstants.monsterTargetSize
 
-        // Kleinste Kante begrenzt; zusätzlich durch die gewünschte Zielgröße gedeckelt.
-        let limit = min(
-            min(widthMeters, heightMeters),
-            min(depthMeters, LayoutConstants.monsterTargetSize)
-        )
+        // 1. Zielmass bestimmen — bevorzugt aus der Messung, unter Beruecksichtigung
+        //    der tatsaechlichen Modellausdehnungen (dieselbe Quelle, die auch
+        //    `MonsterAssetProvider.fit(_:toMaxExtent:)` verwendet).
+        let modelExtents = entity.visualBounds(recursive: true, relativeTo: entity).extents
+
+        let limit: Float
+        if let framing {
+            limit = framing.maxExtent(forModelExtents: modelExtents, inset: inset, cap: cap)
+        } else {
+            limit = estimatedMaxExtent(for: availableSize, inset: inset, cap: cap)
+        }
 
         guard limit > 0 else { return }
 
         // 2. Proportional einpassen (idempotent — misst ohne die eigene Skalierung).
+        //    Ein einziger Faktor fuer X, Y und Z ⇒ keine Streckung, keine Verzerrung.
         let fittedExtents = MonsterAssetProvider.fit(entity, toMaxExtent: limit)
 
-        // 3. Zentrieren und so weit nach vorne schieben, wie die halbe Tiefe abzüglich
-        //    der halben Modelltiefe es erlaubt — sonst würde das Modell vorne anstoßen.
-        let maxForward = max((depthMeters - fittedExtents.z) / 2, 0)
-        let forward = min(LayoutConstants.monsterForwardOffset, maxForward)
-        entity.position = SIMD3<Float>(0, 0, forward)
+        // 3. In die Panelmitte setzen und nur so weit nach vorne schieben, wie die
+        //    nutzbare Tiefe abzueglich der Modelltiefe es erlaubt.
+        let desiredForward = LayoutConstants.monsterForwardOffset
+        if let framing {
+            entity.position = framing.position(
+                desiredForward: desiredForward,
+                fittedDepth: fittedExtents.z,
+                inset: inset
+            )
+        } else {
+            let depthMeters = Float(LayoutConstants.monsterPanelDepth) * (1 - inset)
+            let maxForward = max((depthMeters - fittedExtents.z) / 2, 0)
+            entity.position = SIMD3<Float>(0, 0, min(desiredForward, maxForward))
+        }
 
-        DebugManager.log(.spawning, "Monster-Panel: limit=\(limit), z=\(forward)")
+        DebugManager.log(
+            .spawning,
+            "Monster-Panel: limit=\(limit), pos=\(entity.position), gemessen=\(framing != nil)"
+        )
+    }
+
+    /// Rueckfallebene: Zielmass aus der 2D-Panelflaeche schaetzen.
+    ///
+    /// Ausschliesslich fuer den ersten Layoutdurchlauf, bevor `measurePanel` einen
+    /// brauchbaren Quader geliefert hat. Bewusst unveraendert gegenueber dem bisherigen
+    /// Verhalten, damit die Rueckfallebene kein neues Risiko einfuehrt.
+    private func estimatedMaxExtent(for availableSize: CGSize, inset: Float, cap: Float) -> Float {
+        let factor = 1 - inset
+        let widthMeters = Float(availableSize.width / LayoutConstants.layoutPointsPerMeter) * factor
+        let heightMeters = Float(availableSize.height / LayoutConstants.layoutPointsPerMeter) * factor
+        let depthMeters = Float(LayoutConstants.monsterPanelDepth) * factor
+
+        return min(min(widthMeters, heightMeters), min(depthMeters, cap))
     }
 
     // MARK: - Monster laden

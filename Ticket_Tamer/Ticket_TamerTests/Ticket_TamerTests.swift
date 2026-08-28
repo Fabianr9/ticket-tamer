@@ -3216,3 +3216,223 @@ struct TargetPanelAndOverlapTests {
         #expect(LayoutConstants.targetPanelHeightFactor > InteractionConstants.minimumDropOverlapRatio)
     }
 }
+
+// MARK: - Restpunkt AK-06 — Einpassung im gemessenen Monster-Panel
+
+/// Belegt die Ursache des Clippings in der Untersuchungsansicht und sichert den Fix ab.
+///
+/// Die Tests rechnen bewusst gegen das **gemessene** Volume aus dem Simulatorlog vom
+/// 27.08. (0.284 x 0.236 x 0.235 m) und nicht gegen die deklarierten
+/// `LayoutConstants.centralVolume*` (1.0 x 1.0 x 0.4 m). Genau diese Diskrepanz ist der
+/// Kern des Fehlers.
+@Suite("Restpunkt AK-06 — Einpassung im gemessenen Monster-Panel")
+struct InvestigationFramingTests {
+
+    // MARK: - Messwerte
+
+    /// Das im Simulator gemessene Volume, identisch zur Rekonstruktion aus Modul 013.
+    private var measuredVolume: BoundingBox {
+        BoundingBox(min: SIMD3<Float>(-0.142, -0.1176, 0.0), max: SIMD3<Float>(0.142, 0.1184, 0.2348))
+    }
+
+    /// Rohausdehnungen der vier Assets, normiert auf die groesste Kante = 1.
+    ///
+    /// Abgeleitet aus den in `Modul 013` dokumentierten Huellen nach `fit(toMaxExtent: 0.13)`.
+    /// Da `fit(_:toMaxExtent:)` proportional skaliert, ist das Verhaeltnis der Achsen
+    /// skalierungsinvariant — genau darauf kommt es hier an.
+    private var normalizedModelExtents: [(name: String, extents: SIMD3<Float>)] {
+        [
+            ("monster01", SIMD3<Float>(0.0702, 0.130, 0.0728) / 0.130),
+            ("monster02", SIMD3<Float>(0.0450, 0.130, 0.0516) / 0.130),
+            ("monster03", SIMD3<Float>(0.0982, 0.130, 0.0910) / 0.130),
+            ("monster04", SIMD3<Float>(0.0700, 0.130, 0.0880) / 0.130),
+        ]
+    }
+
+    /// Plausible Panelquader der Untersuchungsansicht innerhalb des gemessenen Volumes.
+    ///
+    /// Das Panel ist die linke Spalte eines `HStack`; die Ticketkarte belegt
+    /// `investigationCardWidthFraction` der Breite. Die exakte Kante liefert erst die
+    /// Messung zur Laufzeit — deshalb wird hier ueber eine Spanne plausibler Quader
+    /// geprueft statt gegen einen einzelnen geratenen Wert.
+    private var candidatePanels: [(name: String, panel: BoundingBox)] {
+        let volume = measuredVolume
+        let monsterFraction = Float(1 - LayoutConstants.investigationCardWidthFraction)
+
+        return [0.85, 1.0].flatMap { (margin: Float) -> [(String, BoundingBox)] in
+            let width = volume.extents.x * monsterFraction * margin
+            let height = volume.extents.y * margin
+            let depth = volume.extents.z * margin
+            let centerX = volume.min.x + width / 2
+
+            return [(
+                "Panel \(monsterFraction) x \(margin)",
+                BoundingBox(
+                    min: SIMD3<Float>(centerX - width / 2, volume.center.y - height / 2, volume.center.z - depth / 2),
+                    max: SIMD3<Float>(centerX + width / 2, volume.center.y + height / 2, volume.center.z + depth / 2)
+                )
+            )]
+        }
+    }
+
+    // MARK: - Ursachenbeleg
+
+    @Test("Das bisherige Zielmass 0.24 m passt in keinen realen Panelquader")
+    func previousTargetSizeDoesNotFitTheMeasuredPanel() {
+        // `monsterTargetSize` (0.24 m) lag ueber jeder Kante des gemessenen Volumes
+        // (0.284 x 0.236 x 0.235 m) — im schmalen Monster-Panel erst recht.
+        // Genau deshalb wurde beschnitten.
+        for candidate in candidatePanels {
+            let usable = InvestigationFraming(panel: candidate.panel)
+                .usableExtents(inset: LayoutConstants.monsterFramingInset)
+            let smallestEdge = min(usable.x, min(usable.y, usable.z))
+
+            #expect(
+                LayoutConstants.monsterTargetSize > smallestEdge,
+                "\(candidate.name): 0.24 m waere hier bereits passend gewesen"
+            )
+        }
+    }
+
+    @Test("Die alte Schaetzung ueberschaetzt den verfuegbaren Raum deutlich")
+    func theOldEstimateOverstatesTheAvailableSpace() {
+        // `layoutPointsPerMeter` (417) ist laut eigener Dokumentation gegen eine
+        // Volume-Hoehe von 0.8 m kalibriert; `centralVolumeHeight` betraegt 1.0 m.
+        // Zusaetzlich ist `monsterPanelDepth` (0.34 m) groesser als die gemessene
+        // Volume-Tiefe ueberhaupt.
+        #expect(Float(LayoutConstants.monsterPanelDepth) > measuredVolume.extents.z)
+    }
+
+    // MARK: - Kein Clipping mehr
+
+    @Test("Jedes Asset bleibt in jedem Panelquader vollstaendig innerhalb")
+    func everyAssetStaysInsideEveryPanel() {
+        let inset = LayoutConstants.monsterFramingInset
+        let cap = LayoutConstants.monsterTargetSize
+
+        for candidate in candidatePanels {
+            let framing = InvestigationFraming(panel: candidate.panel)
+            #expect(framing.isUsable, "\(candidate.name) sollte messbar sein")
+
+            let usable = framing.usableExtents(inset: inset)
+
+            for model in normalizedModelExtents {
+                let limit = framing.maxExtent(forModelExtents: model.extents, inset: inset, cap: cap)
+                #expect(limit > 0, "\(candidate.name)/\(model.name): kein Zielmass")
+
+                // Ein einziger Faktor fuer alle Achsen — keine Verzerrung.
+                let largest = max(model.extents.x, max(model.extents.y, model.extents.z))
+                let scale = limit / largest
+                let fitted = model.extents * scale
+
+                #expect(fitted.x <= usable.x + 0.0001, "\(candidate.name)/\(model.name) Breite")
+                #expect(fitted.y <= usable.y + 0.0001, "\(candidate.name)/\(model.name) Hoehe")
+                #expect(fitted.z <= usable.z + 0.0001, "\(candidate.name)/\(model.name) Tiefe")
+
+                // Und die Huelle liegt vollstaendig im Panel — inklusive Vorschub.
+                let position = framing.position(
+                    desiredForward: LayoutConstants.monsterForwardOffset,
+                    fittedDepth: fitted.z,
+                    inset: inset
+                )
+                let hull = BoundingBox(min: position - fitted / 2, max: position + fitted / 2)
+
+                #expect(hull.min.x >= candidate.panel.min.x - 0.0001, "\(candidate.name)/\(model.name) links")
+                #expect(hull.max.x <= candidate.panel.max.x + 0.0001, "\(candidate.name)/\(model.name) rechts")
+                #expect(hull.min.y >= candidate.panel.min.y - 0.0001, "\(candidate.name)/\(model.name) unten")
+                #expect(hull.max.y <= candidate.panel.max.y + 0.0001, "\(candidate.name)/\(model.name) oben")
+                #expect(hull.min.z >= candidate.panel.min.z - 0.0001, "\(candidate.name)/\(model.name) hinten")
+                #expect(hull.max.z <= candidate.panel.max.z + 0.0001, "\(candidate.name)/\(model.name) vorne")
+            }
+        }
+    }
+
+    @Test("Das Monster sitzt horizontal und vertikal in der Panelmitte")
+    func theMonsterIsCenteredInThePanel() {
+        // Bisher wurde hart auf (0, 0, forward) gesetzt — das trifft die Panelmitte nur,
+        // wenn der Szenenursprung im Panelzentrum liegt. Das Panel ist aber die linke
+        // Spalte eines HStack.
+        for candidate in candidatePanels {
+            let framing = InvestigationFraming(panel: candidate.panel)
+            let position = framing.position(
+                desiredForward: LayoutConstants.monsterForwardOffset,
+                fittedDepth: 0.05,
+                inset: LayoutConstants.monsterFramingInset
+            )
+
+            #expect(abs(position.x - candidate.panel.center.x) < 0.0001, "\(candidate.name) X")
+            #expect(abs(position.y - candidate.panel.center.y) < 0.0001, "\(candidate.name) Y")
+            #expect(position.z >= candidate.panel.center.z, "\(candidate.name) Z nicht nach hinten")
+        }
+    }
+
+    // MARK: - Raumausnutzung
+
+    @Test("Die modellbewusste Einpassung nutzt mehr Raum als die konservative Variante")
+    func modelAwareFittingUsesMoreSpaceThanTheConservativeVariant() {
+        let inset = LayoutConstants.monsterFramingInset
+        let cap = LayoutConstants.monsterTargetSize
+
+        for candidate in candidatePanels {
+            let framing = InvestigationFraming(panel: candidate.panel)
+            let conservative = framing.maxExtent(inset: inset, cap: cap)
+
+            for model in normalizedModelExtents {
+                let aware = framing.maxExtent(forModelExtents: model.extents, inset: inset, cap: cap)
+                #expect(
+                    aware >= conservative - 0.0001,
+                    "\(candidate.name)/\(model.name): \(aware) < \(conservative)"
+                )
+            }
+        }
+    }
+
+    @Test("Der Deckel begrenzt die groesste Kante auch in grossen Panels")
+    func theCapLimitsTheLargestEdgeInLargePanels() {
+        let generous = BoundingBox(min: SIMD3<Float>(repeating: -1), max: SIMD3<Float>(repeating: 1))
+        let framing = InvestigationFraming(panel: generous)
+
+        for model in normalizedModelExtents {
+            let limit = framing.maxExtent(
+                forModelExtents: model.extents,
+                inset: LayoutConstants.monsterFramingInset,
+                cap: LayoutConstants.monsterTargetSize
+            )
+            #expect(limit <= LayoutConstants.monsterTargetSize + 0.0001, model.name)
+        }
+    }
+
+    // MARK: - Rueckfallebene
+
+    @Test("Eine leere Messung gilt nicht als brauchbar")
+    func anEmptyMeasurementIsNotUsable() {
+        let empty = InvestigationFraming(panel: BoundingBox())
+        #expect(empty.isUsable == false)
+
+        let flat = InvestigationFraming(
+            panel: BoundingBox(min: SIMD3<Float>(0, 0, 0), max: SIMD3<Float>(0.2, 0.2, 0.0))
+        )
+        #expect(flat.isUsable == false)
+    }
+
+    @Test("Unbrauchbare Modellmasse fallen auf die konservative Variante zurueck")
+    func unusableModelExtentsFallBackToTheConservativeVariant() {
+        let framing = InvestigationFraming(panel: candidatePanels[0].panel)
+        let inset = LayoutConstants.monsterFramingInset
+        let cap = LayoutConstants.monsterTargetSize
+
+        #expect(
+            framing.maxExtent(forModelExtents: SIMD3<Float>(repeating: 0), inset: inset, cap: cap)
+                == framing.maxExtent(inset: inset, cap: cap)
+        )
+    }
+
+    @Test("Gleiche Messung ist gleich — verhindert die Update-Schleife")
+    func equalMeasurementsCompareEqual() {
+        let panel = candidatePanels[0].panel
+        #expect(InvestigationFraming(panel: panel) == InvestigationFraming(panel: panel))
+
+        let shifted = BoundingBox(min: panel.min + SIMD3<Float>(0.01, 0, 0), max: panel.max)
+        #expect(InvestigationFraming(panel: panel) != InvestigationFraming(panel: shifted))
+    }
+}

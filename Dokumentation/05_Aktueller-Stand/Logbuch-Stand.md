@@ -1,18 +1,65 @@
 # Projektlogbuch — Ticket Tamer
 
-> Einziger aktueller Logbuch-Stand nach Einarbeitung von Modul 014.
+> Einziger aktueller Logbuch-Stand nach Einarbeitung der Restpunkte-Bearbeitung.
 
-**Stand:** Modul `014` — Abschlussdokumentation und Cleanup abgeschlossen, **Abschlussstatus B**  
+**Stand:** Restpunkte — AK-06-Fix implementiert, Nachtest ausstehend, **Abschlussstatus B**  
 **Eingearbeitet am:** 2026-08-28  
-**Aktiver Branch laut Report:** `side`  
-**HEAD:** `cc5a4a20c4cdfaa42ad33645d72d0f4cbb0a7439 — feat: Modul 13`  
-**origin/main:** identisch mit HEAD  
-**Lokaler main:** `bdb444a6f05be1f912e713ec32e5db1b0821ae43 — fix: position` und hinter `origin/main`  
-**Modul-014-Commit:** noch offen  
-**Finaler Build des Fix-8-Stands:** PASS  
-**Tests:** **208/208 bestanden**, 10 Suites, 0 Failed, 0 Skipped  
+**Aktiver Branch:** `side`  
+**HEAD / `origin/main` / `main`:** `e8b289a — feat: Modul 14`  
+**`origin/side`:** `745d45e` — 8 Commits hinter `side`  
+**Lokaler main:** auf `origin/main` angeglichen (Fast-Forward)  
+**Modul-014-Commit:** erledigt  
+**Letzter belegter Build:** PASS (Modul 014)  
+**Letzter belegter Testlauf:** **208/208 bestanden**, 10 Suites, 0 Failed, 0 Skipped  
+**Nach dem Fix erwartet:** 217 Tests / 11 Suites — **noch nicht gelaufen**  
 **Pflicht-AKs:** **15 PASS / 1 OPEN**  
 **Offenes Pflicht-AK:** AK-06
+
+## Restpunkte-Bearbeitung (2026-08-28)
+
+### Git-Korrektur
+
+Der bis Modul 014 dokumentierte Git-Stand war **falsch**. Real: Modul 014 ist bereits
+committed, HEAD steht auf `e8b289a`, der Working Tree war sauber. Der lokale `main`
+(`bdb444a`) lag 10 Commits zurueck und wurde per Fast-Forward auf `origin/main`
+angeglichen — keine History-Umschreibung. Erneut eine verwaiste `.git/index.lock`
+entfernt.
+
+**Abgabebranch: `main`.**
+
+### AK-06 — Ursache isoliert
+
+Nicht assetbedingt, sondern eine Annahme gegen eine vorhandene Messung:
+`InvestigationView` berechnete den verfuegbaren Quader aus `layoutPointsPerMeter` (417,
+gegen 0.8 m Volume-Hoehe kalibriert; heute 1.0 m) und `monsterPanelDepth` (0.34 m, das
+angeforderte statt des gewaehrten Masses). Das gemessene Volume betraegt jedoch
+**0.284 x 0.236 x 0.235 m** — die angenommene Panel-Tiefe ist groesser als die gemessene
+Volume-Tiefe ueberhaupt. Das Zielmass fiel damit stets auf den Deckel 0.24 m, der ueber
+jeder Kante des realen Volumes liegt. Beschneiden war unvermeidbar.
+
+Sichtbar wurde es zuerst bei `monster04`, weil `fit(_:toMaxExtent:)` die **groesste**
+Modellausdehnung auf die Grenze abbildet und diese Achse je Export verschieden ist.
+
+Zweite Fehlerquelle an derselben Stelle: die Position war hart `(0, 0, forward)` und traf
+die Mitte der linken `HStack`-Spalte nicht.
+
+### AK-06 — Fix
+
+Neu: `Services/InvestigationFraming.swift` — misst den realen Panelquader
+(`GeometryReader3D` + `content.convert(_:from: .local, to: .scene)`) und passt das Monster
+modellbewusst ein: groesster gemeinsamer Faktor ueber alle drei Achsen, positioniert auf
+die gemessene Panelmitte. Die bisherige Schaetzung bleibt Rueckfallebene. Keine neue
+Magic Number, keine Aenderung an Drag-/Drop-Geometrie, Scoring, Audio oder Flow.
+
+Ergaenzt: 9 Tests in der Suite „Restpunkt AK-06 — Einpassung im gemessenen Monster-Panel".
+
+### Nicht erledigt
+
+Build, Testsuite, Simulatornachweis und Regression **wurden nicht ausgefuehrt** — Xcode und
+visionOS-Simulator standen in dieser Sitzung nicht zur Verfuegung. AK-06 bleibt deshalb
+OPEN. Kein Ergebnis wurde erfunden.
+
+Details: `Dokumentation/04_Modul-Reports/Restpunkte-Report.md`
 
 ## Abschlussstatus
 
@@ -21,7 +68,9 @@
 Es bleibt genau ein offener Pflichtpunkt:
 
 **AK-06 — Untersuchungsansicht:**  
-Der fachliche Inhalt der Ansicht ist vollständig und korrekt, aber `monster04` / `Monster_4_red.usdc` wird in der Untersuchungsansicht teilweise abgeschnitten.
+Der fachliche Inhalt der Ansicht ist vollständig und korrekt. Der Clippingfehler bei
+`monster04` / `Monster_4_red.usdc` ist am Code behoben, der Nachtest im Simulator steht
+jedoch aus. Ohne Build-, Test- und Simulatornachweis bleibt AK-06 OPEN.
 
 Zusätzlich ist der Apple-Vision-Pro-Gerätetest nicht durchgeführt. Er wird als hardwareabhängiges Abgaberisiko dokumentiert und nicht als PASS erfunden.
 
@@ -161,7 +210,7 @@ AK-05 und AK-16 = PASS.
 | AK-03 | PASS |
 | AK-04 | PASS |
 | AK-05 | PASS |
-| AK-06 | **OPEN** |
+| AK-06 | **OPEN — Fix implementiert, Nachtest ausstehend** |
 | AK-07 | PASS |
 | AK-08 | PASS |
 | AK-09 | PASS |
@@ -246,10 +295,12 @@ Vor Abgabe zwingend klären:
 
 ## Restpunkt vor finalem Status A
 
-1. roten Monster-Clippingfehler in der Untersuchungsansicht beheben
-2. AK-06 nachtesten
-3. AK-Matrix, Projekt-Stand und Logbuch gemeinsam aktualisieren
-4. Modul-014-/Restpunkte-Commit dokumentieren
-5. optional Vision-Pro-Gerätetest, falls Hardware verfügbar
+1. ~~roten Monster-Clippingfehler in der Untersuchungsansicht beheben~~ — **erledigt am Code**
+2. AK-06 nachtesten — **offen** (Xcode-Build, Testsuite, alle vier Assets im Simulator)
+3. Regression Start → Untersuchung → Priorisierung → Team → Ergebnis → Reset — **offen**
+4. AK-Matrix, Projekt-Stand und Logbuch nach dem Nachtest final setzen
+5. Fix nach `main` übernehmen und pushen; `origin/side` nachziehen
+6. optional Vision-Pro-Gerätetest, falls Hardware verfügbar
 
-Nach erfolgreichem Punkt 1–3 kann der Pflichtstatus auf **16/16 PASS** wechseln.
+Nach erfolgreichem Punkt 2–3 kann der Pflichtstatus auf **16/16 PASS** und der
+Abschlussstatus auf **A** wechseln.

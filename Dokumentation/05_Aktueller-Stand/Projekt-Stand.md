@@ -1,6 +1,6 @@
 # Projekt-Stand — Ticket Tamer
 
-**Stand:** nach Restpunkte-Bearbeitung AK-06 — Fix implementiert, Nachtest ausstehend
+**Stand:** nach Restpunkte-Bearbeitung AK-06 — Fix implementiert, Build und Tests gruen, Simulatornachweis ausstehend
 **Eingearbeitet am:** 2026-08-28
 **Aktiver Branch:** `side`
 **HEAD (`side`):** `b56179b` — Restpunkte: AK-06 Clippingfix (Nachtest ausstehend)
@@ -8,8 +8,8 @@
 **Lokaler `main`:** auf `origin/main` angeglichen (Fast-Forward, keine History-Umschreibung)
 **`origin/side`:** `745d45e` — 8 Commits hinter `side`
 **Modul-014-Commit:** erledigt (`235262b`, `21456e7`, `e8b289a`)
-**Build:** PASS (Stand Modul 014; nach dem AK-06-Fix noch nicht erneut gebaut)
-**Tests:** 208/208 PASS (Stand Modul 014); 9 Tests ergaenzt, **erwartet 217**, Lauf ausstehend
+**Build:** **PASS** (nach dem AK-06-Fix)
+**Tests:** **217/217 PASS**, 11 Suites, 0 Failed, 0 Skipped, 0.418 s
 **Abschlussstatus:** **B — nicht vollstaendig abgabebereit**
 
 ## Korrektur des dokumentierten Git-Stands
@@ -49,22 +49,25 @@ Bestaetigt funktionsfaehig:
 
 Offen:
 
-- AK-06: Fix implementiert, **Nachtest im Simulator ausstehend**
+- AK-06: Fix implementiert, Build und Tests gruen, **visueller Simulatornachweis ausstehend**
 - Apple Vision Pro Geraetetest (hardwareabhaengiges Restrisiko)
 
 ## Teststand
 
 | Kennzahl | Wert |
 |---|---:|
-| Tests (letzter belegter Lauf) | 208 |
-| Suites | 10 |
-| Passed | 208 |
+| Tests | **217** |
+| Suites | **11** |
+| Passed | **217** |
 | Failed | 0 |
 | Skipped | 0 |
 | Plattform | arm64-apple-xros1.0-simulator |
-| Laufzeit | 3.682 s |
-| Neu ergaenzt | 9 |
-| Erwartet nach dem Fix | 217 / 11 Suites — **noch nicht gelaufen** |
+| Laufzeit | 0.418 s |
+
+Vorher 208 / 10 Suites. Neu: Suite „Restpunkt AK-06 — Einpassung im gemessenen
+Monster-Panel" mit 9 Tests. Zwei davon belegen die Ursache numerisch (0.24 m passt in
+keinen realen Panelquader; die angenommene Paneltiefe uebersteigt die gemessene
+Volume-Tiefe). Keine Regression in den vorbestehenden 208 Tests.
 
 ## Finale AK-Matrix
 
@@ -75,7 +78,7 @@ Offen:
 | AK-03 | PASS |
 | AK-04 | PASS |
 | AK-05 | PASS |
-| AK-06 | **OPEN — Fix implementiert, Nachtest ausstehend** |
+| AK-06 | **OPEN — Fix implementiert, Build/Tests gruen, Sichtpruefung ausstehend** |
 | AK-07 | PASS |
 | AK-08 | PASS |
 | AK-09 | PASS |
@@ -206,10 +209,11 @@ Entfernt:
 
 ## Naechster Schritt
 
-1. Xcode-Build und vollstaendige Testsuite ausfuehren, reale Zahlen eintragen
+1. ~~Xcode-Build und vollstaendige Testsuite~~ — **erledigt: PASS, 217/217**
 2. Untersuchungsansicht mit allen vier Assets im Simulator pruefen, `spawning`-Log mitschneiden
 3. Regression Start → Untersuchung → Priorisierung → Team → Ergebnis → Reset
 4. Bei PASS: AK-Matrix auf 16/16, Abschlussstatus A, Fix nach `main`
-5. Optional: Apple-Vision-Pro-Geraetetest
+5. `origin/side` nachziehen
+6. Optional: Apple-Vision-Pro-Geraetetest
 
 Details: `Dokumentation/04_Modul-Reports/Restpunkte-Report.md`

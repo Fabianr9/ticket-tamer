@@ -2,7 +2,7 @@
 
 > Einziger aktueller Logbuch-Stand nach Einarbeitung der Restpunkte-Bearbeitung.
 
-**Stand:** Restpunkte — AK-06-Fix implementiert, Nachtest ausstehend, **Abschlussstatus B**  
+**Stand:** Restpunkte — AK-06-Fix implementiert, Build und Tests gruen, Sichtpruefung ausstehend, **Abschlussstatus B**  
 **Eingearbeitet am:** 2026-08-28  
 **Aktiver Branch:** `side`  
 **HEAD (`side`):** `b56179b` — Restpunkte: AK-06 Clippingfix (Nachtest ausstehend)  
@@ -10,9 +10,8 @@
 **`origin/side`:** `745d45e` — 8 Commits hinter `side`  
 **Lokaler main:** auf `origin/main` angeglichen (Fast-Forward)  
 **Modul-014-Commit:** erledigt  
-**Letzter belegter Build:** PASS (Modul 014)  
-**Letzter belegter Testlauf:** **208/208 bestanden**, 10 Suites, 0 Failed, 0 Skipped  
-**Nach dem Fix erwartet:** 217 Tests / 11 Suites — **noch nicht gelaufen**  
+**Build nach dem AK-06-Fix:** **PASS**  
+**Testlauf nach dem AK-06-Fix:** **217/217 bestanden**, 11 Suites, 0 Failed, 0 Skipped, 0.418 s  
 **Pflicht-AKs:** **15 PASS / 1 OPEN**  
 **Offenes Pflicht-AK:** AK-06
 
@@ -54,11 +53,24 @@ Magic Number, keine Aenderung an Drag-/Drop-Geometrie, Scoring, Audio oder Flow.
 
 Ergaenzt: 9 Tests in der Suite „Restpunkt AK-06 — Einpassung im gemessenen Monster-Panel".
 
+### Verifikation
+
+Build **PASS**, Testsuite **217/217 PASS** (11 Suites, 0 Failed, 0 Skipped, 0.418 s) —
+vom Projektverantwortlichen in Xcode ausgefuehrt und nachgetragen. Alle 9 neuen Tests gruen,
+keine Regression in den vorbestehenden 208.
+
+Zwei davon belegen die Ursache **numerisch**: 0.24 m passt in keinen realen Panelquader, und
+die angenommene Paneltiefe (0.34 m) uebersteigt die gemessene Volume-Tiefe (0.235 m).
+
+Ein Zwischenfehler wurde behoben: `#expect` erwartet als zweiten Parameter ein `Comment?` —
+ein `String`-Property konvertiert nicht implizit, nur String-Literale. Zusaetzlich
+`@MainActor` auf der neuen Suite wegen der Default-MainActor-Isolation des Projekts.
+
 ### Nicht erledigt
 
-Build, Testsuite, Simulatornachweis und Regression **wurden nicht ausgefuehrt** — Xcode und
-visionOS-Simulator standen in dieser Sitzung nicht zur Verfuegung. AK-06 bleibt deshalb
-OPEN. Kein Ergebnis wurde erfunden.
+Der **visuelle Simulatornachweis** fuer alle vier Assets und die **Regression durch den
+Spielfluss** stehen aus. Die Tests belegen die Rechnung, nicht das Bild. AK-06 bleibt
+deshalb OPEN. Kein Ergebnis wurde erfunden.
 
 Details: `Dokumentation/04_Modul-Reports/Restpunkte-Report.md`
 
@@ -70,8 +82,9 @@ Es bleibt genau ein offener Pflichtpunkt:
 
 **AK-06 — Untersuchungsansicht:**  
 Der fachliche Inhalt der Ansicht ist vollständig und korrekt. Der Clippingfehler bei
-`monster04` / `Monster_4_red.usdc` ist am Code behoben, der Nachtest im Simulator steht
-jedoch aus. Ohne Build-, Test- und Simulatornachweis bleibt AK-06 OPEN.
+`monster04` / `Monster_4_red.usdc` ist am Code behoben, Build und Testsuite sind gruen.
+Es fehlt die Sichtpruefung aller vier Assets in der Untersuchungsansicht — bis dahin
+bleibt AK-06 OPEN.
 
 Zusätzlich ist der Apple-Vision-Pro-Gerätetest nicht durchgeführt. Er wird als hardwareabhängiges Abgaberisiko dokumentiert und nicht als PASS erfunden.
 
@@ -211,7 +224,7 @@ AK-05 und AK-16 = PASS.
 | AK-03 | PASS |
 | AK-04 | PASS |
 | AK-05 | PASS |
-| AK-06 | **OPEN — Fix implementiert, Nachtest ausstehend** |
+| AK-06 | **OPEN — Fix implementiert, Build/Tests gruen, Sichtpruefung ausstehend** |
 | AK-07 | PASS |
 | AK-08 | PASS |
 | AK-09 | PASS |
@@ -297,7 +310,7 @@ Vor Abgabe zwingend klären:
 ## Restpunkt vor finalem Status A
 
 1. ~~roten Monster-Clippingfehler in der Untersuchungsansicht beheben~~ — **erledigt am Code**
-2. AK-06 nachtesten — **offen** (Xcode-Build, Testsuite, alle vier Assets im Simulator)
+2. AK-06 nachtesten — Build **PASS**, Suite **217/217 PASS**; alle vier Assets im Simulator **offen**
 3. Regression Start → Untersuchung → Priorisierung → Team → Ergebnis → Reset — **offen**
 4. AK-Matrix, Projekt-Stand und Logbuch nach dem Nachtest final setzen
 5. Fix nach `main` übernehmen und pushen; `origin/side` nachziehen

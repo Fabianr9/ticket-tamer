@@ -4,7 +4,8 @@
 > dokumentiert den finalen Git-/Abgabestand.
 
 **Erstellt am:** 2026-08-28
-**Abschlussstatus:** **B — nicht vollstaendig abgabebereit** (Verifikation offen, siehe „Offene Verifikation")
+**Aktualisiert am:** 2026-08-28 — Build und Testsuite nachgetragen
+**Abschlussstatus:** **B — nicht vollstaendig abgabebereit** (Simulatornachweis offen)
 
 ## Zusammenfassung
 
@@ -15,9 +16,10 @@ dieselbe Messmethode (`GeometryReader3D` + `content.convert(_:from:to:)`) und pa
 Monster modellbewusst in den gemessenen Panelquader ein. Der Git-Stand wurde bereinigt:
 der lokale `main` steht jetzt auf dem Abgabestand.
 
-**Build, Testsuite und Simulatornachweis stehen aus** — sie erfordern Xcode und den
-visionOS-Simulator und konnten in dieser Sitzung nicht ausgefuehrt werden. AK-06 bleibt
-deshalb formal OPEN, bis der Nachtest vorliegt. Kein Ergebnis wurde erfunden.
+**Build PASS. Testsuite 217/217 PASS.** Beides nachtraeglich vom Projektverantwortlichen
+in Xcode ausgefuehrt und hier eingetragen. Es fehlt noch der **visuelle Simulatornachweis**
+fuer alle vier Assets sowie die Regression durch den Spielfluss. AK-06 bleibt deshalb formal
+OPEN. Kein Ergebnis wurde erfunden.
 
 ## Git
 
@@ -143,45 +145,72 @@ Nicht angefasst: `ScaledToFitView.swift`, `MonsterAssetProvider.swift`, `AppCons
 Das Projekt nutzt `PBXFileSystemSynchronizedRootGroup` (objectVersion 77) — die neue Datei
 wird von Xcode automatisch in das Target aufgenommen, keine `project.pbxproj`-Aenderung noetig.
 
-## Offene Verifikation
+## Verifikationsstand
 
-Diese Sitzung hatte **keinen Zugriff auf Xcode oder den visionOS-Simulator**. Folgende
-Punkte des Restpunkte-Prompts sind daher **nicht** erledigt und duerfen nicht als bestanden
-gewertet werden:
+| Schritt | Status |
+|---|---|
+| 2 — Fehler im Simulator reproduzieren | offen |
+| 5 — alle vier Assets nachtesten | **offen** |
+| 6 — AK-06 vollstaendig nachtesten | **offen** |
+| 7 — Regression Start → Untersuchung → Priorisierung → Team → Ergebnis → Reset | **offen** |
+| 8 — vollstaendige Testsuite | **PASS — 217/217** |
+| 9 — finaler Build | **PASS** |
 
-| Schritt | Status | Wer |
-|---|---|---|
-| 2 — Fehler im Simulator reproduzieren | **offen** | Projektverantwortlicher |
-| 5 — alle vier Assets nachtesten | **offen** | Projektverantwortlicher |
-| 6 — AK-06 vollstaendig nachtesten | **offen** | Projektverantwortlicher |
-| 7 — Regression Start → Untersuchung → Priorisierung → Team → Ergebnis → Reset | **offen** | Projektverantwortlicher |
-| 8 — vollstaendige Testsuite | **offen** | Projektverantwortlicher |
-| 9 — finaler Build | **offen** | Projektverantwortlicher |
+Ein Zwischenfehler wurde dabei behoben: `#expect` erwartet als zweiten Parameter ein
+`Comment?`. Ein `String`-Property konvertiert nicht implizit — nur String-Literale (auch
+mit Interpolation) tun das. Betraf `theCapLimitsTheLargestEdgeInLargePanels()`.
+Zusaetzlich `@MainActor` auf der neuen Suite, weil die `Equatable`-Konformanz von
+`InvestigationFraming` unter der Default-MainActor-Isolation des Projekts main-actor-isoliert
+ist. Commit `1222cd3`.
 
 ## Build
 
-**Nicht ausgefuehrt.** Kein Xcode in dieser Sitzung. Letzter belegter Build: Modul 014, PASS
-(Xcode 26.6, visionOS SDK 26.5, Simulator Apple Vision Pro visionOS 26.5).
+**PASS.** Xcode, Ziel Apple Vision Pro (visionOS-Simulator). Der Testlauf setzt einen
+erfolgreichen Build voraus.
+
+Verbleibende Warnungen sind Bestand aus frueheren Modulen und wurden bewusst nicht in
+diesem Restpunkt angefasst:
+
+- `MonsterAssetProvider` — main-actor-isolierte statische Property `allIDs` aus nonisolated Kontext
+- `MonsterAssetProvider` — `Entity.load` in asynchronem Kontext nicht verfuegbar
+- `TicketCardView` — `+` fuer `Text` ab iOS 26.0 deprecated
+- `RootVolumeView` — `default` wird nie erreicht
+- `Ticket` — main-actor-isolierte `Equatable`-Konformanz
 
 ## Tests
 
-**Nicht ausgefuehrt.**
+**PASS.**
 
-- Letzter belegter Lauf: **208/208 PASS**, 10 Suites, 0 Failed, 0 Skipped, 3.682 s
-- Neu ergaenzt: 9 Tests in einer neuen Suite
-- **Erwartung: 217 Tests / 11 Suites.** Die tatsaechliche Zahl ist nach dem Lauf einzutragen.
+| Kennzahl | Wert |
+|---|---:|
+| Tests | **217** |
+| Suites | **11** |
+| Passed | **217** |
+| Failed | 0 |
+| Skipped | 0 |
+| Laufzeit | 0.418 s |
+| Plattform | `arm64-apple-xros1.0-simulator` |
+| Testing Library | 1902 |
 
-Die neuen Tests pruefen:
+Vorher: 208 Tests / 10 Suites. Neu: Suite „Restpunkt AK-06 — Einpassung im gemessenen
+Monster-Panel" mit 9 Tests, alle gruen:
 
-- dass `monsterTargetSize` (0.24 m) in keinem realen Panelquader Platz hatte — Ursachenbeleg
-- dass `monsterPanelDepth` (0.34 m) groesser ist als die gemessene Volume-Tiefe (0.235 m)
-- dass alle vier Assets in jedem plausiblen Panelquader vollstaendig innerhalb bleiben
-- dass die Huelle inklusive Vorschub das Panel in keiner Achse verlaesst
-- dass horizontal und vertikal auf die Panelmitte positioniert wird
-- dass ein einziger Skalierungsfaktor fuer alle Achsen gilt (keine Verzerrung)
-- dass der Deckel in grossen Volumes greift
-- dass leere Messungen und unbrauchbare Modellmasse sauber zurueckfallen
-- dass gleiche Messungen gleich vergleichen (verhindert die Update-Schleife)
+- `Das bisherige Zielmass 0.24 m passt in keinen realen Panelquader` — Ursachenbeleg
+- `Die alte Schaetzung ueberschaetzt den verfuegbaren Raum deutlich` — Ursachenbeleg
+- `Jedes Asset bleibt in jedem Panelquader vollstaendig innerhalb`
+- `Das Monster sitzt horizontal und vertikal in der Panelmitte`
+- `Die modellbewusste Einpassung nutzt mehr Raum als die konservative Variante`
+- `Der Deckel begrenzt die groesste Kante auch in grossen Panels`
+- `Eine leere Messung gilt nicht als brauchbar`
+- `Unbrauchbare Modellmasse fallen auf die konservative Variante zurueck`
+- `Gleiche Messung ist gleich — verhindert die Update-Schleife`
+
+Damit ist die Ursachenanalyse **numerisch belegt**, nicht nur hergeleitet: die beiden
+Ursachentests wuerden fehlschlagen, wenn 0.24 m in den realen Panelquader passte oder die
+angenommene Paneltiefe die gemessene Volume-Tiefe nicht ueberschritte.
+
+Keine Regression: alle 208 vorbestehenden Tests weiterhin gruen, insbesondere die
+Drag-/Drop-Suiten aus Modul 013.
 
 ## Simulatornachweis alle vier Monster
 
@@ -238,25 +267,27 @@ PASS gewertet.
 
 ### B — Nicht vollstaendig abgabebereit
 
-Begruendung: AK-06 ist am Code behoben, aber **nicht nachgetestet**. Ohne Build,
-Testsuite und Simulatornachweis waere ein Wechsel auf Status A eine unbelegte Behauptung.
+Begruendung: AK-06 ist am Code behoben, Build und Testsuite sind gruen — aber der
+**visuelle Nachweis in der Untersuchungsansicht fehlt**. Die Tests belegen die Rechnung,
+nicht das Bild. Ohne Sichtpruefung aller vier Assets waere ein Wechsel auf Status A eine
+unbelegte Behauptung.
 
 Zusaetzlich offen als separates Restrisiko: **Apple-Vision-Pro-Geraetetest**.
 
 Status A ist erreicht, sobald:
 
-1. Build PASS,
-2. vollstaendige Suite PASS (erwartet 217/217),
-3. alle vier Monster in der Untersuchungsansicht vollstaendig sichtbar,
-4. Ticketinhalt vollstaendig sichtbar, keine Referenzwerte,
-5. Regression Start → Untersuchung → Priorisierung → Team → Ergebnis → Reset unauffaellig.
+1. ~~Build PASS~~ — **erledigt**
+2. ~~vollstaendige Suite PASS~~ — **erledigt, 217/217**
+3. alle vier Monster in der Untersuchungsansicht vollstaendig sichtbar — **offen**
+4. Ticketinhalt vollstaendig sichtbar, keine Referenzwerte — **offen**
+5. Regression Start → Untersuchung → Priorisierung → Team → Ergebnis → Reset — **offen**
 
 ## Empfehlung fuer den naechsten Schritt
 
-1. In Xcode bauen und die Suite laufen lassen; die reale Testzahl in diesen Report eintragen.
-2. Untersuchungsansicht mit allen vier Tickets/Assets im Simulator pruefen und die
-   `spawning`-Logzeile mitschneiden — sie belegt die Ursache mit echten Zahlen.
+1. Untersuchungsansicht mit allen vier Tickets/Assets im Simulator pruefen und die
+   `spawning`-Logzeile mitschneiden — sie belegt die Ursache mit echten Laufzeitzahlen.
+2. Regression durch den Spielfluss: Start → Untersuchung → Priorisierung → Team → Ergebnis → Reset.
 3. Bei PASS: AK-Matrix auf 16/16, Abschlussstatus A, Fix nach `main` uebernehmen und pushen.
-4. `origin/side` nachziehen, falls `side` erhalten bleiben soll.
+4. `origin/side` nachziehen — liegt derzeit hinter `side`.
 5. Optional: `LayoutConstants.layoutPointsPerMeter` und `monsterPanelDepth` als „nur noch
    Rueckfallebene" kennzeichnen — sie beschreiben die Laufzeit nachweislich nicht.

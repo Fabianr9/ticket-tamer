@@ -3225,6 +3225,7 @@ struct TargetPanelAndOverlapTests {
 /// 27.08. (0.284 x 0.236 x 0.235 m) und nicht gegen die deklarierten
 /// `LayoutConstants.centralVolume*` (1.0 x 1.0 x 0.4 m). Genau diese Diskrepanz ist der
 /// Kern des Fehlers.
+@MainActor
 @Suite("Restpunkt AK-06 — Einpassung im gemessenen Monster-Panel")
 struct InvestigationFramingTests {
 
@@ -3398,7 +3399,7 @@ struct InvestigationFramingTests {
                 inset: LayoutConstants.monsterFramingInset,
                 cap: LayoutConstants.monsterTargetSize
             )
-            #expect(limit <= LayoutConstants.monsterTargetSize + 0.0001, model.name)
+            #expect(limit <= LayoutConstants.monsterTargetSize + 0.0001, "\(model.name)")
         }
     }
 

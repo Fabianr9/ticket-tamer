@@ -22,11 +22,8 @@ struct InvestigationView: View {
     /// Geladene Monster-Entity. Nil während Ladevorgang oder bei Fehler.
     @State private var monsterEntity: Entity? = nil
 
-    /// Zeigt an, dass ein Ladevorgang läuft.
-    @State private var isLoadingMonster: Bool = false
-
-    /// Enthält den Ladefehler, falls der Monster-Load fehlgeschlagen ist.
-    @State private var monsterLoadError: MonsterAssetProvider.LoadError? = nil
+    /// Rein lokaler Lade-/Retry-Zustand; enthaelt keinen fachlichen Sitzungszustand.
+    @State private var monsterLoadRecovery = MonsterLoadRecovery()
 
     /// Gemessener Quader des Monster-Panels (Restpunkt AK-06).
     ///
@@ -118,7 +115,7 @@ struct InvestigationView: View {
     /// - Parameter availableSize: Vom Layout zugewiesene Panelflaeche in Punkten.
     @ViewBuilder
     private func monsterPanel(availableSize: CGSize) -> some View {
-        if isLoadingMonster {
+        if monsterLoadRecovery.isLoading {
             VStack(spacing: LayoutConstants.investigationCardSpacing) {
                 ProgressView()
                     .controlSize(.large)
@@ -146,7 +143,7 @@ struct InvestigationView: View {
             // und wuerde Modellteile vor/hinter der Ebene beschneiden. Wieviel Tiefe
             // real gewaehrt wird, misst `measurePanel(proxy:content:)`.
             .frame(depth: LayoutConstants.monsterPanelDepth)
-        } else if monsterLoadError != nil {
+        } else if monsterLoadRecovery.hasError {
             VStack(spacing: LayoutConstants.investigationCardSpacing) {
                 Image(systemName: "exclamationmark.triangle")
                     .font(.title)
@@ -154,6 +151,10 @@ struct InvestigationView: View {
                 Text("investigation.error.monsterLoad")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                Button("monsterLoad.retry") {
+                    loadMonster(for: model.currentTicket)
+                }
+                .disabled(monsterLoadRecovery.isLoading)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
@@ -291,30 +292,27 @@ struct InvestigationView: View {
 
     // MARK: - Monster laden
 
-    private func loadMonster(for ticket: Ticket) {
-        guard !isLoadingMonster else { return }
-        isLoadingMonster = true
-        monsterLoadError = nil
+    private func loadMonster(for ticket: Ticket?) {
+        guard let ticket, monsterLoadRecovery.begin(assetID: ticket.monsterAssetId) else { return }
+        DebugManager.log(.spawning, "Monster-Retry/Laden gestartet: \(ticket.monsterAssetId)")
         monsterEntity = nil
 
         Task {
             do {
                 let entity = try await MonsterAssetProvider.loadMonster(assetID: ticket.monsterAssetId)
                 monsterEntity = entity
-                DebugManager.log(.spawning, "Monster bereit fuer Anzeige: \(ticket.monsterAssetId)")
-            } catch let error as MonsterAssetProvider.LoadError {
-                monsterLoadError = error
+                monsterLoadRecovery.finishSuccessfully()
+                DebugManager.log(.spawning, "Monster-Retry/Laden erfolgreich: \(ticket.monsterAssetId)")
             } catch {
-                monsterLoadError = .entityLoadFailed(ticket.monsterAssetId)
+                monsterLoadRecovery.finishWithFailure()
+                DebugManager.log(.spawning, "Monster-Retry/Laden fehlgeschlagen: \(ticket.monsterAssetId) – \(error.localizedDescription)")
             }
-            isLoadingMonster = false
         }
     }
 
     private func resetMonster() {
         monsterEntity = nil
-        isLoadingMonster = false
-        monsterLoadError = nil
+        monsterLoadRecovery.reset()
     }
 }
 

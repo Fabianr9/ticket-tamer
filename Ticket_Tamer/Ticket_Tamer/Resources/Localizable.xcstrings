@@ -181,6 +181,18 @@
         }
       }
     },
+    "monsterLoad.retry" : {
+      "comment" : "Aktion zum erneuten Laden des aktuellen Monsters nach einem Ladefehler (Modul 019, F-23).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erneut laden"
+          }
+        }
+      }
+    },
     "investigation.error.noTicket" : {
       "comment" : "Fallback-Text, wenn kein aktives Ticket im SessionModel vorhanden ist (Modul 006).",
       "extractionState" : "manual",

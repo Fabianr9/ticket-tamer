@@ -1,254 +1,152 @@
 # Projektlogbuch — Ticket Tamer
 
-> Einziger aktueller Logbuch-Stand nach Einarbeitung von Modul 017 für Version 1.1.
-
-**Projektversion:** v1.1 in Arbeit  
-**v1.0:** abgeschlossen  
-**Stand:** nach Modul `017` — Startseiten-Usability  
-**Eingearbeitet am:** 2026-09-02  
-**Branch laut 017-Report:** `side`  
-**HEAD vor Modul 017:** `0d25719` (`fix: Modul 16`)  
-**Modul-016-Commit:** `8d60045 feat: Modul 16`  
-**Modul-016-Layoutfix:** `0d25719 fix: Modul 16`  
-**Modul-017-Commit:** noch nicht erzeugt  
-**Testdeklarationen vor 017:** 246  
-**Testdeklarationen nach 017:** 261  
-**Build/Test/Simulator nach 017:** offen
-
-## Versionsgrundsatz
-
-Version 1.0 bleibt fachlich abgeschlossen. Version 1.1 ergänzt ausschließlich F-18 bis F-24.
-
-Unverändert geschützt bleiben:
-
-- `SessionModel` als einzige fachliche Source of Truth,
-- Scoring,
-- Audio,
-- Exactly-once,
-- 1,5-Sekunden-Feedbackflow,
-- Drop-Regeln,
-- DragBounds,
-- Z-Toleranz,
-- Snapback,
-- Ticketdaten,
-- Monster-Asset-Mapping,
-- Ergebnisansicht,
-- Resetlogik.
+**Projektversion:** v1.1 in Arbeit
+**v1.0:** abgeschlossen
+**Stand:** nach Modul `019` — Ladefehler-Recovery
+**Eingearbeitet am:** 2026-09-02
+**Branch laut 019-Preflight:** `A`
+**HEAD vor Modul 019:** `de7e4d6` (`feat: Modul 18`)
+**Modul-017-Commit:** `6dbd2ba feat: Modul 17`
+**Modul-018-Commit:** `de7e4d6 feat: Modul 18`
+**Testdeklarationen vor 019:** 278
+**Testdeklarationen nach 019:** 298
+**Build/Test/Simulator nach 019:** offen
 
 ## v1.1-Modulstatus
 
 | Modul | Titel | Anforderungen | Status |
 |---|---|---|---|
-| 015 | Session-HUD und Interaktionshinweise | F-18, F-20 | implementiert; Commit `afe4bce`; Laufzeitabnahme offen |
-| 016 | Kompakte Ticketinfo | F-19 | implementiert; Commit `8d60045` + Fix `0d25719`; Laufzeitabnahme offen |
-| 017 | Startseiten-Usability | F-22, F-24 | implementiert; statisch geprüft; Build/Test/Simulator offen; Commit offen |
-| 018 | Visuelles Entscheidungsfeedback | F-21 | als Nächstes |
-| 019 | Ladefehler-Recovery | F-23 | offen |
+| 015 | Session-HUD und Interaktionshinweise | F-18, F-20 | implementiert; Laufzeitabnahme offen |
+| 016 | Kompakte Ticketinfo | F-19 | implementiert; Laufzeitabnahme offen |
+| 017 | Startseiten-Usability | F-22, F-24 | implementiert; Commit `6dbd2ba`; Laufzeitabnahme offen |
+| 018 | Visuelles Entscheidungsfeedback | F-21 | implementiert; Commit `de7e4d6`; Laufzeitabnahme offen |
+| 019 | Ladefehler-Recovery | F-23 | implementiert; statisch geprüft; Build/Test/Simulator offen; Commit offen |
 | 020 | Integration und Abnahme v1.1 | F-18 bis F-24 | offen |
 
-## Eingearbeiteter Stand Modul 017
-
-### Startseitenbeschreibung
-
-Direkt unter `Ticket Tamer` steht exakt:
-
-`Untersuche Support-Tickets und ordne die Monster einer Priorität und einem Team zu.`
-
-Es wurde kein Tutorial, Popover oder persistenter Tutorialzustand ergänzt.
-
-### Ticketanzahl-Steuerung
-
-Die Startansicht enthält jetzt:
-
-- Minus-Button,
-- bestehenden Slider,
-- Plus-Button,
-- sichtbare Zahl.
-
-Alle vier Elemente verwenden ausschließlich:
-
-`SessionModel.selectedTicketCount`
-
-Keine lokale Kopie, kein ViewModel, keine Persistenz.
-
-### Minus-Semantik
-
-- aktueller Wert > 1 → genau -1
-- bei 1 → Button tatsächlich `disabled`
-
-Accessibility:
-
-`Ein Ticket weniger`
-
-### Plus-Semantik
-
-- aktueller Wert < 12 → genau +1
-- bei 12 → Button tatsächlich `disabled`
-
-Accessibility:
-
-`Ein Ticket mehr`
-
-### Slider
-
-Der vorhandene Slider bleibt erhalten und nutzt weiterhin denselben Modellwert.
-
-### Reset
-
-`SessionModel.reset()` bleibt unverändert und setzt:
-
-`selectedTicketCount = 6`
-
-Damit zeigen nach „Erneut spielen“:
-
-- Slider 6,
-- Zahl 6,
-- Minus enabled,
-- Plus enabled.
-
-## Dateien Modul 017
-
-Geändert:
-
-- `Views/StartView.swift`
-- `Support/AppConstants.swift`
-- `Resources/Localizable.xcstrings`
-- `Ticket_TamerTests/Ticket_TamerTests.swift`
+## Stand Modul 018
 
 Neu:
 
-- `017-Report.md`
+- `Views/Components/DecisionFeedbackView.swift`
 
-Nicht geändert:
+Neue Darstellungssemantik:
 
-- `SessionModel`
-- `ResultView`
+```text
+DecisionFeedbackResult
+- correct
+- incorrect
+- init?(evaluation: Bool?)
+```
+
+Richtig:
+
+- grüner Haken
+- `+100 Punkte`
+- Accessibility: `Entscheidung richtig, 100 Punkte`
+
+Falsch:
+
+- rotes Kreuz
+- kein Punktetext
+- Accessibility: `Entscheidung falsch`
+
+Das visuelle Feedback verwendet ausschließlich das bestehende Bool-Ergebnis aus:
+
+- `evaluatePriority()`
+- `evaluateTeam()`
+
+Es wertet Referenzpriorität oder Referenzteam nicht erneut aus.
+
+## Integration
+
+Beide Entscheidungsviews halten lokalen State:
+
+```text
+decisionFeedback: DecisionFeedbackResult?
+```
+
+Ablauf:
+
+```text
+gültige Entscheidung
+→ bestehende Bewertung
+→ Bool
+→ visueller lokaler State
+→ bestehender Sound
+→ bestehende 1,5 s
+→ visueller State zurücksetzen
+→ bestehender Phasenwechsel
+```
+
+Keine zweite Task-Kette.
+
+Unverändert:
+
+- Score
+- AudioService
+- `isInputLocked`
+- Exactly-once
+- Drop-/Drag-Geometrie
+- Startseite
 - HUD
-- InteractionHint
 - Ticketinfo
-- Overlay-/Drag-Code
-- RealityViews
-- Monster-/Volume-Größen
-- Scoring
-- Audio
-- Feedback
-
-## Übernommener Modul-016-Dateistand
-
-Der reale Diff bis `0d25719` bestätigt:
-
-- `Support/AppConstants.swift`
-  - Volume `1.2 × 1.15 × 0.45 m`
-  - Investigation-Monsterzielgröße `0.20 m`
-  - Drag-Phasen-Monsterzielgröße `0.11 m`
-  - Ticketinfo-Designfläche `520 × 560 pt`
-- `CompactTicketInfoView.swift`
-- `PrioritizationView.swift`
-- `TeamAssignmentView.swift`
-- `Localizable.xcstrings`
-- Tests
-- Report
-
-Damit ist die zuvor unvollständige 016-Dateidokumentation aufgelöst.
+- Ergebnisansicht
 
 ## Teststand
 
-| Kennzahl | Stand |
-|---|---:|
-| Tests vor 017 | 246 |
-| neue Tests | 15 |
-| Tests nach 017 | 261 |
-| `jq empty Localizable.xcstrings` | PASS |
-| `git diff --check` für Modul-017-Dateien | PASS |
-| vollständiger Xcode-Lauf | offen |
+- vor 018: 261
+- neu: 17
+- nach 018: 278 Testdeklarationen
+- `jq empty`: PASS
+- `git diff --check` für Modul-018-Dateien: PASS
+- vollständiger Xcode-Testlauf: offen
 
-Die 15 neuen Tests decken ab:
+## Status F-21 / AK-21
 
-- Plus von 6 → 7,
-- Minus von 6 → 5,
-- exakte Einerschritte,
-- Clamp 1/12,
-- Disabled-Ableitungen,
-- beide Buttons bei 6 enabled,
-- gemeinsame Modellquelle,
-- Reset auf 6,
-- Enabled-Zustände nach Reset,
-- exakten Beschreibungstext,
-- beide exakten Accessibility-Texte.
+Code-/strukturseitig umgesetzt:
 
-## Dokumentationshygiene
+- richtiger Fall: grüner Haken + `+100 Punkte`
+- falscher Fall: rotes Kreuz ohne Punktetext
+- parallel zum vorhandenen Sound
+- an dasselbe 1,5-s-Fenster gekoppelt
+- keine Lösung
+- Lock/Exactly-once unverändert
+- Accessibility vorhanden
 
-Der globale `git diff --check` meldet laut Report nur bereits vor Modul 017 vorhandene trailing spaces in:
+Noch offen:
 
-- `Projekt-Stand.md`
-- `Logbuch-Stand.md`
+- Xcode-Build
+- vollständiger 278-Testlauf
+- Simulatorprüfung aller vier Fälle
+- Sound-Synchronität
+- Sichtdauer
+- schnelle Mehrfacheingabe
+- VoiceOver
 
-Die Modul-017-Codeänderungen selbst sind sauber.
+**F-21 implementiert; AK-21 Laufzeitabnahme offen.**
 
-Diese Dokumentations-Whitespace-Probleme sollen spätestens beim nächsten Commit/Cleanup bereinigt werden, ohne inhaltliche Änderungen zu erfinden.
+## Offene Laufzeitprüfungen aus Modul 018
 
-## Status F-22 / AK-22
+- [ ] Modul 018 bauen
+- [ ] vollständige 278 Tests
+- [ ] richtige/falsche Priorität
+- [ ] richtiges/falsches Team
+- [ ] Sound parallel
+- [ ] 1,5-s-Sichtdauer
+- [ ] Exactly-once Regression
+- [ ] HUD/Ticketinfo/Startseite Regression
+- [x] Modul 018 separat committen (`de7e4d6`)
 
-Code- und testseitig implementiert:
+## Stand Modul 019
 
-- Plus/Minus,
-- Grenzen,
-- Slider bleibt,
-- Synchronität über eine Source of Truth,
-- Reset auf 6,
-- Accessibility.
-
-Offen:
-
-- Xcode-Build,
-- vollständige 261 Tests,
-- Simulatorprüfung.
-
-Daher:
-
-**F-22 implementiert; AK-22 Laufzeitabnahme offen.**
-
-## Status F-24 / AK-24
-
-Code- und testseitig implementiert:
-
-- exakter Beschreibungstext,
-- direkt unter Titel,
-- kein Tutorial,
-- kein Popover,
-- keine Persistenz.
-
-Offen:
-
-- visuelle Simulatorabnahme.
-
-Daher:
-
-**F-24 implementiert; AK-24 Laufzeitabnahme offen.**
-
-## Offene Punkte vor Modul 018
-
-- [ ] Modul 017 bauen
-- [ ] vollständige 261 Tests ausführen
-- [ ] Start bei 6 prüfen
-- [ ] Plus/Minus 1...12 prüfen
-- [ ] Slider/Zahl/Buttons synchron prüfen
-- [ ] Reset auf 6 prüfen
-- [ ] Beschreibung visuell prüfen
-- [ ] HUD aus 015 regressionsprüfen
-- [ ] Ticketinfo aus 016 regressionsprüfen
-- [ ] Modul 017 separat committen
-- [ ] trailing spaces in aktuellen Standdokumenten bereinigen
+- `Erneut laden` ist nach Monster-Ladefehlern in Untersuchung, Priorisierung und Team sichtbar.
+- Retry lädt ausschließlich `currentTicket.monsterAssetId`.
+- `MonsterLoadRecovery` verhindert parallele Loads und erlaubt unbegrenzt neue Versuche.
+- Drei Prioritäts- und vier Teamziele werden nicht erneut erzeugt.
+- Ticket, Index, Phase, Score, Entscheidungen und Input-Lock bleiben unverändert.
+- 20 neue Tests; insgesamt 298 Testdeklarationen.
+- Xcode-Build, vollständiger Testlauf und Simulatorprüfung sind offen.
 
 ## Nächster Schritt
 
-`018-Eingangsprompt.md` ausführen.
-
-Modul 018 ergänzt ausschließlich F-21 / AK-21:
-
-- richtige Entscheidung → grüner Haken + `+100 Punkte`,
-- falsche Entscheidung → rotes Kreuz ohne Punktetext,
-- parallel zum bestehenden Sound,
-- ausschließlich innerhalb des bestehenden ca. 1,5-Sekunden-Feedbackfensters,
-- keine richtige Lösung,
-- keine Änderung an Bewertung, Score, Exactly-once, Lock oder Transition.
+Modul 019 auf macOS bauen, testen und im Simulator abnehmen; danach separat committen und Modul 020 ausführen.

@@ -4,6 +4,200 @@ import Testing
 import simd
 @testable import Ticket_Tamer
 
+// MARK: - Modul 019 — Ladefehler-Recovery
+
+@MainActor
+@Suite("Modul 019 — Ladefehler-Recovery")
+struct MonsterLoadRecoveryTests {
+    private let assetID = AssetKeys.Monster.monster01
+
+    @Test("Fehlerzustand bietet Retry")
+    func failedStateOffersRetry() {
+        var recovery = MonsterLoadRecovery()
+        #expect(recovery.begin(assetID: assetID))
+        recovery.finishWithFailure()
+        #expect(recovery.hasError)
+        #expect(recovery.canRetry)
+    }
+
+    @Test("Retry loescht den alten Fehler und startet Loading")
+    func retryClearsErrorAndStartsLoading() {
+        var recovery = failedRecovery()
+        #expect(recovery.begin(assetID: assetID))
+        #expect(!recovery.hasError)
+        #expect(recovery.isLoading)
+    }
+
+    @Test("Retry fordert dieselbe Monster-Asset-ID an")
+    func retryRequestsSameAssetID() {
+        var recovery = failedRecovery()
+        _ = recovery.begin(assetID: assetID)
+        #expect(recovery.requestedAssetID == assetID)
+    }
+
+    @Test("Paralleler zweiter Load wird abgewiesen")
+    func parallelSecondLoadIsRejected() {
+        var recovery = MonsterLoadRecovery()
+        #expect(recovery.begin(assetID: assetID))
+        #expect(!recovery.begin(assetID: assetID))
+        #expect(recovery.isLoading)
+    }
+
+    @Test("Erfolg beendet Loading und Fehlerzustand")
+    func successEndsLoadingAndError() {
+        var recovery = failedRecovery()
+        _ = recovery.begin(assetID: assetID)
+        recovery.finishSuccessfully()
+        #expect(!recovery.isLoading)
+        #expect(!recovery.hasError)
+        #expect(!recovery.canRetry)
+    }
+
+    @Test("Erneuter Fehler bietet Retry erneut")
+    func repeatedFailureOffersRetryAgain() {
+        var recovery = failedRecovery()
+        _ = recovery.begin(assetID: assetID)
+        recovery.finishWithFailure()
+        #expect(recovery.canRetry)
+    }
+
+    @Test("Mehrere Fehler und Erfolg ergeben genau ein Monster")
+    func repeatedFailuresThenSuccessYieldOneMonster() {
+        var recovery = MonsterLoadRecovery()
+        for _ in 0..<3 {
+            #expect(recovery.begin(assetID: assetID))
+            recovery.finishWithFailure()
+            #expect(recovery.displayedMonsterCount == 0)
+        }
+        #expect(recovery.begin(assetID: assetID))
+        recovery.finishSuccessfully()
+        #expect(recovery.displayedMonsterCount == 1)
+    }
+
+    @Test("Spaete Abschluesse ohne laufenden Versuch sind No-Ops")
+    func lateCompletionsAreNoOps() {
+        var recovery = MonsterLoadRecovery()
+        recovery.finishSuccessfully()
+        recovery.finishWithFailure()
+        #expect(recovery.status == .idle)
+        #expect(recovery.displayedMonsterCount == 0)
+    }
+
+    @Test("Reset entfernt ausschliesslich lokalen Ladezustand")
+    func resetClearsLocalLoadState() {
+        var recovery = failedRecovery()
+        recovery.reset()
+        #expect(recovery.status == .idle)
+        #expect(recovery.requestedAssetID == nil)
+    }
+
+    @Test("Recovery veraendert Ticket, Index, Phase und Score nicht")
+    func recoveryPreservesCoreSessionState() {
+        let model = startedModel()
+        let before = (model.currentTicket?.id, model.currentTicketIndex, model.currentPhase, model.score)
+        var recovery = failedRecovery()
+        _ = recovery.begin(assetID: assetID)
+        recovery.finishSuccessfully()
+        #expect(model.currentTicket?.id == before.0)
+        #expect(model.currentTicketIndex == before.1)
+        #expect(model.currentPhase == before.2)
+        #expect(model.score == before.3)
+    }
+
+    @Test("Recovery veraendert Entscheidungen und Input-Lock nicht")
+    func recoveryPreservesDecisionsAndLock() {
+        let model = startedModel()
+        model.beginPrioritizationPhase()
+        model.savePriority(.wichtig)
+        let before = (model.selectedPriority, model.selectedTeam, model.isInputLocked)
+        var recovery = failedRecovery()
+        _ = recovery.begin(assetID: assetID)
+        recovery.finishSuccessfully()
+        #expect(model.selectedPriority == before.0)
+        #expect(model.selectedTeam == before.1)
+        #expect(model.isInputLocked == before.2)
+    }
+
+    @Test("Recovery erzeugt weder Bewertung noch Phasenwechsel")
+    func recoveryCreatesNoEvaluationOrPhaseTransition() {
+        let model = startedModel()
+        model.beginPrioritizationPhase()
+        model.savePriority(.wichtig)
+        let score = model.score
+        let phase = model.currentPhase
+        var recovery = failedRecovery()
+        _ = recovery.begin(assetID: assetID)
+        recovery.finishSuccessfully()
+        #expect(model.score == score)
+        #expect(model.currentPhase == phase)
+    }
+
+    @Test("Priorisierungsphase definiert exakt drei Ziele")
+    func prioritizationKeepsExactlyThreeTargets() {
+        #expect(PriorityTargetMapping.allTargets.count == 3)
+    }
+
+    @Test("Teamphase definiert exakt vier Ziele")
+    func teamAssignmentKeepsExactlyFourTargets() {
+        #expect(TeamTargetMapping.allTargets.count == 4)
+    }
+
+    @Test("Initialzustand bietet keinen Retry")
+    func idleStateOffersNoRetry() {
+        #expect(!MonsterLoadRecovery().canRetry)
+    }
+
+    @Test("Erfolgszustand bildet hoechstens ein Monster ab")
+    func successRepresentsAtMostOneMonster() {
+        var recovery = MonsterLoadRecovery()
+        _ = recovery.begin(assetID: assetID)
+        recovery.finishSuccessfully()
+        recovery.finishSuccessfully()
+        #expect(recovery.displayedMonsterCount == 1)
+    }
+
+    @Test("Fehlerzustand bildet kein Monster ab")
+    func failureRepresentsNoMonster() {
+        #expect(failedRecovery().displayedMonsterCount == 0)
+    }
+
+    @Test("Retry besitzt kein Versuchslimit")
+    func retryHasNoAttemptLimit() {
+        var recovery = MonsterLoadRecovery()
+        for _ in 0..<100 {
+            #expect(recovery.begin(assetID: assetID))
+            recovery.finishWithFailure()
+        }
+        #expect(recovery.canRetry)
+    }
+
+    @Test("Prioritaetsziel-IDs sind eindeutig")
+    func priorityTargetIDsAreUnique() {
+        let ids = PriorityTargetMapping.allTargets.map(\.id)
+        #expect(Set(ids).count == ids.count)
+    }
+
+    @Test("Teamziel-IDs sind eindeutig")
+    func teamTargetIDsAreUnique() {
+        let ids = TeamTargetMapping.allTargets.map(\.id)
+        #expect(Set(ids).count == ids.count)
+    }
+
+    private func failedRecovery() -> MonsterLoadRecovery {
+        var recovery = MonsterLoadRecovery()
+        _ = recovery.begin(assetID: assetID)
+        recovery.finishWithFailure()
+        return recovery
+    }
+
+    private func startedModel() -> SessionModel {
+        let model = SessionModel()
+        model.setTicketCount(1)
+        model.startSession(using: { $0 })
+        return model
+    }
+}
+
 // MARK: - Modul 018 — Visuelles Entscheidungsfeedback
 
 @MainActor

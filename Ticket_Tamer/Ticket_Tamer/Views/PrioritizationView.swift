@@ -98,6 +98,7 @@ struct PrioritizationView: View {
     @State private var targetEntities: [Entity] = []
     @State private var originTransform: Transform? = nil
     @State private var loadError: String? = nil
+    @State private var monsterLoadRecovery = MonsterLoadRecovery()
 
     // MARK: - Modul 010: Feedback-Zustand
 
@@ -250,7 +251,7 @@ struct PrioritizationView: View {
             #endif
 
             // Ladeindikator — liest monsterEntity im Body (SwiftUI-Dependency-Tracking).
-            if monsterEntity == nil && loadError == nil {
+            if monsterLoadRecovery.isLoading {
                 ProgressView()
                     .controlSize(.large)
                     .padding(.top, 100)
@@ -258,12 +259,20 @@ struct PrioritizationView: View {
 
             // Fehlermeldung bei Ladefehlern (kein Crash, kein Auto-Wechsel).
             if let error = loadError {
-                Text(error)
-                    .font(.caption)
-                    .foregroundStyle(.red)
-                    .padding(10)
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
-                    .padding(.top, 80)
+                VStack(spacing: 8) {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                    if monsterLoadRecovery.canRetry {
+                        Button("monsterLoad.retry") {
+                            Task { await loadCurrentMonster() }
+                        }
+                        .disabled(monsterLoadRecovery.isLoading)
+                    }
+                }
+                .padding(10)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
+                .padding(.top, 80)
             }
 
             if let decisionFeedback {
@@ -379,23 +388,33 @@ struct PrioritizationView: View {
     /// Erzeugt die drei Zielpanels und lädt das Monster asynchron.
     private func setupScene() async {
         // Drei Zielstationen aufbauen — noch ohne Bemaßung, die folgt aus der Messung.
-        for targetDef in PriorityTargetMapping.allTargets {
-            let entity = TargetPanelFactory.makeTarget(
-                id: targetDef.id,
-                debugName: targetDef.priority.displayName
-            )
-            // Rückfallposition, bis Volume und Monster vermessen sind.
-            entity.position = targetDef.position
-            targetEntities.append(entity)
-            DebugManager.log(.spawning, "Prioritaetsziel bereit: \(targetDef.id)")
+        if targetEntities.isEmpty {
+            for targetDef in PriorityTargetMapping.allTargets {
+                let entity = TargetPanelFactory.makeTarget(
+                    id: targetDef.id,
+                    debugName: targetDef.priority.displayName
+                )
+                // Rückfallposition, bis Volume und Monster vermessen sind.
+                entity.position = targetDef.position
+                targetEntities.append(entity)
+                DebugManager.log(.spawning, "Prioritaetsziel bereit: \(targetDef.id)")
+            }
         }
 
-        // Monster laden.
+        await loadCurrentMonster()
+    }
+
+    /// Laedt nur das Monster. Bestehende Zielpanels bleiben unveraendert erhalten.
+    private func loadCurrentMonster() async {
         guard let ticket = model.currentTicket else {
             DebugManager.log(.spawning, "Kein aktives Ticket — Monster-Load abgebrochen")
             loadError = "Kein aktives Ticket."
             return
         }
+        guard monsterLoadRecovery.begin(assetID: ticket.monsterAssetId) else { return }
+        loadError = nil
+        monsterEntity = nil
+        DebugManager.log(.spawning, "Monster-Retry/Laden gestartet: \(ticket.monsterAssetId)")
 
         do {
             let entity = try await MonsterAssetProvider.loadMonster(assetID: ticket.monsterAssetId)
@@ -406,15 +425,17 @@ struct PrioritizationView: View {
             originTransform = entity.transform
             MonsterInteractionConfigurator.configure(entity, mode: .dragDrop)
             monsterEntity = entity
+            monsterLoadRecovery.finishSuccessfully()
 
             // Tatsächliche sichtbare Hülle messen — Grundlage für den sicheren
             // Zieh-Bereich, für die Panelhöhe und für die 50-%-Prüfung.
             geometry.measureMonster(entity, assetID: ticket.monsterAssetId)
             syncPanels()
 
-            DebugManager.log(.spawning, "Monster bereit: \(ticket.monsterAssetId), Modus: dragDrop")
+            DebugManager.log(.spawning, "Monster-Retry/Laden erfolgreich: \(ticket.monsterAssetId), Modus: dragDrop")
         } catch {
-            DebugManager.log(.spawning, "Monster-Load fehlgeschlagen: \(error.localizedDescription)")
+            monsterLoadRecovery.finishWithFailure()
+            DebugManager.log(.spawning, "Monster-Retry/Laden fehlgeschlagen: \(error.localizedDescription)")
             loadError = "Monster konnte nicht geladen werden."
         }
     }

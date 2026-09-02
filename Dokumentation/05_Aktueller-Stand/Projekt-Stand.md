@@ -1,219 +1,231 @@
 # Projekt-Stand — Ticket Tamer
 
-**Stand:** nach Restpunkte-Bearbeitung AK-06 — Fix implementiert, Build und Tests gruen, Simulatornachweis ausstehend
-**Eingearbeitet am:** 2026-08-28
-**Aktiver Branch:** `side`
-**HEAD (`side`):** `b56179b` — Restpunkte: AK-06 Clippingfix (Nachtest ausstehend)
-**`origin/main` / `main`:** `e8b289a` — feat: Modul 14
-**Lokaler `main`:** auf `origin/main` angeglichen (Fast-Forward, keine History-Umschreibung)
-**`origin/side`:** `745d45e` — 8 Commits hinter `side`
-**Modul-014-Commit:** erledigt (`235262b`, `21456e7`, `e8b289a`)
-**Build:** **PASS** (nach dem AK-06-Fix)
-**Tests:** **217/217 PASS**, 11 Suites, 0 Failed, 0 Skipped, 0.418 s
-**Abschlussstatus:** **B — nicht vollstaendig abgabebereit**
+> Aktuelle Code-Landkarte nach Modul 015 der Version 1.1.
 
-## Korrektur des dokumentierten Git-Stands
+**Projektversion:** v1.1 in Arbeit  
+**v1.0:** abgeschlossen  
+**Stand:** nach Modul `015` — Session-HUD und Interaktionshinweise  
+**Branch laut Report:** `main`  
+**HEAD vor Modul 015:** `fc39a56939bb9e16f08cd3f352595e8b673d71f6`  
+**Modul-015-Commit:** offen  
+**Testdeklarationen:** 228  
+**Build/Test/Simulator nach Modul 015:** offen
 
-Der bis Modul 014 dokumentierte Git-Stand war falsch. Real ermittelt:
+## Relevanter aktueller Funktionsstand
 
-| Angabe | Dokumentiert | Tatsaechlich |
-|---|---|---|
-| HEAD | `cc5a4a2` — Modul 13 | `e8b289a` — Modul 14 |
-| Modul-014-Commit | offen | bereits committed |
-| Working Tree | Aenderungen offen | sauber |
-| lokaler `main` | hinter `origin/main` | jetzt angeglichen |
+v1.0-Kern vorhanden und laut Versionierungsbasis abgeschlossen:
 
-## Technischer Funktionsstand
+- genau ein zentrales Volume,
+- Start,
+- Untersuchung,
+- Priorisierung,
+- Teamzuordnung,
+- Drop/Lock/Exactly-once,
+- Scoring,
+- Audio,
+- Auto-Transition,
+- Ergebnis,
+- Reset,
+- vier lokale Monster.
 
-Bestaetigt funktionsfaehig:
+v1.1 neu nach Modul 015:
 
-- genau ein zentrales visionOS-Volume
-- Startansicht
-- 12 lokale Tickets
-- Sitzungsauswahl
-- Untersuchungsphase fachlich vollstaendig
-- Priorisierung
-- Teamzuordnung
-- gemessene Drag-Grenzen
-- 3D-Zielpanels
-- 50-%-Drop-Regel
-- Snapback
-- Exactly-once
-- Scoring
-- beide Sounds
-- 1,5-s-Transitions
-- vier echte Monster
-- Ergebnisansicht
-- Reset
-- 1/2/6/12-Ticket-Stabilitaet
+- Session-HUD in drei laufenden Phasen,
+- Ticketfortschritt,
+- Phasentitel,
+- dauerhafte Drag-Hinweise.
 
-Offen:
+## Geänderte Dateibereiche Modul 015
 
-- AK-06: Fix implementiert, Build und Tests gruen, **visueller Simulatornachweis ausstehend**
-- Apple Vision Pro Geraetetest (hardwareabhaengiges Restrisiko)
+```text
+Ticket_Tamer/Ticket_Tamer/
+├── Resources/
+│   └── Localizable.xcstrings
+└── Views/
+    ├── InvestigationView.swift
+    ├── PrioritizationView.swift
+    ├── TeamAssignmentView.swift
+    └── Components/
+        ├── InteractionHintView.swift
+        └── SessionHUDView.swift
+```
+
+## Neue Schnittstellen
+
+### `SessionHUDView`
+
+```text
+SessionHUDView(
+    currentTicketIndex: Int,
+    totalTicketCount: Int,
+    phase: GamePhase
+)
+```
+
+Reine Darstellung.
+
+### `SessionHUDContent`
+
+Leitet darstellungsbezogen ab:
+
+```text
+currentTicketNumber
+totalTicketCount
+progress
+phaseTitle
+```
+
+Kein SessionModel-State.
+
+### `InteractionHintView`
+
+```text
+InteractionHintView(text: String)
+```
+
+Reine Darstellung.
+
+## HUD-Semantik
+
+```text
+Ticket 1 von 6 → 1/6
+Ticket 3 von 6 → 0.5
+Ticket 6 von 6 → 1.0
+```
+
+Fortschritt bleibt während:
+
+```text
+untersuchen → priorisieren → teamZuordnen
+```
+
+für dasselbe Ticket gleich.
+
+## Phasentitel
+
+- `.untersuchen` → `Ticket untersuchen`
+- `.priorisieren` → `Priorität zuordnen`
+- `.teamZuordnen` → `Team zuordnen`
+
+## Interaktionshinweise
+
+Priorität:
+
+`Monster greifen und auf eine Priorität ziehen.`
+
+Team:
+
+`Monster greifen und dem zuständigen Team zuordnen.`
+
+## Ornaments
+
+- Session-HUD: Szene oben
+- InteractionHint: Szene unten
+- beide `.allowsHitTesting(false)`
+
+Die tatsächliche Simulatorprüfung steht aus.
+
+## Lokalisierung
+
+Neu:
+
+- `hud.ticket.position`
+- `hud.phase.investigation`
+- `hud.phase.prioritization`
+- `hud.phase.teamAssignment`
+- `hud.progress.accessibility`
+- `interactionHint.prioritization`
+- `interactionHint.teamAssignment`
 
 ## Teststand
 
-| Kennzahl | Wert |
-|---|---:|
-| Tests | **217** |
-| Suites | **11** |
-| Passed | **217** |
-| Failed | 0 |
-| Skipped | 0 |
-| Plattform | arm64-apple-xros1.0-simulator |
-| Laufzeit | 0.418 s |
+- v1.0 dokumentierte Basis: 217 Tests PASS
+- +11 Modul-015-Tests
+- aktueller Quellstand: 228 Testdeklarationen
+- vollständiger Lauf nach 015 offen
 
-Vorher 208 / 10 Suites. Neu: Suite „Restpunkt AK-06 — Einpassung im gemessenen
-Monster-Panel" mit 9 Tests. Zwei davon belegen die Ursache numerisch (0.24 m passt in
-keinen realen Panelquader; die angenommene Paneltiefe uebersteigt die gemessene
-Volume-Tiefe). Keine Regression in den vorbestehenden 208 Tests.
+## v1.1-Modul-Landkarte
 
-## Finale AK-Matrix
+| Modul | Aufgabe | Status |
+|---|---|---|
+| 015 | HUD + Hinweise | implementiert; Abnahme offen |
+| 016 | Kompakte Ticketinfo | als Nächstes |
+| 017 | Startseiten-Usability | offen |
+| 018 | Visuelles Feedback | offen |
+| 019 | Ladefehler-Recovery | offen |
+| 020 | v1.1-Integration | offen |
 
-| AK | Status |
-|---|---|
-| AK-01 | PASS |
-| AK-02 | PASS |
-| AK-03 | PASS |
-| AK-04 | PASS |
-| AK-05 | PASS |
-| AK-06 | **OPEN — Fix implementiert, Build/Tests gruen, Sichtpruefung ausstehend** |
-| AK-07 | PASS |
-| AK-08 | PASS |
-| AK-09 | PASS |
-| AK-10 | PASS |
-| AK-11 | PASS |
-| AK-12 | PASS |
-| AK-13 | PASS |
-| AK-14 | PASS |
-| AK-15 | PASS |
-| AK-16 | PASS |
+## Für Modul 016 relevante bestehende Daten
 
-**Pflichtstatus: 15/16 PASS.**
+`Ticket`:
 
-## AK-06
+- ticketNumber
+- title
+- shortDescription
+- userImpact
+- symptoms
+- referencePriority
+- referenceTeam
+- monsterAssetId
 
-Inhalt und Navigation sind korrekt.
+`model.currentTicket` ist die einzige Quelle für die anzuzeigende Ticketinfo.
 
-Fehler: `monster04` / `Monster_4_red.usdc` wird in der Untersuchungsansicht zusammen mit dem
-Ticketinhalt teilweise abgeschnitten.
+In `CompactTicketInfoView` zulässig:
 
-### Ursache (isoliert, messbar)
+- Ticketnummer
+- Titel
+- Kurzbeschreibung
+- User Impact
+- Symptome/Hinweise
 
-`InvestigationView` berechnete seinen verfuegbaren Quader aus zwei Annahmen, waehrend die
-Drag-Phasen ihn seit Modul 013 messen:
+Nicht zulässig:
 
-- `layoutPointsPerMeter = 417` — gegen eine Volume-Hoehe von 0.8 m kalibriert, heute 1.0 m
-- `monsterPanelDepth = 0.34 m` — das angeforderte, nicht das gewaehrte Tiefenmass
+- Referenzpriorität
+- Referenzteam
+- richtige Lösung
+- interne Bewertungsdaten
+- Score
+- monsterAssetId als Nutztext
 
-Das im Simulator gemessene Volume betraegt **0.284 x 0.236 x 0.235 m** statt der deklarierten
-1.0 x 1.0 x 0.4 m (belegt durch die Regressionstests aus Modul 013). Daraus folgt:
+## Neuer v1.1-Darstellungszustand für Modul 016
 
-- die angenommene Panel-Tiefe ist groesser als die gemessene Volume-Tiefe ueberhaupt
-- das Zielmass fiel damit stets auf den Deckel `monsterTargetSize = 0.24 m`
-- 0.24 m liegt ueber jeder Kante des gemessenen Volumes — Beschneiden war unvermeidbar
-
-Da `fit(_:toMaxExtent:)` die **groesste** Modellausdehnung auf die Grenze abbildet und diese
-Achse je Export verschieden ist, schlug zuerst nur ein Asset sichtbar an. Kein Assetfehler.
-
-Zweite Fehlerquelle: die Position war hart `(0, 0, forward)` — das trifft die Panelmitte nur,
-wenn der Szenenursprung im Panelzentrum liegt. Das Panel ist die linke Spalte eines `HStack`.
-
-### Fix
-
-`Services/InvestigationFraming.swift` (neu) misst den realen Panelquader und passt das
-Monster modellbewusst ein; `InvestigationView` nutzt `GeometryReader3D` +
-`content.convert(_:from: .local, to: .scene)`. Die bisherige Schaetzung bleibt als
-Rueckfallebene fuer den ersten Layoutdurchlauf.
-
-Nicht betroffen und unveraendert:
-
-- Priorisierung
-- Teamzuordnung
-- DragBounds
-- 3D-Zielpanels
-- DropEvaluator
-- Scoring
-- Audio
-- Reset
-
-## Interaktionsarchitektur
-
-Produktiv:
+Laut SPEC ausdrücklich view-lokal:
 
 ```text
-VolumeMetrics
-  ↓
-MonsterDragGeometry
-  ├─ DragBounds
-  ├─ TargetPanelLayout
-  └─ DropEvaluator
+PrioritizationView
+- isTicketInfoPresented: Bool
+
+TeamAssignmentView
+- isTicketInfoPresented: Bool
 ```
 
-Getrennt davon, ohne geteilte Konstante:
+Nicht in `SessionModel`.
 
-```text
-InvestigationFraming   (nur Untersuchungsansicht)
-```
+## Modul-016-Interaktionsregel
 
-Drop gueltig bei:
+Wenn Ticketinfo geöffnet:
 
-- mindestens 50 % Monsterflaechenueberlappung
-- Z-Abstand <= 0.05 m
+- verdeckte 3D-Szene nimmt keine Drag-Eingaben an,
+- keine Entscheidung wird ausgelöst,
+- kein Score ändert sich,
+- kein Phasenwechsel entsteht.
 
-`defaultSize` ist keine reale Geometriegrundlage. `layoutPointsPerMeter` und
-`monsterPanelDepth` ebenfalls nicht — sie dienen nur noch als Rueckfallebene.
+Wenn Ticketinfo geschlossen:
 
-## Monster
+- Drag wieder normal möglich.
 
-Build-Assets:
+Schließen:
 
-- Monster_1_blue.usdc
-- Monster_2_green.usdc
-- Monster_3_yellow.usdc
-- Monster_4_red.usdc
+- `X`,
+- erneuter Info-Tap,
+- Phasenwechsel.
 
-Alle vier im Simulator belegt.
+## Offene Vormodul-Verifikation
 
-## Audio
+Vor 016 möglichst nachholen:
 
-- correct.wav PASS
-- incorrect.wav PASS
-- genau einmal PASS
-
-## Ergebnis
-
-`ResultView` zeigt ausschliesslich:
-
-- Scorezahl
-- `Erneut spielen`
-
-## Cleanup
-
-Entfernt:
-
-- `_abgeloest/`
-- stale Git-Lock-Dateien (erneut eine verwaiste `.git/index.lock` in dieser Sitzung)
-- `.DS_Store`
-
-`.gitignore` enthaelt `.DS_Store` und `rot-debug.txt`.
-
-## Git
-
-- Abgabebranch: `main` = `origin/main` = `e8b289a`
-- Arbeitsbranch `side`: `b56179b` — traegt den AK-06-Fix, aufgesetzt auf `e8b289a`
-- lokaler `main` per Fast-Forward angeglichen
-- offen: `origin/side` nachziehen, falls `side` erhalten bleiben soll
-- offen: Fix nach erfolgreichem Nachtest nach `main` uebernehmen und pushen
-
-## Naechster Schritt
-
-1. ~~Xcode-Build und vollstaendige Testsuite~~ — **erledigt: PASS, 217/217**
-2. Untersuchungsansicht mit allen vier Assets im Simulator pruefen, `spawning`-Log mitschneiden
-3. Regression Start → Untersuchung → Priorisierung → Team → Ergebnis → Reset
-4. Bei PASS: AK-Matrix auf 16/16, Abschlussstatus A, Fix nach `main`
-5. `origin/side` nachziehen
-6. Optional: Apple-Vision-Pro-Geraetetest
-
-Details: `Dokumentation/04_Modul-Reports/Restpunkte-Report.md`
+- Build 015,
+- 228 Tests,
+- Simulator HUD/Hint,
+- Drag-Regression,
+- Commit 015.

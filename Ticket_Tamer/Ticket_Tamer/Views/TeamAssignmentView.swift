@@ -133,6 +133,10 @@ struct TeamAssignmentView: View {
     /// Verhindert, dass die Grenz-Debugausgabe während einer Geste in jedem Frame erscheint.
     @State private var clampLogged: Bool = false
 
+    // MARK: - Modul 016: lokale Ticketinfo
+
+    @State private var isTicketInfoPresented = TicketInfoInteraction.initialPresentation
+
     // MARK: - Body
 
     var body: some View {
@@ -179,6 +183,40 @@ struct TeamAssignmentView: View {
                     .onChanged { value in handleDragChanged(value: value) }
                     .onEnded { value in handleDragEnded(value: value) }
             )
+            .allowsHitTesting(
+                TicketInfoInteraction.isDragEnabled(
+                    isPresented: isTicketInfoPresented,
+                    isInputLocked: model.isInputLocked
+                )
+            )
+
+            if isTicketInfoPresented, let ticket = model.currentTicket {
+                CompactTicketInfoView(ticket: ticket) {
+                    isTicketInfoPresented = false
+                }
+                .padding(.horizontal, 32)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(.black.opacity(0.22))
+                .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                .zIndex(1)
+            }
+
+            if model.currentTicket != nil {
+                HStack {
+                    Spacer()
+                    Button {
+                        isTicketInfoPresented = TicketInfoInteraction.toggled(isTicketInfoPresented)
+                    } label: {
+                        Image(systemName: "info.circle.fill")
+                            .font(.title2)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .buttonBorderShape(.circle)
+                    .accessibilityLabel(Text("ticketInfo.button.accessibility"))
+                }
+                .padding(20)
+                .zIndex(2)
+            }
 
             // Ladeindikator — liest monsterEntity im Body (SwiftUI-Dependency-Tracking).
             if monsterEntity == nil && loadError == nil {
@@ -217,6 +255,7 @@ struct TeamAssignmentView: View {
             await setupScene()
         }
         .onAppear {
+            isTicketInfoPresented = false
             // Eingabe nur freigeben, wenn noch keine Teamentscheidung getroffen wurde.
             // beginTeamAssignmentPhase() übernimmt das initiale Unlock; dieser Guard
             // schützt vor erneutem Entsperren bei View-Refresh nach saveTeam(_:).
@@ -226,6 +265,9 @@ struct TeamAssignmentView: View {
                 feedbackTaskStarted = false
                 DebugManager.log(.state, "TeamAssignmentView erschienen, Phase: \(model.currentPhase)")
             }
+        }
+        .onChange(of: model.currentPhase) { _, _ in
+            isTicketInfoPresented = false
         }
         // MARK: Modul 010 — Teamfeedback und automatischer Übergang (F-11 / F-12 / F-13)
         .onChange(of: model.selectedTeam) { _, newTeam in
@@ -418,6 +460,7 @@ struct TeamAssignmentView: View {
     // MARK: - Gesture-Handler
 
     private func handleDragChanged(value: EntityTargetValue<DragGesture.Value>) {
+        guard !isTicketInfoPresented else { return }
         guard !model.isInputLocked else {
             DebugManager.log(.input, "Drag ignoriert: Input gesperrt (AK-10)")
             return
@@ -475,6 +518,11 @@ struct TeamAssignmentView: View {
         // Immer zuerst: die Geste ist beendet, der gemerkte Startpunkt gilt nicht mehr.
         dragStartPosition = nil
         clampLogged = false
+
+        guard !isTicketInfoPresented else {
+            clearHighlight()
+            return
+        }
 
         guard !model.isInputLocked else {
             DebugManager.log(.input, "Release ignoriert: Input bereits gesperrt (AK-10)")

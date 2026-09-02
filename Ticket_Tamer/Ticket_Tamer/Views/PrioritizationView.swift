@@ -130,6 +130,10 @@ struct PrioritizationView: View {
     /// Verhindert, dass die Grenz-Debugausgabe während einer Geste in jedem Frame erscheint.
     @State private var clampLogged: Bool = false
 
+    // MARK: - Modul 016: lokale Ticketinfo
+
+    @State private var isTicketInfoPresented = TicketInfoInteraction.initialPresentation
+
     // MARK: - Body
 
     var body: some View {
@@ -182,6 +186,40 @@ struct PrioritizationView: View {
                     .onChanged { value in handleDragChanged(value: value) }
                     .onEnded { value in handleDragEnded(value: value) }
             )
+            .allowsHitTesting(
+                TicketInfoInteraction.isDragEnabled(
+                    isPresented: isTicketInfoPresented,
+                    isInputLocked: model.isInputLocked
+                )
+            )
+
+            if isTicketInfoPresented, let ticket = model.currentTicket {
+                CompactTicketInfoView(ticket: ticket) {
+                    isTicketInfoPresented = false
+                }
+                .padding(.horizontal, 32)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(.black.opacity(0.22))
+                .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                .zIndex(1)
+            }
+
+            if model.currentTicket != nil {
+                HStack {
+                    Spacer()
+                    Button {
+                        isTicketInfoPresented = TicketInfoInteraction.toggled(isTicketInfoPresented)
+                    } label: {
+                        Image(systemName: "info.circle.fill")
+                            .font(.title2)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .buttonBorderShape(.circle)
+                    .accessibilityLabel(Text("ticketInfo.button.accessibility"))
+                }
+                .padding(20)
+                .zIndex(2)
+            }
 
             // DEBUG-Einstieg in die Teamphase — nur für Entwicklung/Simulator-Prüfung.
             // Nicht im Release-Build, nicht als F-09-Nutzerfunktion (AK-09).
@@ -238,6 +276,7 @@ struct PrioritizationView: View {
             await setupScene()
         }
         .onAppear {
+            isTicketInfoPresented = false
             // Eingabe nur freigeben, wenn noch keine Entscheidung getroffen wurde.
             // Kein Unlock nach View-Refresh bei bereits gespeicherter Priorität (AK-10).
             if model.selectedPriority == nil {
@@ -247,6 +286,9 @@ struct PrioritizationView: View {
             } else {
                 DebugManager.log(.state, "PrioritizationView erschienen, Prioritaet bereits gespeichert: \(model.selectedPriority!.rawValue)")
             }
+        }
+        .onChange(of: model.currentPhase) { _, _ in
+            isTicketInfoPresented = false
         }
         // MARK: Modul 010 — Prioritätsfeedback und automatischer Übergang (F-11 / F-12 / F-13)
         .onChange(of: model.selectedPriority) { _, newPriority in
@@ -457,6 +499,7 @@ struct PrioritizationView: View {
     // MARK: - Gesture-Handler
 
     private func handleDragChanged(value: EntityTargetValue<DragGesture.Value>) {
+        guard !isTicketInfoPresented else { return }
         guard !model.isInputLocked else {
             DebugManager.log(.input, "Drag ignoriert: Input gesperrt (AK-10)")
             return
@@ -539,6 +582,11 @@ struct PrioritizationView: View {
         // Immer zuerst: die Geste ist beendet, der gemerkte Startpunkt gilt nicht mehr.
         dragStartPosition = nil
         clampLogged = false
+
+        guard !isTicketInfoPresented else {
+            clearHighlight()
+            return
+        }
 
         guard !model.isInputLocked else {
             DebugManager.log(.input, "Release ignoriert: Input bereits gesperrt (AK-10)")

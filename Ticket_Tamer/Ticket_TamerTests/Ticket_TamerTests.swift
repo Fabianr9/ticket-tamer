@@ -84,6 +84,109 @@ struct TicketTamerTests {
     }
 }
 
+// MARK: - Modul 016 — Kompakte Ticketinfo
+
+@MainActor
+@Suite("Modul 016 — Kompakte Ticketinfo")
+struct CompactTicketInfoTests {
+    private var ticket: Ticket { LocalTicketCatalog.allTickets[0] }
+
+    @Test("Die Ticketnummer wird unveraendert uebernommen")
+    func ticketNumberIsCopied() {
+        #expect(CompactTicketInfoContent(ticket: ticket).ticketNumber == ticket.ticketNumber)
+    }
+
+    @Test("Der Titel wird unveraendert uebernommen")
+    func titleIsCopied() {
+        #expect(CompactTicketInfoContent(ticket: ticket).title == ticket.title)
+    }
+
+    @Test("Die Kurzbeschreibung wird unveraendert uebernommen")
+    func shortDescriptionIsCopied() {
+        #expect(CompactTicketInfoContent(ticket: ticket).shortDescription == ticket.shortDescription)
+    }
+
+    @Test("Der User Impact wird unveraendert uebernommen")
+    func userImpactIsCopied() {
+        #expect(CompactTicketInfoContent(ticket: ticket).userImpact == ticket.userImpact)
+    }
+
+    @Test("Alle Symptome werden in ihrer Reihenfolge uebernommen")
+    func symptomsAreCopied() {
+        #expect(CompactTicketInfoContent(ticket: ticket).symptoms == ticket.symptoms)
+    }
+
+    @Test("Der Darstellungsinhalt ist unabhaengig von der Referenzprioritaet")
+    func contentDoesNotNeedReferencePriority() {
+        let changed = Ticket(
+            id: ticket.id, ticketNumber: ticket.ticketNumber, title: ticket.title,
+            shortDescription: ticket.shortDescription, userImpact: ticket.userImpact,
+            symptoms: ticket.symptoms, referencePriority: ticket.referencePriority == .normal ? .kritisch : .normal,
+            referenceTeam: ticket.referenceTeam, monsterAssetId: ticket.monsterAssetId
+        )
+        #expect(CompactTicketInfoContent(ticket: changed) == CompactTicketInfoContent(ticket: ticket))
+    }
+
+    @Test("Der Darstellungsinhalt ist unabhaengig vom Referenzteam")
+    func contentDoesNotNeedReferenceTeam() {
+        let changed = Ticket(
+            id: ticket.id, ticketNumber: ticket.ticketNumber, title: ticket.title,
+            shortDescription: ticket.shortDescription, userImpact: ticket.userImpact,
+            symptoms: ticket.symptoms, referencePriority: ticket.referencePriority,
+            referenceTeam: ticket.referenceTeam == .netzwerk ? .hardware : .netzwerk,
+            monsterAssetId: ticket.monsterAssetId
+        )
+        #expect(CompactTicketInfoContent(ticket: changed) == CompactTicketInfoContent(ticket: ticket))
+    }
+
+    @Test("Der Darstellungsinhalt ist unabhaengig von interner ID und Monsterasset")
+    func contentDoesNotNeedInternalIdentifiers() {
+        let changed = Ticket(
+            id: "andere-interne-id", ticketNumber: ticket.ticketNumber, title: ticket.title,
+            shortDescription: ticket.shortDescription, userImpact: ticket.userImpact,
+            symptoms: ticket.symptoms, referencePriority: ticket.referencePriority,
+            referenceTeam: ticket.referenceTeam, monsterAssetId: "anderes-asset"
+        )
+        #expect(CompactTicketInfoContent(ticket: changed) == CompactTicketInfoContent(ticket: ticket))
+    }
+
+    @Test("Der Overlayzustand startet geschlossen")
+    func overlayStartsClosed() {
+        #expect(TicketInfoInteraction.initialPresentation == false)
+    }
+
+    @Test("Info-Tap oeffnet ein geschlossenes Overlay")
+    func toggleOpensOverlay() {
+        #expect(TicketInfoInteraction.toggled(false) == true)
+    }
+
+    @Test("Erneuter Info-Tap schliesst ein offenes Overlay")
+    func toggleClosesOverlay() {
+        #expect(TicketInfoInteraction.toggled(true) == false)
+    }
+
+    @Test("Ein neuer Viewzustand beginnt nach Phasenwechsel geschlossen")
+    func recreatedViewStateStartsClosed() {
+        let stateAfterRecreation = TicketInfoInteraction.initialPresentation
+        #expect(stateAfterRecreation == false)
+    }
+
+    @Test("Ein offenes Overlay sperrt Drag")
+    func openOverlayDisablesDrag() {
+        #expect(TicketInfoInteraction.isDragEnabled(isPresented: true, isInputLocked: false) == false)
+    }
+
+    @Test("Ein geschlossenes Overlay erlaubt Drag bei freiem Facheingang")
+    func closedOverlayAllowsUnlockedDrag() {
+        #expect(TicketInfoInteraction.isDragEnabled(isPresented: false, isInputLocked: false) == true)
+    }
+
+    @Test("Der fachliche Lock bleibt nach dem Schliessen massgeblich")
+    func domainLockStillDisablesDrag() {
+        #expect(TicketInfoInteraction.isDragEnabled(isPresented: false, isInputLocked: true) == false)
+    }
+}
+
 // MARK: - Modul 015: Session-HUD und Interaktionshinweise
 
 /// Tests der rein darstellungsbezogenen HUD-Ableitung ohne zweiten Sitzungszustand.

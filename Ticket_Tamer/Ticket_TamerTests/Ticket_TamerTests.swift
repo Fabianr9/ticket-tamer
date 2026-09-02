@@ -84,6 +84,91 @@ struct TicketTamerTests {
     }
 }
 
+// MARK: - Modul 015: Session-HUD und Interaktionshinweise
+
+/// Tests der rein darstellungsbezogenen HUD-Ableitung ohne zweiten Sitzungszustand.
+@MainActor
+struct SessionHUDContentTests {
+    @Test("Ticket 1 von 6 ergibt ein Sechstel Fortschritt")
+    func firstOfSixTickets() {
+        let content = SessionHUDContent(currentTicketIndex: 0, totalTicketCount: 6, phase: .untersuchen)
+        #expect(content.currentTicketNumber == 1)
+        #expect(content.totalTicketCount == 6)
+        #expect(abs(content.progress - (1.0 / 6.0)) < 0.000_001)
+    }
+
+    @Test("Ticket 3 von 6 ergibt 50 Prozent Fortschritt")
+    func thirdOfSixTickets() {
+        let content = SessionHUDContent(currentTicketIndex: 2, totalTicketCount: 6, phase: .priorisieren)
+        #expect(content.currentTicketNumber == 3)
+        #expect(content.progress == 0.5)
+    }
+
+    @Test("Ticket 6 von 6 ergibt vollen Fortschritt")
+    func lastOfSixTickets() {
+        let content = SessionHUDContent(currentTicketIndex: 5, totalTicketCount: 6, phase: .teamZuordnen)
+        #expect(content.currentTicketNumber == 6)
+        #expect(content.progress == 1)
+    }
+
+    @Test("Fortschritt bleibt in allen drei Ticketphasen identisch")
+    func progressIsIndependentOfSubphase() {
+        let phases: [GamePhase] = [.untersuchen, .priorisieren, .teamZuordnen]
+        let values = phases.map {
+            SessionHUDContent(currentTicketIndex: 2, totalTicketCount: 6, phase: $0).progress
+        }
+        #expect(values == [0.5, 0.5, 0.5])
+    }
+
+    @Test("Der naechste Ticketindex erhoeht den Fortschritt")
+    func nextTicketIncreasesProgress() {
+        let current = SessionHUDContent(currentTicketIndex: 1, totalTicketCount: 6, phase: .teamZuordnen)
+        let next = SessionHUDContent(currentTicketIndex: 2, totalTicketCount: 6, phase: .untersuchen)
+        #expect(next.progress > current.progress)
+    }
+
+    @Test("Leere Sitzung ergibt sichere Nullwerte")
+    func emptySessionIsSafe() {
+        let content = SessionHUDContent(currentTicketIndex: 0, totalTicketCount: 0, phase: .untersuchen)
+        #expect(content.currentTicketNumber == 0)
+        #expect(content.totalTicketCount == 0)
+        #expect(content.progress == 0)
+        #expect(content.progress.isFinite)
+    }
+
+    @Test("Ungueltige Indizes bleiben im sichtbaren Fortschrittsbereich")
+    func invalidIndicesAreClamped() {
+        let below = SessionHUDContent(currentTicketIndex: -4, totalTicketCount: 6, phase: .untersuchen)
+        let above = SessionHUDContent(currentTicketIndex: 20, totalTicketCount: 6, phase: .untersuchen)
+        #expect((0...1).contains(below.progress))
+        #expect((0...1).contains(above.progress))
+        #expect(above.currentTicketNumber == 6)
+    }
+
+    @Test("Die drei Phasentitel entsprechen der Vorgabe")
+    func phaseTitlesMatchSpecification() {
+        #expect(SessionHUDContent.title(for: .untersuchen) == "Ticket untersuchen")
+        #expect(SessionHUDContent.title(for: .priorisieren) == "Priorität zuordnen")
+        #expect(SessionHUDContent.title(for: .teamZuordnen) == "Team zuordnen")
+    }
+
+    @Test("Start und Ergebnis haben keinen HUD-Titel")
+    func phasesWithoutHUDHaveNoTitle() {
+        #expect(SessionHUDContent.title(for: .start).isEmpty)
+        #expect(SessionHUDContent.title(for: .ergebnis).isEmpty)
+    }
+
+    @Test("Der Priorisierungshinweis entspricht exakt der Vorgabe")
+    func prioritizationHintMatchesSpecification() {
+        #expect(InteractionHintContent.prioritization == "Monster greifen und auf eine Priorität ziehen.")
+    }
+
+    @Test("Der Teamhinweis entspricht exakt der Vorgabe")
+    func teamHintMatchesSpecification() {
+        #expect(InteractionHintContent.teamAssignment == "Monster greifen und dem zuständigen Team zuordnen.")
+    }
+}
+
 // MARK: - Modul 003: Sitzungsmodell und Zufallsauswahl
 
 /// Tests für das zentrale Sitzungsmodell (SPEC F-04, F-16, AK-04, AK-16 Modellanteil).

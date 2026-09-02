@@ -218,6 +218,22 @@ struct PrioritizationView: View {
                     .padding(.top, 80)
             }
         }
+        .ornament(
+            attachmentAnchor: .scene(.top),
+            contentAlignment: .bottom
+        ) {
+            SessionHUDView(
+                currentTicketIndex: model.currentTicketIndex,
+                totalTicketCount: model.sessionTickets.count,
+                phase: model.currentPhase
+            )
+        }
+        .ornament(
+            attachmentAnchor: .scene(.bottom),
+            contentAlignment: .top
+        ) {
+            InteractionHintView(text: InteractionHintContent.prioritization)
+        }
         .task {
             await setupScene()
         }

@@ -39,6 +39,12 @@ struct InvestigationView: View {
     var body: some View {
         if let ticket = model.currentTicket {
             mainContent(ticket: ticket)
+                .ornament(
+                    attachmentAnchor: .scene(.top),
+                    contentAlignment: .bottom
+                ) {
+                    sessionHUD
+                }
                 .onAppear {
                     DebugManager.log(.lifecycle, "Untersuchungsansicht erscheint: \(ticket.ticketNumber)")
                     loadMonster(for: ticket)
@@ -58,6 +64,14 @@ struct InvestigationView: View {
     }
 
     // MARK: - Hauptinhalt
+
+    private var sessionHUD: some View {
+        SessionHUDView(
+            currentTicketIndex: model.currentTicketIndex,
+            totalTicketCount: model.sessionTickets.count,
+            phase: model.currentPhase
+        )
+    }
 
     /// Teilt den verfuegbaren Bereich explizit zwischen Monster-Panel und Ticketkarte auf.
     ///

@@ -21,19 +21,25 @@ enum LayoutConstants {
 
     /// Breite des zentralen Volumes in Metern.
     ///
-    /// Von 0.8 auf 1.0 erhoeht: die Ticketkarte erhaelt dadurch 221 statt 157 Punkte
-    /// Spaltenbreite und rendert mit Faktor 0.48 statt 0.34.
-    static let centralVolumeWidth = 1.0
+    /// Fuer die Entscheidungsansichten und ihre kompakte Ticketinfo verbreitert.
+    static let centralVolumeWidth = 1.2
 
     /// Hoehe des zentralen Volumes in Metern.
     ///
-    /// Verlauf: 0.6 → 0.8 → 1.0. Bei 0.6 m lag die Obergrenze bei y = 0.30 m; ein 0.13 m
-    /// hohes Monster wurde beim Ziehen zu den Prioritaetsfeldern ab y = 0.235 m
-    /// angeschnitten. Der aktuelle Wert gibt zusaetzlich der Ticketkarte vertikal Luft.
-    static let centralVolumeHeight = 1.0
+    /// Verlauf: 0.6 → 0.8 → 1.0 → 1.15. Die zusaetzliche Hoehe stellt die komplette
+    /// Ticketinfo dar und laesst weiterhin Abstand zu HUD und Interaktionshinweis.
+    static let centralVolumeHeight = 1.15
 
     /// Tiefe des zentralen Volumes in Metern.
-    static let centralVolumeDepth = 0.4
+    static let centralVolumeDepth = 0.45
+
+    // MARK: - Compact Ticket Info (Modul 016)
+
+    /// Feste Designflaeche der kompakten Ticketinfo. Sie wird als Ganzes proportional
+    /// eingepasst, damit auch das laengste Katalogticket ohne Clipping sichtbar bleibt.
+    static let compactTicketInfoDesignWidth = 520.0
+    static let compactTicketInfoDesignHeight = 560.0
+    static let compactTicketInfoOuterPadding = 40.0
 
     // MARK: - Root View
 
@@ -45,6 +51,18 @@ enum LayoutConstants {
 
     /// Abstand innerhalb des Textblocks.
     static let textSpacing = 8.0
+
+    /// Maximale Textbreite der kurzen Spielbeschreibung auf der Startseite.
+    static let startDescriptionMaximumWidth = 560.0
+
+    /// Maximale Breite des weiterhin vorhandenen Ticketanzahl-Sliders.
+    static let startSliderMaximumWidth = 320.0
+
+    /// Abstand zwischen Minus, Slider und Plus.
+    static let startTicketControlSpacing = 16.0
+
+    /// Mindestgroesse der direkt bedienbaren Minus-/Plus-Schaltflächen.
+    static let startTicketButtonSize = 44.0
 
     /// Abstand unter dem vorhandenen RealityKit-Default-Modell.
     static let modelBottomPadding = 24.0
@@ -149,7 +167,7 @@ enum LayoutConstants {
     ///
     /// Ohne explizite Tiefe hat die `RealityView` in einem 2D-Layout praktisch keine
     /// Z-Ausdehnung; Modellteile vor und hinter der Ebene werden dann beschnitten.
-    /// Bleibt deutlich unter `centralVolumeDepth` (0.4 m), damit das Panel nicht
+    /// Bleibt deutlich unter `centralVolumeDepth` (0.45 m), damit das Panel nicht
     /// an die Volume-Grenzen stoesst.
     static let monsterPanelDepth = 0.34
 
@@ -165,7 +183,7 @@ enum LayoutConstants {
     /// Obergrenze der Kantenlaenge des eingepassten Monsters in Metern.
     ///
     /// Verhindert, dass das Monster in sehr grossen Volumes den Bildausschnitt dominiert.
-    static let monsterTargetSize: Float = 0.24
+    static let monsterTargetSize: Float = 0.20
 
     /// Gewuenschte Verschiebung des Monsters zur betrachtenden Person (+Z) in Metern.
     ///
@@ -185,7 +203,7 @@ enum LayoutConstants {
     ///
     /// Bewusst kleiner als `InteractionConstants.monsterCollisionRadius × 2`, damit die
     /// Greifsphaere das Modell sicher umschliesst.
-    static let monsterDragDropTargetSize: Float = 0.13
+    static let monsterDragDropTargetSize: Float = 0.11
 
     /// Sichtbarer Sicherheitsabstand zwischen Modellhuelle und Volume-Grenze (Meter).
     ///
@@ -451,8 +469,7 @@ enum PrioritizationConstants {
     ///
     /// Y bewusst nahe 0 statt im unteren Drittel: tiefer wirkte das Modell im Passthrough,
     /// als versinke es in Tisch oder Boden. Bei einer Modellgröße von
-    /// `monsterDragDropTargetSize` (0.13 m) bleibt oben wie unten reichlich Luft
-    /// (Modell reicht von y ≈ -0.085 bis 0.045 bei Volume-Grenzen ±0.3).
+    /// `monsterDragDropTargetSize` (0.11 m) bleibt oben wie unten reichlich Luft.
     ///
     /// Leicht nach vorne versetzt (+Z), damit das Modell klar vor der Zielebene steht.
     /// Abstand zu allen drei Zielen > `InteractionConstants.dropTargetRadius`, das Monster

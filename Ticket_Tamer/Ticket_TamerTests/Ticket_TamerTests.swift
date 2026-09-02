@@ -4,6 +4,310 @@ import Testing
 import simd
 @testable import Ticket_Tamer
 
+// MARK: - Modul 019 — Ladefehler-Recovery
+
+@MainActor
+@Suite("Modul 019 — Ladefehler-Recovery")
+struct MonsterLoadRecoveryTests {
+    private let assetID = AssetKeys.Monster.monster01
+
+    @Test("Fehlerzustand bietet Retry")
+    func failedStateOffersRetry() {
+        var recovery = MonsterLoadRecovery()
+        #expect(recovery.begin(assetID: assetID))
+        recovery.finishWithFailure()
+        #expect(recovery.hasError)
+        #expect(recovery.canRetry)
+    }
+
+    @Test("Retry loescht den alten Fehler und startet Loading")
+    func retryClearsErrorAndStartsLoading() {
+        var recovery = failedRecovery()
+        #expect(recovery.begin(assetID: assetID))
+        #expect(!recovery.hasError)
+        #expect(recovery.isLoading)
+    }
+
+    @Test("Retry fordert dieselbe Monster-Asset-ID an")
+    func retryRequestsSameAssetID() {
+        var recovery = failedRecovery()
+        _ = recovery.begin(assetID: assetID)
+        #expect(recovery.requestedAssetID == assetID)
+    }
+
+    @Test("Paralleler zweiter Load wird abgewiesen")
+    func parallelSecondLoadIsRejected() {
+        var recovery = MonsterLoadRecovery()
+        #expect(recovery.begin(assetID: assetID))
+        #expect(!recovery.begin(assetID: assetID))
+        #expect(recovery.isLoading)
+    }
+
+    @Test("Erfolg beendet Loading und Fehlerzustand")
+    func successEndsLoadingAndError() {
+        var recovery = failedRecovery()
+        _ = recovery.begin(assetID: assetID)
+        recovery.finishSuccessfully()
+        #expect(!recovery.isLoading)
+        #expect(!recovery.hasError)
+        #expect(!recovery.canRetry)
+    }
+
+    @Test("Erneuter Fehler bietet Retry erneut")
+    func repeatedFailureOffersRetryAgain() {
+        var recovery = failedRecovery()
+        _ = recovery.begin(assetID: assetID)
+        recovery.finishWithFailure()
+        #expect(recovery.canRetry)
+    }
+
+    @Test("Mehrere Fehler und Erfolg ergeben genau ein Monster")
+    func repeatedFailuresThenSuccessYieldOneMonster() {
+        var recovery = MonsterLoadRecovery()
+        for _ in 0..<3 {
+            #expect(recovery.begin(assetID: assetID))
+            recovery.finishWithFailure()
+            #expect(recovery.displayedMonsterCount == 0)
+        }
+        #expect(recovery.begin(assetID: assetID))
+        recovery.finishSuccessfully()
+        #expect(recovery.displayedMonsterCount == 1)
+    }
+
+    @Test("Spaete Abschluesse ohne laufenden Versuch sind No-Ops")
+    func lateCompletionsAreNoOps() {
+        var recovery = MonsterLoadRecovery()
+        recovery.finishSuccessfully()
+        recovery.finishWithFailure()
+        #expect(recovery.status == .idle)
+        #expect(recovery.displayedMonsterCount == 0)
+    }
+
+    @Test("Reset entfernt ausschliesslich lokalen Ladezustand")
+    func resetClearsLocalLoadState() {
+        var recovery = failedRecovery()
+        recovery.reset()
+        #expect(recovery.status == .idle)
+        #expect(recovery.requestedAssetID == nil)
+    }
+
+    @Test("Recovery veraendert Ticket, Index, Phase und Score nicht")
+    func recoveryPreservesCoreSessionState() {
+        let model = startedModel()
+        let before = (model.currentTicket?.id, model.currentTicketIndex, model.currentPhase, model.score)
+        var recovery = failedRecovery()
+        _ = recovery.begin(assetID: assetID)
+        recovery.finishSuccessfully()
+        #expect(model.currentTicket?.id == before.0)
+        #expect(model.currentTicketIndex == before.1)
+        #expect(model.currentPhase == before.2)
+        #expect(model.score == before.3)
+    }
+
+    @Test("Recovery veraendert Entscheidungen und Input-Lock nicht")
+    func recoveryPreservesDecisionsAndLock() {
+        let model = startedModel()
+        model.beginPrioritizationPhase()
+        model.savePriority(.wichtig)
+        let before = (model.selectedPriority, model.selectedTeam, model.isInputLocked)
+        var recovery = failedRecovery()
+        _ = recovery.begin(assetID: assetID)
+        recovery.finishSuccessfully()
+        #expect(model.selectedPriority == before.0)
+        #expect(model.selectedTeam == before.1)
+        #expect(model.isInputLocked == before.2)
+    }
+
+    @Test("Recovery erzeugt weder Bewertung noch Phasenwechsel")
+    func recoveryCreatesNoEvaluationOrPhaseTransition() {
+        let model = startedModel()
+        model.beginPrioritizationPhase()
+        model.savePriority(.wichtig)
+        let score = model.score
+        let phase = model.currentPhase
+        var recovery = failedRecovery()
+        _ = recovery.begin(assetID: assetID)
+        recovery.finishSuccessfully()
+        #expect(model.score == score)
+        #expect(model.currentPhase == phase)
+    }
+
+    @Test("Priorisierungsphase definiert exakt drei Ziele")
+    func prioritizationKeepsExactlyThreeTargets() {
+        #expect(PriorityTargetMapping.allTargets.count == 3)
+    }
+
+    @Test("Teamphase definiert exakt vier Ziele")
+    func teamAssignmentKeepsExactlyFourTargets() {
+        #expect(TeamTargetMapping.allTargets.count == 4)
+    }
+
+    @Test("Initialzustand bietet keinen Retry")
+    func idleStateOffersNoRetry() {
+        #expect(!MonsterLoadRecovery().canRetry)
+    }
+
+    @Test("Erfolgszustand bildet hoechstens ein Monster ab")
+    func successRepresentsAtMostOneMonster() {
+        var recovery = MonsterLoadRecovery()
+        _ = recovery.begin(assetID: assetID)
+        recovery.finishSuccessfully()
+        recovery.finishSuccessfully()
+        #expect(recovery.displayedMonsterCount == 1)
+    }
+
+    @Test("Fehlerzustand bildet kein Monster ab")
+    func failureRepresentsNoMonster() {
+        #expect(failedRecovery().displayedMonsterCount == 0)
+    }
+
+    @Test("Retry besitzt kein Versuchslimit")
+    func retryHasNoAttemptLimit() {
+        var recovery = MonsterLoadRecovery()
+        for _ in 0..<100 {
+            #expect(recovery.begin(assetID: assetID))
+            recovery.finishWithFailure()
+        }
+        #expect(recovery.canRetry)
+    }
+
+    @Test("Prioritaetsziel-IDs sind eindeutig")
+    func priorityTargetIDsAreUnique() {
+        let ids = PriorityTargetMapping.allTargets.map(\.id)
+        #expect(Set(ids).count == ids.count)
+    }
+
+    @Test("Teamziel-IDs sind eindeutig")
+    func teamTargetIDsAreUnique() {
+        let ids = TeamTargetMapping.allTargets.map(\.id)
+        #expect(Set(ids).count == ids.count)
+    }
+
+    private func failedRecovery() -> MonsterLoadRecovery {
+        var recovery = MonsterLoadRecovery()
+        _ = recovery.begin(assetID: assetID)
+        recovery.finishWithFailure()
+        return recovery
+    }
+
+    private func startedModel() -> SessionModel {
+        let model = SessionModel()
+        model.setTicketCount(1)
+        model.startSession(using: { $0 })
+        return model
+    }
+}
+
+// MARK: - Modul 018 — Visuelles Entscheidungsfeedback
+
+@MainActor
+@Suite("Modul 018 — Visuelles Entscheidungsfeedback")
+struct DecisionFeedbackTests {
+
+    @Test("Richtige Bewertung wird auf correct abgebildet")
+    func correctEvaluationMapsToCorrectFeedback() {
+        #expect(DecisionFeedbackResult(evaluation: true) == .correct)
+    }
+
+    @Test("Falsche Bewertung wird auf incorrect abgebildet")
+    func incorrectEvaluationMapsToIncorrectFeedback() {
+        #expect(DecisionFeedbackResult(evaluation: false) == .incorrect)
+    }
+
+    @Test("Nur richtiges Feedback enthaelt den exakten Punktetext")
+    func onlyCorrectFeedbackContainsPointsText() {
+        #expect(DecisionFeedbackResult.correct.pointsText == "+100 Punkte")
+        #expect(DecisionFeedbackResult.incorrect.pointsText == nil)
+    }
+
+    @Test("Richtiges Feedback verwendet einen Haken")
+    func correctFeedbackUsesCheckmark() {
+        #expect(DecisionFeedbackResult.correct.symbolName == "checkmark")
+    }
+
+    @Test("Falsches Feedback verwendet ein Kreuz")
+    func incorrectFeedbackUsesXmark() {
+        #expect(DecisionFeedbackResult.incorrect.symbolName == "xmark")
+    }
+
+    @Test("Richtiges Feedback besitzt den lokalisierten Accessibility-Schluessel")
+    func correctFeedbackHasAccessibilityKey() {
+        #expect(DecisionFeedbackResult.correct.accessibilityLabelKey == "decisionFeedback.correct.accessibility")
+    }
+
+    @Test("Falsches Feedback besitzt den lokalisierten Accessibility-Schluessel")
+    func incorrectFeedbackHasAccessibilityKey() {
+        #expect(DecisionFeedbackResult.incorrect.accessibilityLabelKey == "decisionFeedback.incorrect.accessibility")
+    }
+
+    @Test("Eine No-Op-Bewertung erzeugt keinen Feedbackzustand")
+    func nilEvaluationCreatesNoFeedback() {
+        #expect(DecisionFeedbackResult(evaluation: nil) == nil)
+    }
+
+    @Test("Feedbackresultat besteht nur aus den beiden Darstellungsfaellen")
+    func feedbackContainsNoDomainOrScoreState() {
+        #expect([DecisionFeedbackResult.correct, .incorrect].count == 2)
+        #expect(DecisionFeedbackResult.incorrect.pointsText == nil)
+    }
+
+    @Test("Correct benoetigt keine Referenzprioritaet")
+    func correctFeedbackNeedsNoReferencePriority() {
+        let result = DecisionFeedbackResult(evaluation: true)
+        #expect(result == .correct)
+    }
+
+    @Test("Incorrect benoetigt kein Referenzteam")
+    func incorrectFeedbackNeedsNoReferenceTeam() {
+        let result = DecisionFeedbackResult(evaluation: false)
+        #expect(result == .incorrect)
+    }
+
+    @Test("Das Feedback bildet gleiche Bool-Ergebnisse deterministisch ab")
+    func mappingIsDeterministic() {
+        #expect(DecisionFeedbackResult(evaluation: true) == DecisionFeedbackResult(evaluation: true))
+        #expect(DecisionFeedbackResult(evaluation: false) == DecisionFeedbackResult(evaluation: false))
+    }
+
+    @Test("Die Symbole der beiden Ergebnisse sind eindeutig")
+    func symbolsAreDistinct() {
+        #expect(DecisionFeedbackResult.correct.symbolName != DecisionFeedbackResult.incorrect.symbolName)
+    }
+
+    @Test("Accessibility-Schluessel verraten keine Prioritaet")
+    func accessibilityKeysRevealNoPriority() {
+        let keys = [
+            DecisionFeedbackResult.correct.accessibilityLabelKey,
+            DecisionFeedbackResult.incorrect.accessibilityLabelKey,
+        ]
+        #expect(keys.allSatisfy { !$0.contains("priority") && !$0.contains("normal") && !$0.contains("kritisch") })
+    }
+
+    @Test("Accessibility-Schluessel verraten kein Team")
+    func accessibilityKeysRevealNoTeam() {
+        let keys = [
+            DecisionFeedbackResult.correct.accessibilityLabelKey,
+            DecisionFeedbackResult.incorrect.accessibilityLabelKey,
+        ]
+        #expect(keys.allSatisfy { !$0.contains("team") && !$0.contains("netzwerk") && !$0.contains("hardware") })
+    }
+
+    @Test("Das visuelle Mapping veraendert den Input-Lock nicht")
+    func visualMappingDoesNotChangeInputLock() {
+        let model = SessionModel()
+        let lockBeforeMapping = model.isInputLocked
+        _ = DecisionFeedbackResult(evaluation: true)
+        #expect(model.isInputLocked == lockBeforeMapping)
+    }
+
+    @Test("Nach Ruecksetzen des lokalen States bleibt kein Feedbackresultat")
+    func resettingLocalStateLeavesNoFeedback() {
+        var feedback = DecisionFeedbackResult(evaluation: true)
+        feedback = nil
+        #expect(feedback == nil)
+    }
+}
+
 /// Smoke-Tests für die technische Grundlage aus Modul 001.
 struct TicketTamerTests {
 
@@ -81,6 +385,214 @@ struct TicketTamerTests {
 
         #expect(TicketPriority.allCases.map(\.displayName) == ["Normal", "Wichtig", "Kritisch"])
         #expect(SupportTeam.allCases.map(\.displayName) == ["Netzwerk", "Konto", "Software", "Hardware"])
+    }
+}
+
+// MARK: - Modul 016 — Kompakte Ticketinfo
+
+@MainActor
+@Suite("Modul 016 — Kompakte Ticketinfo")
+struct CompactTicketInfoTests {
+    private var ticket: Ticket { LocalTicketCatalog.allTickets[0] }
+
+    @Test("Die Ticketnummer wird unveraendert uebernommen")
+    func ticketNumberIsCopied() {
+        #expect(CompactTicketInfoContent(ticket: ticket).ticketNumber == ticket.ticketNumber)
+    }
+
+    @Test("Der Titel wird unveraendert uebernommen")
+    func titleIsCopied() {
+        #expect(CompactTicketInfoContent(ticket: ticket).title == ticket.title)
+    }
+
+    @Test("Die Kurzbeschreibung wird unveraendert uebernommen")
+    func shortDescriptionIsCopied() {
+        #expect(CompactTicketInfoContent(ticket: ticket).shortDescription == ticket.shortDescription)
+    }
+
+    @Test("Der User Impact wird unveraendert uebernommen")
+    func userImpactIsCopied() {
+        #expect(CompactTicketInfoContent(ticket: ticket).userImpact == ticket.userImpact)
+    }
+
+    @Test("Alle Symptome werden in ihrer Reihenfolge uebernommen")
+    func symptomsAreCopied() {
+        #expect(CompactTicketInfoContent(ticket: ticket).symptoms == ticket.symptoms)
+    }
+
+    @Test("Der Darstellungsinhalt ist unabhaengig von der Referenzprioritaet")
+    func contentDoesNotNeedReferencePriority() {
+        let changed = Ticket(
+            id: ticket.id, ticketNumber: ticket.ticketNumber, title: ticket.title,
+            shortDescription: ticket.shortDescription, userImpact: ticket.userImpact,
+            symptoms: ticket.symptoms, referencePriority: ticket.referencePriority == .normal ? .kritisch : .normal,
+            referenceTeam: ticket.referenceTeam, monsterAssetId: ticket.monsterAssetId
+        )
+        #expect(CompactTicketInfoContent(ticket: changed) == CompactTicketInfoContent(ticket: ticket))
+    }
+
+    @Test("Der Darstellungsinhalt ist unabhaengig vom Referenzteam")
+    func contentDoesNotNeedReferenceTeam() {
+        let changed = Ticket(
+            id: ticket.id, ticketNumber: ticket.ticketNumber, title: ticket.title,
+            shortDescription: ticket.shortDescription, userImpact: ticket.userImpact,
+            symptoms: ticket.symptoms, referencePriority: ticket.referencePriority,
+            referenceTeam: ticket.referenceTeam == .netzwerk ? .hardware : .netzwerk,
+            monsterAssetId: ticket.monsterAssetId
+        )
+        #expect(CompactTicketInfoContent(ticket: changed) == CompactTicketInfoContent(ticket: ticket))
+    }
+
+    @Test("Der Darstellungsinhalt ist unabhaengig von interner ID und Monsterasset")
+    func contentDoesNotNeedInternalIdentifiers() {
+        let changed = Ticket(
+            id: "andere-interne-id", ticketNumber: ticket.ticketNumber, title: ticket.title,
+            shortDescription: ticket.shortDescription, userImpact: ticket.userImpact,
+            symptoms: ticket.symptoms, referencePriority: ticket.referencePriority,
+            referenceTeam: ticket.referenceTeam, monsterAssetId: "anderes-asset"
+        )
+        #expect(CompactTicketInfoContent(ticket: changed) == CompactTicketInfoContent(ticket: ticket))
+    }
+
+    @Test("Der Overlayzustand startet geschlossen")
+    func overlayStartsClosed() {
+        #expect(TicketInfoInteraction.initialPresentation == false)
+    }
+
+    @Test("Info-Tap oeffnet ein geschlossenes Overlay")
+    func toggleOpensOverlay() {
+        #expect(TicketInfoInteraction.toggled(false) == true)
+    }
+
+    @Test("Erneuter Info-Tap schliesst ein offenes Overlay")
+    func toggleClosesOverlay() {
+        #expect(TicketInfoInteraction.toggled(true) == false)
+    }
+
+    @Test("Ein neuer Viewzustand beginnt nach Phasenwechsel geschlossen")
+    func recreatedViewStateStartsClosed() {
+        let stateAfterRecreation = TicketInfoInteraction.initialPresentation
+        #expect(stateAfterRecreation == false)
+    }
+
+    @Test("Ein offenes Overlay sperrt Drag")
+    func openOverlayDisablesDrag() {
+        #expect(TicketInfoInteraction.isDragEnabled(isPresented: true, isInputLocked: false) == false)
+    }
+
+    @Test("Ein geschlossenes Overlay erlaubt Drag bei freiem Facheingang")
+    func closedOverlayAllowsUnlockedDrag() {
+        #expect(TicketInfoInteraction.isDragEnabled(isPresented: false, isInputLocked: false) == true)
+    }
+
+    @Test("Der fachliche Lock bleibt nach dem Schliessen massgeblich")
+    func domainLockStillDisablesDrag() {
+        #expect(TicketInfoInteraction.isDragEnabled(isPresented: false, isInputLocked: true) == false)
+    }
+
+    @Test("Die Ticketinfo besitzt eine vollstaendige kompakte Designflaeche")
+    func ticketInfoDesignCanvasIsLargeEnough() {
+        #expect(LayoutConstants.compactTicketInfoDesignWidth == 520)
+        #expect(LayoutConstants.compactTicketInfoDesignHeight == 560)
+        #expect(LayoutConstants.compactTicketInfoOuterPadding > 0)
+    }
+
+    @Test("Das zentrale Volume ist fuer die vollstaendige Ticketinfo vergroessert")
+    func centralVolumeIsEnlarged() {
+        #expect(LayoutConstants.centralVolumeWidth == 1.2)
+        #expect(LayoutConstants.centralVolumeHeight == 1.15)
+        #expect(LayoutConstants.centralVolumeDepth == 0.45)
+    }
+
+    @Test("Die Monster-Zielgroessen sind reduziert")
+    func monsterTargetSizesAreReduced() {
+        #expect(LayoutConstants.monsterTargetSize == 0.20)
+        #expect(LayoutConstants.monsterDragDropTargetSize == 0.11)
+    }
+}
+
+// MARK: - Modul 015: Session-HUD und Interaktionshinweise
+
+/// Tests der rein darstellungsbezogenen HUD-Ableitung ohne zweiten Sitzungszustand.
+@MainActor
+struct SessionHUDContentTests {
+    @Test("Ticket 1 von 6 ergibt ein Sechstel Fortschritt")
+    func firstOfSixTickets() {
+        let content = SessionHUDContent(currentTicketIndex: 0, totalTicketCount: 6, phase: .untersuchen)
+        #expect(content.currentTicketNumber == 1)
+        #expect(content.totalTicketCount == 6)
+        #expect(abs(content.progress - (1.0 / 6.0)) < 0.000_001)
+    }
+
+    @Test("Ticket 3 von 6 ergibt 50 Prozent Fortschritt")
+    func thirdOfSixTickets() {
+        let content = SessionHUDContent(currentTicketIndex: 2, totalTicketCount: 6, phase: .priorisieren)
+        #expect(content.currentTicketNumber == 3)
+        #expect(content.progress == 0.5)
+    }
+
+    @Test("Ticket 6 von 6 ergibt vollen Fortschritt")
+    func lastOfSixTickets() {
+        let content = SessionHUDContent(currentTicketIndex: 5, totalTicketCount: 6, phase: .teamZuordnen)
+        #expect(content.currentTicketNumber == 6)
+        #expect(content.progress == 1)
+    }
+
+    @Test("Fortschritt bleibt in allen drei Ticketphasen identisch")
+    func progressIsIndependentOfSubphase() {
+        let phases: [GamePhase] = [.untersuchen, .priorisieren, .teamZuordnen]
+        let values = phases.map {
+            SessionHUDContent(currentTicketIndex: 2, totalTicketCount: 6, phase: $0).progress
+        }
+        #expect(values == [0.5, 0.5, 0.5])
+    }
+
+    @Test("Der naechste Ticketindex erhoeht den Fortschritt")
+    func nextTicketIncreasesProgress() {
+        let current = SessionHUDContent(currentTicketIndex: 1, totalTicketCount: 6, phase: .teamZuordnen)
+        let next = SessionHUDContent(currentTicketIndex: 2, totalTicketCount: 6, phase: .untersuchen)
+        #expect(next.progress > current.progress)
+    }
+
+    @Test("Leere Sitzung ergibt sichere Nullwerte")
+    func emptySessionIsSafe() {
+        let content = SessionHUDContent(currentTicketIndex: 0, totalTicketCount: 0, phase: .untersuchen)
+        #expect(content.currentTicketNumber == 0)
+        #expect(content.totalTicketCount == 0)
+        #expect(content.progress == 0)
+        #expect(content.progress.isFinite)
+    }
+
+    @Test("Ungueltige Indizes bleiben im sichtbaren Fortschrittsbereich")
+    func invalidIndicesAreClamped() {
+        let below = SessionHUDContent(currentTicketIndex: -4, totalTicketCount: 6, phase: .untersuchen)
+        let above = SessionHUDContent(currentTicketIndex: 20, totalTicketCount: 6, phase: .untersuchen)
+        #expect((0...1).contains(below.progress))
+        #expect((0...1).contains(above.progress))
+        #expect(above.currentTicketNumber == 6)
+    }
+
+    @Test("Die drei Phasentitel entsprechen der Vorgabe")
+    func phaseTitlesMatchSpecification() {
+        #expect(SessionHUDContent.title(for: .untersuchen) == "Ticket untersuchen")
+        #expect(SessionHUDContent.title(for: .priorisieren) == "Priorität zuordnen")
+        #expect(SessionHUDContent.title(for: .teamZuordnen) == "Team zuordnen")
+    }
+
+    @Test("Start und Ergebnis haben keinen HUD-Titel")
+    func phasesWithoutHUDHaveNoTitle() {
+        #expect(SessionHUDContent.title(for: .start).isEmpty)
+        #expect(SessionHUDContent.title(for: .ergebnis).isEmpty)
+    }
+
+    @Test("Der Priorisierungshinweis entspricht exakt der Vorgabe")
+    func prioritizationHintMatchesSpecification() {
+        #expect(InteractionHintContent.prioritization == "Monster greifen und auf eine Priorität ziehen.")
+    }
+
+    @Test("Der Teamhinweis entspricht exakt der Vorgabe")
+    func teamHintMatchesSpecification() {
+        #expect(InteractionHintContent.teamAssignment == "Monster greifen und dem zuständigen Team zuordnen.")
     }
 }
 
@@ -343,6 +855,123 @@ struct StartViewModelTests {
         model.reset()
         #expect(model.currentPhase == .start)
         #expect(model.selectedTicketCount == GameplayConstants.defaultTicketCount)
+    }
+}
+
+// MARK: - Modul 017: Startseiten-Usability
+
+/// Tests für Plus/Minus, gemeinsame Source of Truth, Reset und die verbindlichen Texte.
+@MainActor
+struct StartPageUsabilityTests {
+
+    @Test("Plus erhöht 6 genau auf 7")
+    func plusFromSixProducesSeven() {
+        let model = SessionModel()
+        model.setTicketCount(model.selectedTicketCount + 1)
+        #expect(model.selectedTicketCount == 7)
+    }
+
+    @Test("Minus verringert 6 genau auf 5")
+    func minusFromSixProducesFive() {
+        let model = SessionModel()
+        model.setTicketCount(model.selectedTicketCount - 1)
+        #expect(model.selectedTicketCount == 5)
+    }
+
+    @Test("Plus erhöht von jedem inneren Wert um genau eins")
+    func plusAlwaysIncreasesExactlyOnce() {
+        let model = SessionModel()
+        for value in 1..<GameplayConstants.maximumTicketCount {
+            model.setTicketCount(value)
+            model.setTicketCount(model.selectedTicketCount + 1)
+            #expect(model.selectedTicketCount == value + 1)
+        }
+    }
+
+    @Test("Minus verringert von jedem inneren Wert um genau eins")
+    func minusAlwaysDecreasesExactlyOnce() {
+        let model = SessionModel()
+        for value in 2...GameplayConstants.maximumTicketCount {
+            model.setTicketCount(value)
+            model.setTicketCount(model.selectedTicketCount - 1)
+            #expect(model.selectedTicketCount == value - 1)
+        }
+    }
+
+    @Test("Minimum 1 kann nicht unterschritten werden")
+    func minimumCannotBeUnderrun() {
+        let model = SessionModel()
+        model.setTicketCount(1)
+        model.setTicketCount(model.selectedTicketCount - 1)
+        #expect(model.selectedTicketCount == 1)
+    }
+
+    @Test("Maximum 12 kann nicht überschritten werden")
+    func maximumCannotBeExceeded() {
+        let model = SessionModel()
+        model.setTicketCount(12)
+        model.setTicketCount(model.selectedTicketCount + 1)
+        #expect(model.selectedTicketCount == 12)
+    }
+
+    @Test("Minus ist bei 1 als deaktiviert ableitbar")
+    func minusIsDisabledAtMinimum() {
+        #expect(!StartTicketCountControls.canDecrease(1))
+        #expect(StartTicketCountControls.canIncrease(1))
+    }
+
+    @Test("Plus ist bei 12 als deaktiviert ableitbar")
+    func plusIsDisabledAtMaximum() {
+        #expect(!StartTicketCountControls.canIncrease(12))
+        #expect(StartTicketCountControls.canDecrease(12))
+    }
+
+    @Test("Bei 6 sind Minus und Plus aktiviert")
+    func bothButtonsAreEnabledAtSix() {
+        #expect(StartTicketCountControls.canDecrease(6))
+        #expect(StartTicketCountControls.canIncrease(6))
+    }
+
+    @Test("Slider und Buttons ändern dieselbe Ticketanzahl")
+    func sliderAndButtonsShareSelectedTicketCount() {
+        let model = SessionModel()
+        model.setTicketCount(3) // entspricht dem Slider-Binding
+        model.setTicketCount(model.selectedTicketCount - 1)
+        #expect(model.selectedTicketCount == 2)
+        model.setTicketCount(model.selectedTicketCount + 1)
+        #expect(model.selectedTicketCount == 3)
+    }
+
+    @Test("Reset setzt die Ticketanzahl auf 6")
+    func resetRestoresSixTickets() {
+        let model = SessionModel()
+        model.setTicketCount(12)
+        model.reset()
+        #expect(model.selectedTicketCount == 6)
+    }
+
+    @Test("Nach Reset sind Minus und Plus aktiviert")
+    func bothButtonsAreEnabledAfterReset() {
+        let model = SessionModel()
+        model.setTicketCount(1)
+        model.reset()
+        #expect(StartTicketCountControls.canDecrease(model.selectedTicketCount))
+        #expect(StartTicketCountControls.canIncrease(model.selectedTicketCount))
+    }
+
+    @Test("Kurzbeschreibung entspricht exakt der Vorgabe")
+    func descriptionMatchesSpecification() {
+        #expect(StartViewContent.description == "Untersuche Support-Tickets und ordne die Monster einer Priorität und einem Team zu.")
+    }
+
+    @Test("Accessibility-Text Minus entspricht exakt der Vorgabe")
+    func decreaseAccessibilityLabelMatchesSpecification() {
+        #expect(StartViewContent.decreaseAccessibilityLabel == "Ein Ticket weniger")
+    }
+
+    @Test("Accessibility-Text Plus entspricht exakt der Vorgabe")
+    func increaseAccessibilityLabelMatchesSpecification() {
+        #expect(StartViewContent.increaseAccessibilityLabel == "Ein Ticket mehr")
     }
 }
 

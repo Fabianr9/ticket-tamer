@@ -7,11 +7,12 @@
 
 import SwiftUI
 
-/// Deutsche Startansicht mit Projekttitel, ganzzahligem Ticketregler und Startschaltfläche.
+/// Deutsche Startansicht mit Projekttitel, Kurzbeschreibung, Ticketsteuerung und Startschaltfläche.
 ///
 /// Zeigt beim App-Start (Phase `.start`):
 /// - Projekttitel „Ticket Tamer"
-/// - Beschriftung und ganzzahligen Regler 1–12 (Standardwert 6)
+/// - Kurzbeschreibung des Spielziels
+/// - Beschriftung, Minus-/Plus-Schaltflächen und ganzzahligen Regler 1–12 (Standardwert 6)
 /// - sichtbaren aktuellen Zahlenwert
 /// - Schaltfläche „Spiel starten"
 ///
@@ -35,6 +36,12 @@ struct StartView: View {
                 .font(.largeTitle)
                 .fontWeight(.semibold)
 
+            Text(LocalizedStringKey(StartViewContent.description))
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: LayoutConstants.startDescriptionMaximumWidth)
+
             // MARK: Ticketanzahl-Steuerung
             VStack(spacing: LayoutConstants.textSpacing) {
                 Text("start.ticketCount.label")
@@ -44,17 +51,45 @@ struct StartView: View {
                 // Das Binding konvertiert Double ↔ Int und leitet jeden Wert durch
                 // `setTicketCount(_:)`, das ungültige Werte auf 1–12 klemmt.
                 // Kein lokaler `@State`-Spiegel — SessionModel ist die einzige Wahrheitsquelle.
-                Slider(
-                    value: Binding(
-                        get: { Double(model.selectedTicketCount) },
-                        set: { model.setTicketCount(Int($0.rounded())) }
-                    ),
-                    in: Double(GameplayConstants.minimumTicketCount)...Double(GameplayConstants.maximumTicketCount),
-                    step: 1
-                )
-                .frame(maxWidth: 320)
-                .accessibilityLabel(Text("start.ticketCount.accessibility"))
-                .accessibilityValue(Text(String(model.selectedTicketCount)))
+                HStack(spacing: LayoutConstants.startTicketControlSpacing) {
+                    Button {
+                        model.setTicketCount(model.selectedTicketCount - 1)
+                    } label: {
+                        Image(systemName: "minus")
+                            .frame(minWidth: LayoutConstants.startTicketButtonSize,
+                                   minHeight: LayoutConstants.startTicketButtonSize)
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(!StartTicketCountControls.canDecrease(model.selectedTicketCount))
+                    .accessibilityLabel(
+                        Text(LocalizedStringKey(StartViewContent.decreaseAccessibilityLabel))
+                    )
+
+                    Slider(
+                        value: Binding(
+                            get: { Double(model.selectedTicketCount) },
+                            set: { model.setTicketCount(Int($0.rounded())) }
+                        ),
+                        in: Double(GameplayConstants.minimumTicketCount)...Double(GameplayConstants.maximumTicketCount),
+                        step: 1
+                    )
+                    .frame(maxWidth: LayoutConstants.startSliderMaximumWidth)
+                    .accessibilityLabel(Text("start.ticketCount.accessibility"))
+                    .accessibilityValue(Text(String(model.selectedTicketCount)))
+
+                    Button {
+                        model.setTicketCount(model.selectedTicketCount + 1)
+                    } label: {
+                        Image(systemName: "plus")
+                            .frame(minWidth: LayoutConstants.startTicketButtonSize,
+                                   minHeight: LayoutConstants.startTicketButtonSize)
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(!StartTicketCountControls.canIncrease(model.selectedTicketCount))
+                    .accessibilityLabel(
+                        Text(LocalizedStringKey(StartViewContent.increaseAccessibilityLabel))
+                    )
+                }
 
                 // Sichtbarer aktueller Zahlenwert (AK-01)
                 Text("\(model.selectedTicketCount)")
@@ -85,6 +120,24 @@ struct StartView: View {
             DebugManager.log(.lifecycle, "Startansicht erscheint, selectedTicketCount: \(model.selectedTicketCount)")
         }
     }
+}
+
+/// Rein darstellungsbezogene Ableitungen für die Grenzzustände der Ticketsteuerung.
+enum StartTicketCountControls {
+    static func canDecrease(_ count: Int) -> Bool {
+        count > GameplayConstants.minimumTicketCount
+    }
+
+    static func canIncrease(_ count: Int) -> Bool {
+        count < GameplayConstants.maximumTicketCount
+    }
+}
+
+/// Verbindliche sichtbare und barrierefreie Texte aus F-24 beziehungsweise AK-22.
+enum StartViewContent {
+    static let description = "Untersuche Support-Tickets und ordne die Monster einer Priorität und einem Team zu."
+    static let decreaseAccessibilityLabel = "Ein Ticket weniger"
+    static let increaseAccessibilityLabel = "Ein Ticket mehr"
 }
 
 #Preview(windowStyle: .volumetric) {

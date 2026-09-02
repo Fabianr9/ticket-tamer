@@ -98,11 +98,14 @@ struct PrioritizationView: View {
     @State private var targetEntities: [Entity] = []
     @State private var originTransform: Transform? = nil
     @State private var loadError: String? = nil
+    @State private var monsterLoadRecovery = MonsterLoadRecovery()
 
     // MARK: - Modul 010: Feedback-Zustand
 
     /// Verhindert mehrfachen Task-Start bei View-Refresh nach gespeicherter Priorität.
     @State private var feedbackTaskStarted: Bool = false
+    /// Rein lokaler Sichtzustand fuer das bestehende Feedbackfenster (Modul 018).
+    @State private var decisionFeedback: DecisionFeedbackResult? = nil
     /// Lokale Audio-Kapselung — kein globaler Service-Locator.
     @State private var audioService = AudioService()
 
@@ -129,6 +132,10 @@ struct PrioritizationView: View {
 
     /// Verhindert, dass die Grenz-Debugausgabe während einer Geste in jedem Frame erscheint.
     @State private var clampLogged: Bool = false
+
+    // MARK: - Modul 016: lokale Ticketinfo
+
+    @State private var isTicketInfoPresented = TicketInfoInteraction.initialPresentation
 
     // MARK: - Body
 
@@ -182,6 +189,48 @@ struct PrioritizationView: View {
                     .onChanged { value in handleDragChanged(value: value) }
                     .onEnded { value in handleDragEnded(value: value) }
             )
+            .allowsHitTesting(
+                TicketInfoInteraction.isDragEnabled(
+                    isPresented: isTicketInfoPresented,
+                    isInputLocked: model.isInputLocked
+                )
+            )
+
+            if isTicketInfoPresented, let ticket = model.currentTicket {
+                ScaledToFitView(
+                    designSize: CGSize(
+                        width: LayoutConstants.compactTicketInfoDesignWidth,
+                        height: LayoutConstants.compactTicketInfoDesignHeight
+                    ),
+                    maxScale: 1
+                ) {
+                    CompactTicketInfoView(ticket: ticket) {
+                        isTicketInfoPresented = false
+                    }
+                }
+                .padding(LayoutConstants.compactTicketInfoOuterPadding)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(.black.opacity(0.22))
+                .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                .zIndex(1)
+            }
+
+            if model.currentTicket != nil {
+                HStack {
+                    Spacer()
+                    Button {
+                        isTicketInfoPresented = TicketInfoInteraction.toggled(isTicketInfoPresented)
+                    } label: {
+                        Image(systemName: "info.circle.fill")
+                            .font(.title2)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .buttonBorderShape(.circle)
+                    .accessibilityLabel(Text("ticketInfo.button.accessibility"))
+                }
+                .padding(20)
+                .zIndex(2)
+            }
 
             // DEBUG-Einstieg in die Teamphase — nur für Entwicklung/Simulator-Prüfung.
             // Nicht im Release-Build, nicht als F-09-Nutzerfunktion (AK-09).
@@ -202,7 +251,7 @@ struct PrioritizationView: View {
             #endif
 
             // Ladeindikator — liest monsterEntity im Body (SwiftUI-Dependency-Tracking).
-            if monsterEntity == nil && loadError == nil {
+            if monsterLoadRecovery.isLoading {
                 ProgressView()
                     .controlSize(.large)
                     .padding(.top, 100)
@@ -210,18 +259,54 @@ struct PrioritizationView: View {
 
             // Fehlermeldung bei Ladefehlern (kein Crash, kein Auto-Wechsel).
             if let error = loadError {
-                Text(error)
-                    .font(.caption)
-                    .foregroundStyle(.red)
-                    .padding(10)
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
-                    .padding(.top, 80)
+                VStack(spacing: 8) {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                    if monsterLoadRecovery.canRetry {
+                        Button("Erneut laden") {
+                            Task { await loadCurrentMonster() }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
+                        .disabled(monsterLoadRecovery.isLoading)
+                    }
+                }
+                .padding(10)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
+                .padding(.top, 80)
+                .zIndex(10)
             }
+
+            if let decisionFeedback {
+                DecisionFeedbackView(result: decisionFeedback)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .transition(.opacity.combined(with: .scale(scale: 0.92)))
+                    .zIndex(3)
+            }
+        }
+        .ornament(
+            attachmentAnchor: .scene(.top),
+            contentAlignment: .bottom
+        ) {
+            SessionHUDView(
+                currentTicketIndex: model.currentTicketIndex,
+                totalTicketCount: model.sessionTickets.count,
+                phase: model.currentPhase
+            )
+        }
+        .ornament(
+            attachmentAnchor: .scene(.bottom),
+            contentAlignment: .top
+        ) {
+            InteractionHintView(text: InteractionHintContent.prioritization)
         }
         .task {
             await setupScene()
         }
         .onAppear {
+            isTicketInfoPresented = false
+            decisionFeedback = nil
             // Eingabe nur freigeben, wenn noch keine Entscheidung getroffen wurde.
             // Kein Unlock nach View-Refresh bei bereits gespeicherter Priorität (AK-10).
             if model.selectedPriority == nil {
@@ -231,6 +316,10 @@ struct PrioritizationView: View {
             } else {
                 DebugManager.log(.state, "PrioritizationView erschienen, Prioritaet bereits gespeichert: \(model.selectedPriority!.rawValue)")
             }
+        }
+        .onChange(of: model.currentPhase) { _, _ in
+            isTicketInfoPresented = false
+            decisionFeedback = nil
         }
         // MARK: Modul 010 — Prioritätsfeedback und automatischer Übergang (F-11 / F-12 / F-13)
         .onChange(of: model.selectedPriority) { _, newPriority in
@@ -242,11 +331,13 @@ struct PrioritizationView: View {
                     DebugManager.log(.state, "Prioritaetsbewertung war No-Op — Task beendet")
                     return
                 }
-                // 2. Genau einen Sound abspielen.
+                // 2. Das Bool-Ergebnis ist die einzige Quelle fuer das Sichtfeedback.
+                decisionFeedback = DecisionFeedbackResult(evaluation: isCorrect)
+                // 3. Genau einen Sound parallel zum Sichtfeedback abspielen.
                 audioService.play(isCorrect ? .correct : .incorrect)
-                // 3. Eingabe bleibt gesperrt; Szene steht (kein visuelles Feedback-Label).
-                // 4. Warten.
+                // 4. Eingabe bleibt gesperrt; bestehendes Feedbackfenster abwarten.
                 try? await Task.sleep(for: .seconds(FeedbackConstants.feedbackTransitionDelay))
+                decisionFeedback = nil
                 // 5. Guard: Phase darf sich nicht unerwartet geändert haben.
                 guard model.currentPhase == .priorisieren else {
                     DebugManager.log(.state, "Prioritaets-Task: Phase hat sich geaendert, kein Uebergang")
@@ -300,23 +391,33 @@ struct PrioritizationView: View {
     /// Erzeugt die drei Zielpanels und lädt das Monster asynchron.
     private func setupScene() async {
         // Drei Zielstationen aufbauen — noch ohne Bemaßung, die folgt aus der Messung.
-        for targetDef in PriorityTargetMapping.allTargets {
-            let entity = TargetPanelFactory.makeTarget(
-                id: targetDef.id,
-                debugName: targetDef.priority.displayName
-            )
-            // Rückfallposition, bis Volume und Monster vermessen sind.
-            entity.position = targetDef.position
-            targetEntities.append(entity)
-            DebugManager.log(.spawning, "Prioritaetsziel bereit: \(targetDef.id)")
+        if targetEntities.isEmpty {
+            for targetDef in PriorityTargetMapping.allTargets {
+                let entity = TargetPanelFactory.makeTarget(
+                    id: targetDef.id,
+                    debugName: targetDef.priority.displayName
+                )
+                // Rückfallposition, bis Volume und Monster vermessen sind.
+                entity.position = targetDef.position
+                targetEntities.append(entity)
+                DebugManager.log(.spawning, "Prioritaetsziel bereit: \(targetDef.id)")
+            }
         }
 
-        // Monster laden.
+        await loadCurrentMonster()
+    }
+
+    /// Laedt nur das Monster. Bestehende Zielpanels bleiben unveraendert erhalten.
+    private func loadCurrentMonster() async {
         guard let ticket = model.currentTicket else {
             DebugManager.log(.spawning, "Kein aktives Ticket — Monster-Load abgebrochen")
             loadError = "Kein aktives Ticket."
             return
         }
+        guard monsterLoadRecovery.begin(assetID: ticket.monsterAssetId) else { return }
+        loadError = nil
+        monsterEntity = nil
+        DebugManager.log(.spawning, "Monster-Retry/Laden gestartet: \(ticket.monsterAssetId)")
 
         do {
             let entity = try await MonsterAssetProvider.loadMonster(assetID: ticket.monsterAssetId)
@@ -327,15 +428,17 @@ struct PrioritizationView: View {
             originTransform = entity.transform
             MonsterInteractionConfigurator.configure(entity, mode: .dragDrop)
             monsterEntity = entity
+            monsterLoadRecovery.finishSuccessfully()
 
             // Tatsächliche sichtbare Hülle messen — Grundlage für den sicheren
             // Zieh-Bereich, für die Panelhöhe und für die 50-%-Prüfung.
             geometry.measureMonster(entity, assetID: ticket.monsterAssetId)
             syncPanels()
 
-            DebugManager.log(.spawning, "Monster bereit: \(ticket.monsterAssetId), Modus: dragDrop")
+            DebugManager.log(.spawning, "Monster-Retry/Laden erfolgreich: \(ticket.monsterAssetId), Modus: dragDrop")
         } catch {
-            DebugManager.log(.spawning, "Monster-Load fehlgeschlagen: \(error.localizedDescription)")
+            monsterLoadRecovery.finishWithFailure()
+            DebugManager.log(.spawning, "Monster-Retry/Laden fehlgeschlagen: \(error.localizedDescription)")
             loadError = "Monster konnte nicht geladen werden."
         }
     }
@@ -441,6 +544,7 @@ struct PrioritizationView: View {
     // MARK: - Gesture-Handler
 
     private func handleDragChanged(value: EntityTargetValue<DragGesture.Value>) {
+        guard !isTicketInfoPresented else { return }
         guard !model.isInputLocked else {
             DebugManager.log(.input, "Drag ignoriert: Input gesperrt (AK-10)")
             return
@@ -523,6 +627,11 @@ struct PrioritizationView: View {
         // Immer zuerst: die Geste ist beendet, der gemerkte Startpunkt gilt nicht mehr.
         dragStartPosition = nil
         clampLogged = false
+
+        guard !isTicketInfoPresented else {
+            clearHighlight()
+            return
+        }
 
         guard !model.isInputLocked else {
             DebugManager.log(.input, "Release ignoriert: Input bereits gesperrt (AK-10)")

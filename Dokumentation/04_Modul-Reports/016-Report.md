@@ -5,6 +5,18 @@
 **Erstellt am:** 2026-09-02  
 **Status:** Implementiert und statisch geprüft; Xcode-Build, vollständiger Testlauf und Simulatorprüfung in dieser Linux-Umgebung offen.
 
+## Nachbesserung: vollständige Lesbarkeit und Raumgröße
+
+Nach der ersten Sichtprüfung wurde die Ticketinfo auf eine feste Designfläche von 520 × 560
+Punkten umgestellt. `ScaledToFitView` passt diese Fläche mit einem einzigen Skalierungsfaktor
+vollständig in den verfügbaren Bereich ein; dadurch werden weder Text noch X-Schalter an der
+Volume-Kante abgeschnitten. Alle Textblöcke behalten ihre vollständige vertikale Größe.
+
+Das zentrale Volume wurde von 1,0 × 1,0 × 0,4 m auf 1,2 × 1,15 × 0,45 m vergrößert. Die
+Monster-Zielgröße wurde in der Untersuchung von 0,24 m auf 0,20 m und in den beiden
+Drag-Drop-Phasen von 0,13 m auf 0,11 m reduziert. `MonsterAssetProvider.fit` skaliert weiterhin
+mit einem einheitlichen Faktor über alle Achsen; die Modellproportionen bleiben unverändert.
+
 ## Zusammenfassung
 
 Priorisierung und Teamzuordnung besitzen nun denselben Info-Schalter. Er öffnet eine kompakte
@@ -89,7 +101,7 @@ wieder möglich.
 | `Views/PrioritizationView.swift` | geändert | lokaler State, Info-Button, Overlay, Drag-Sperre und Phasenreset | F-19 / AK-19.1, 4–6 |
 | `Views/TeamAssignmentView.swift` | geändert | identische Integration in der Teamphase | F-19 / AK-19.1, 4–6 |
 | `Resources/Localizable.xcstrings` | geändert | Accessibility-Texte für Info und X | AK-19 |
-| `Ticket_TamerTests.swift` | geändert | 15 Tests für Inhalt, Ausschlüsse, Toggle und Drag-Freigabe | AK-19 |
+| `Ticket_TamerTests.swift` | geändert | 18 Tests für Inhalt, Ausschlüsse, Toggle, Drag-Freigabe und Layoutgrößen | AK-19 |
 | `016-Report.md` | neu | tatsächlicher Implementierungs- und Prüfstand | Modulabschluss |
 
 `InvestigationView`, `SessionHUDView`, `InteractionHintView`, `SessionModel`, `Ticket` sowie
@@ -100,20 +112,21 @@ Untersuchungsphase keinen zusätzlichen Info-Button.
 
 | Kennzahl | Vorher | Nachher im Quellstand |
 |---|---:|---:|
-| `@Test`-Fälle | 228 | 243 |
-| neue Tests | – | 15 |
+| `@Test`-Fälle | 228 | 246 |
+| neue Tests | – | 18 |
 
 Die neuen Tests sichern die fünf sichtbaren Datenfelder einschließlich aller Symptome,
 Unabhängigkeit von Referenzpriorität, Referenzteam, interner ID und Monsterasset, geschlossenen
 Initialzustand, beide Toggle-Richtungen, geschlossenen Neustartzustand sowie die Kombinationen
-von Overlay und fachlichem Input-Lock ab. Score und Auswahlwerte werden vom
+von Overlay und fachlichem Input-Lock ab. Drei zusätzliche Layouttests sichern Designfläche,
+vergrößertes Volume und reduzierte Monster-Zielgrößen. Score und Auswahlwerte werden vom
 Darstellungsmodell nicht angefordert.
 
 Statische Prüfungen:
 
 - `jq empty Resources/Localizable.xcstrings`: PASS
 - `git diff --check`: PASS
-- Testdeklarationszählung: 243
+- Testdeklarationszählung: 246
 
 Ein Xcode-Build und die Testsuite konnten nicht ausgeführt werden, weil `xcodebuild`, Xcode und
 die visionOS-Laufzeit in dieser Linux-Umgebung fehlen. Daher werden für den neuen Stand keine

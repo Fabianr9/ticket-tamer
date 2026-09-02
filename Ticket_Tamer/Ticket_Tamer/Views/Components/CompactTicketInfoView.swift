@@ -66,11 +66,13 @@ struct CompactTicketInfoView: View {
 
             Text(content.title)
                 .font(.title2.bold())
+                .fixedSize(horizontal: false, vertical: true)
 
             Divider()
 
             Text(content.shortDescription)
                 .font(.body)
+                .fixedSize(horizontal: false, vertical: true)
 
             informationSection(label: "investigation.userImpact.label", text: content.userImpact)
 
@@ -82,11 +84,18 @@ struct CompactTicketInfoView: View {
                     Label(symptom, systemImage: "circle.fill")
                         .font(.callout)
                         .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
+
+            Spacer(minLength: 0)
         }
         .padding(24)
-        .frame(maxWidth: 520, alignment: .leading)
+        .frame(
+            width: LayoutConstants.compactTicketInfoDesignWidth,
+            height: LayoutConstants.compactTicketInfoDesignHeight,
+            alignment: .topLeading
+        )
         .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 24))
         .accessibilityElement(children: .contain)
     }
@@ -98,6 +107,7 @@ struct CompactTicketInfoView: View {
             Text(text)
                 .font(.callout)
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }

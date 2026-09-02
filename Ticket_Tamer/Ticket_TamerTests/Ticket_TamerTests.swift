@@ -185,6 +185,26 @@ struct CompactTicketInfoTests {
     func domainLockStillDisablesDrag() {
         #expect(TicketInfoInteraction.isDragEnabled(isPresented: false, isInputLocked: true) == false)
     }
+
+    @Test("Die Ticketinfo besitzt eine vollstaendige kompakte Designflaeche")
+    func ticketInfoDesignCanvasIsLargeEnough() {
+        #expect(LayoutConstants.compactTicketInfoDesignWidth == 520)
+        #expect(LayoutConstants.compactTicketInfoDesignHeight == 560)
+        #expect(LayoutConstants.compactTicketInfoOuterPadding > 0)
+    }
+
+    @Test("Das zentrale Volume ist fuer die vollstaendige Ticketinfo vergroessert")
+    func centralVolumeIsEnlarged() {
+        #expect(LayoutConstants.centralVolumeWidth == 1.2)
+        #expect(LayoutConstants.centralVolumeHeight == 1.15)
+        #expect(LayoutConstants.centralVolumeDepth == 0.45)
+    }
+
+    @Test("Die Monster-Zielgroessen sind reduziert")
+    func monsterTargetSizesAreReduced() {
+        #expect(LayoutConstants.monsterTargetSize == 0.20)
+        #expect(LayoutConstants.monsterDragDropTargetSize == 0.11)
+    }
 }
 
 // MARK: - Modul 015: Session-HUD und Interaktionshinweise

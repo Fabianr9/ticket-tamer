@@ -191,10 +191,18 @@ struct TeamAssignmentView: View {
             )
 
             if isTicketInfoPresented, let ticket = model.currentTicket {
-                CompactTicketInfoView(ticket: ticket) {
-                    isTicketInfoPresented = false
+                ScaledToFitView(
+                    designSize: CGSize(
+                        width: LayoutConstants.compactTicketInfoDesignWidth,
+                        height: LayoutConstants.compactTicketInfoDesignHeight
+                    ),
+                    maxScale: 1
+                ) {
+                    CompactTicketInfoView(ticket: ticket) {
+                        isTicketInfoPresented = false
+                    }
                 }
-                .padding(.horizontal, 32)
+                .padding(LayoutConstants.compactTicketInfoOuterPadding)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(.black.opacity(0.22))
                 .transition(.opacity.combined(with: .scale(scale: 0.96)))

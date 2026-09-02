@@ -103,6 +103,8 @@ struct PrioritizationView: View {
 
     /// Verhindert mehrfachen Task-Start bei View-Refresh nach gespeicherter Priorität.
     @State private var feedbackTaskStarted: Bool = false
+    /// Rein lokaler Sichtzustand fuer das bestehende Feedbackfenster (Modul 018).
+    @State private var decisionFeedback: DecisionFeedbackResult? = nil
     /// Lokale Audio-Kapselung — kein globaler Service-Locator.
     @State private var audioService = AudioService()
 
@@ -263,6 +265,13 @@ struct PrioritizationView: View {
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
                     .padding(.top, 80)
             }
+
+            if let decisionFeedback {
+                DecisionFeedbackView(result: decisionFeedback)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .transition(.opacity.combined(with: .scale(scale: 0.92)))
+                    .zIndex(3)
+            }
         }
         .ornament(
             attachmentAnchor: .scene(.top),
@@ -285,6 +294,7 @@ struct PrioritizationView: View {
         }
         .onAppear {
             isTicketInfoPresented = false
+            decisionFeedback = nil
             // Eingabe nur freigeben, wenn noch keine Entscheidung getroffen wurde.
             // Kein Unlock nach View-Refresh bei bereits gespeicherter Priorität (AK-10).
             if model.selectedPriority == nil {
@@ -297,6 +307,7 @@ struct PrioritizationView: View {
         }
         .onChange(of: model.currentPhase) { _, _ in
             isTicketInfoPresented = false
+            decisionFeedback = nil
         }
         // MARK: Modul 010 — Prioritätsfeedback und automatischer Übergang (F-11 / F-12 / F-13)
         .onChange(of: model.selectedPriority) { _, newPriority in
@@ -308,11 +319,13 @@ struct PrioritizationView: View {
                     DebugManager.log(.state, "Prioritaetsbewertung war No-Op — Task beendet")
                     return
                 }
-                // 2. Genau einen Sound abspielen.
+                // 2. Das Bool-Ergebnis ist die einzige Quelle fuer das Sichtfeedback.
+                decisionFeedback = DecisionFeedbackResult(evaluation: isCorrect)
+                // 3. Genau einen Sound parallel zum Sichtfeedback abspielen.
                 audioService.play(isCorrect ? .correct : .incorrect)
-                // 3. Eingabe bleibt gesperrt; Szene steht (kein visuelles Feedback-Label).
-                // 4. Warten.
+                // 4. Eingabe bleibt gesperrt; bestehendes Feedbackfenster abwarten.
                 try? await Task.sleep(for: .seconds(FeedbackConstants.feedbackTransitionDelay))
+                decisionFeedback = nil
                 // 5. Guard: Phase darf sich nicht unerwartet geändert haben.
                 guard model.currentPhase == .priorisieren else {
                     DebugManager.log(.state, "Prioritaets-Task: Phase hat sich geaendert, kein Uebergang")

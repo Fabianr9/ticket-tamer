@@ -4,6 +4,116 @@ import Testing
 import simd
 @testable import Ticket_Tamer
 
+// MARK: - Modul 018 — Visuelles Entscheidungsfeedback
+
+@MainActor
+@Suite("Modul 018 — Visuelles Entscheidungsfeedback")
+struct DecisionFeedbackTests {
+
+    @Test("Richtige Bewertung wird auf correct abgebildet")
+    func correctEvaluationMapsToCorrectFeedback() {
+        #expect(DecisionFeedbackResult(evaluation: true) == .correct)
+    }
+
+    @Test("Falsche Bewertung wird auf incorrect abgebildet")
+    func incorrectEvaluationMapsToIncorrectFeedback() {
+        #expect(DecisionFeedbackResult(evaluation: false) == .incorrect)
+    }
+
+    @Test("Nur richtiges Feedback enthaelt den exakten Punktetext")
+    func onlyCorrectFeedbackContainsPointsText() {
+        #expect(DecisionFeedbackResult.correct.pointsText == "+100 Punkte")
+        #expect(DecisionFeedbackResult.incorrect.pointsText == nil)
+    }
+
+    @Test("Richtiges Feedback verwendet einen Haken")
+    func correctFeedbackUsesCheckmark() {
+        #expect(DecisionFeedbackResult.correct.symbolName == "checkmark")
+    }
+
+    @Test("Falsches Feedback verwendet ein Kreuz")
+    func incorrectFeedbackUsesXmark() {
+        #expect(DecisionFeedbackResult.incorrect.symbolName == "xmark")
+    }
+
+    @Test("Richtiges Feedback besitzt den lokalisierten Accessibility-Schluessel")
+    func correctFeedbackHasAccessibilityKey() {
+        #expect(DecisionFeedbackResult.correct.accessibilityLabelKey == "decisionFeedback.correct.accessibility")
+    }
+
+    @Test("Falsches Feedback besitzt den lokalisierten Accessibility-Schluessel")
+    func incorrectFeedbackHasAccessibilityKey() {
+        #expect(DecisionFeedbackResult.incorrect.accessibilityLabelKey == "decisionFeedback.incorrect.accessibility")
+    }
+
+    @Test("Eine No-Op-Bewertung erzeugt keinen Feedbackzustand")
+    func nilEvaluationCreatesNoFeedback() {
+        #expect(DecisionFeedbackResult(evaluation: nil) == nil)
+    }
+
+    @Test("Feedbackresultat besteht nur aus den beiden Darstellungsfaellen")
+    func feedbackContainsNoDomainOrScoreState() {
+        #expect([DecisionFeedbackResult.correct, .incorrect].count == 2)
+        #expect(DecisionFeedbackResult.incorrect.pointsText == nil)
+    }
+
+    @Test("Correct benoetigt keine Referenzprioritaet")
+    func correctFeedbackNeedsNoReferencePriority() {
+        let result = DecisionFeedbackResult(evaluation: true)
+        #expect(result == .correct)
+    }
+
+    @Test("Incorrect benoetigt kein Referenzteam")
+    func incorrectFeedbackNeedsNoReferenceTeam() {
+        let result = DecisionFeedbackResult(evaluation: false)
+        #expect(result == .incorrect)
+    }
+
+    @Test("Das Feedback bildet gleiche Bool-Ergebnisse deterministisch ab")
+    func mappingIsDeterministic() {
+        #expect(DecisionFeedbackResult(evaluation: true) == DecisionFeedbackResult(evaluation: true))
+        #expect(DecisionFeedbackResult(evaluation: false) == DecisionFeedbackResult(evaluation: false))
+    }
+
+    @Test("Die Symbole der beiden Ergebnisse sind eindeutig")
+    func symbolsAreDistinct() {
+        #expect(DecisionFeedbackResult.correct.symbolName != DecisionFeedbackResult.incorrect.symbolName)
+    }
+
+    @Test("Accessibility-Schluessel verraten keine Prioritaet")
+    func accessibilityKeysRevealNoPriority() {
+        let keys = [
+            DecisionFeedbackResult.correct.accessibilityLabelKey,
+            DecisionFeedbackResult.incorrect.accessibilityLabelKey,
+        ]
+        #expect(keys.allSatisfy { !$0.contains("priority") && !$0.contains("normal") && !$0.contains("kritisch") })
+    }
+
+    @Test("Accessibility-Schluessel verraten kein Team")
+    func accessibilityKeysRevealNoTeam() {
+        let keys = [
+            DecisionFeedbackResult.correct.accessibilityLabelKey,
+            DecisionFeedbackResult.incorrect.accessibilityLabelKey,
+        ]
+        #expect(keys.allSatisfy { !$0.contains("team") && !$0.contains("netzwerk") && !$0.contains("hardware") })
+    }
+
+    @Test("Das visuelle Mapping veraendert den Input-Lock nicht")
+    func visualMappingDoesNotChangeInputLock() {
+        let model = SessionModel()
+        let lockBeforeMapping = model.isInputLocked
+        _ = DecisionFeedbackResult(evaluation: true)
+        #expect(model.isInputLocked == lockBeforeMapping)
+    }
+
+    @Test("Nach Ruecksetzen des lokalen States bleibt kein Feedbackresultat")
+    func resettingLocalStateLeavesNoFeedback() {
+        var feedback = DecisionFeedbackResult(evaluation: true)
+        feedback = nil
+        #expect(feedback == nil)
+    }
+}
+
 /// Smoke-Tests für die technische Grundlage aus Modul 001.
 struct TicketTamerTests {
 

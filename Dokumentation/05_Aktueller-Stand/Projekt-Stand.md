@@ -1,42 +1,83 @@
 # Projekt-Stand — Ticket Tamer
 
-> Aktuelle Code-Landkarte nach Modul 016 der Version 1.1.
+> Aktuelle Code-Landkarte nach Modul 017 der Version 1.1.
 
 **Projektversion:** v1.1 in Arbeit  
 **v1.0:** abgeschlossen  
-**Stand:** nach Modul `016` — Kompakte Ticketinfo  
+**Stand:** nach Modul `017` — Startseiten-Usability  
 **Branch laut Report:** `side`  
-**HEAD vor 016:** `9fd8706363983cf1ad4ccabbfddab1f5aef08424`  
-**Modul-015-Commit:** `afe4bce feat: Modul 15`  
-**Modul-016-Commit:** offen  
-**Testdeklarationen:** 246  
-**Build/Test/Simulator nach 016:** offen
+**HEAD vor 017:** `0d25719`  
+**Modul-016-Commit:** `8d60045`  
+**Modul-016-Layoutfix:** `0d25719`  
+**Modul-017-Commit:** offen  
+**Testdeklarationen:** 261  
+**Build/Test/Simulator nach 017:** offen
 
 ## v1.1-Funktionsstand
 
 ### Modul 015
 
-Vorhanden:
-
 - Session-HUD
-- Ticket X von Y
+- Ticketfortschritt
 - Phasentitel
-- ProgressView
-- dauerhafte Drag-Hinweise
+- permanente Drag-Hinweise
 
 ### Modul 016
 
-Vorhanden:
-
-- kompakte Ticketinfo in Priorisierung
-- kompakte Ticketinfo in Team
+- kompakte Ticketinfo
+- Info-Toggle
 - lokaler Overlay-State
-- Schließen per X
-- Schließen per erneutem Info-Tap
 - Drag-Sperre bei offenem Overlay
-- Reset des Overlays bei View-/Phasenwechsel
+- X-Schließen
+- Phasenreset
 
-## Relevanter Dateibaum
+### Modul 017
+
+- Kurzbeschreibung auf Startseite
+- Minus
+- bestehender Slider
+- Plus
+- Grenzdeaktivierung
+- Accessibility
+
+## StartView nach Modul 017
+
+Source of Truth:
+
+`SessionModel.selectedTicketCount`
+
+Bedienelemente:
+
+```text
+Ticket Tamer
+Kurzbeschreibung
+
+Anzahl Tickets
+[ - ] [ Slider ] [ + ]
+          6
+
+[ Spiel starten ]
+```
+
+Exakte Beschreibung:
+
+`Untersuche Support-Tickets und ordne die Monster einer Priorität und einem Team zu.`
+
+Accessibility:
+
+- Minus: `Ein Ticket weniger`
+- Plus: `Ein Ticket mehr`
+
+Grenzen:
+
+- 1 → Minus disabled
+- 12 → Plus disabled
+
+Reset:
+
+- zurück auf 6
+
+## Relevanter v1.1-Dateibaum
 
 ```text
 Ticket_Tamer/Ticket_Tamer/
@@ -45,99 +86,36 @@ Ticket_Tamer/Ticket_Tamer/
 │  └─ Ticket.swift
 ├─ Resources/
 │  └─ Localizable.xcstrings
-├─ Views/
-│  ├─ StartView.swift
-│  ├─ InvestigationView.swift
-│  ├─ PrioritizationView.swift
-│  ├─ TeamAssignmentView.swift
-│  └─ Components/
-│     ├─ CompactTicketInfoView.swift
-│     ├─ InteractionHintView.swift
-│     ├─ ScaledToFitView.swift
-│     └─ SessionHUDView.swift
-└─ ...
+├─ Support/
+│  └─ AppConstants.swift
+└─ Views/
+   ├─ StartView.swift
+   ├─ InvestigationView.swift
+   ├─ PrioritizationView.swift
+   ├─ TeamAssignmentView.swift
+   └─ Components/
+      ├─ CompactTicketInfoView.swift
+      ├─ InteractionHintView.swift
+      ├─ ScaledToFitView.swift
+      └─ SessionHUDView.swift
 ```
 
-`ScaledToFitView.swift` wird vom 016-Report als vorhandene Layoutkomponente referenziert; tatsächlichen Pfad im nächsten Preflight verifizieren.
+## Modul-016-Layoutstand
 
-## `CompactTicketInfoContent`
+Bestätigt aus realem Diff:
 
-Enthält ausschließlich:
+- Volume: `1.2 × 1.15 × 0.45 m`
+- Investigation-Monsterzielgröße: `0.20 m`
+- Priorisierung/Team-Monsterzielgröße: `0.11 m`
+- Ticketinfo-Designfläche: `520 × 560 pt`
 
-- ticketNumber
-- title
-- shortDescription
-- userImpact
-- symptoms
-
-Nicht enthalten:
-
-- referencePriority
-- referenceTeam
-- score
-- selectedPriority
-- selectedTeam
-- interne ID
-- monsterAssetId
-
-## Overlay-State
-
-Jeweils lokal in:
-
-- `PrioritizationView`
-- `TeamAssignmentView`
-
-Semantik:
-
-```text
-isTicketInfoPresented = false
-```
-
-Keine SessionModel-Erweiterung.
-
-## Drag-Freigabe
-
-```text
-!isTicketInfoPresented && !model.isInputLocked
-```
-
-Overlay darf den fachlichen Lock weder setzen noch lösen.
-
-## Nachbesserte Layoutwerte aus Modul 016
-
-Gemeldet:
-
-### Volume
-
-`1.2 × 1.15 × 0.45 m`
-
-vorher:
-
-`1.0 × 1.0 × 0.4 m`
-
-### Monster-Zielgrößen
-
-Untersuchung:
-
-`0.20 m`
-
-Priorisierung/Team:
-
-`0.11 m`
-
-### Ticketinfo-Designfläche
-
-`520 × 560 pt`
-
-Diese Werte sind laut Report durch Layouttests abgedeckt.
-
-**Achtung:** Die reale Dateiänderungstabelle des Reports weist die Dateien hinter Volume-/Monstergrößenänderungen nicht vollständig aus. Nächster Preflight muss sie im Code/Git-Diff ermitteln.
+Modul 017 verändert diese Werte nicht.
 
 ## Tests
 
-- vor 016: 228
-- neu: 18
-- nach 016: 246 Deklarationen
+- vor 017: 246
+- +15
+- aktuell: 261 Testdeklarationen
 - vollständiger Xcode-Lauf offen
 
 ## v1.1-Modul-Landkarte
@@ -146,52 +124,58 @@ Diese Werte sind laut Report durch Layouttests abgedeckt.
 |---|---|---|
 | 015 | HUD + Hinweise | implementiert; Laufzeitabnahme offen |
 | 016 | Kompakte Ticketinfo | implementiert; Laufzeitabnahme offen |
-| 017 | Startseiten-Usability | als Nächstes |
-| 018 | Visuelles Feedback | offen |
+| 017 | Startseiten-Usability | implementiert; Laufzeitabnahme offen |
+| 018 | Visuelles Entscheidungsfeedback | als Nächstes |
 | 019 | Ladefehler-Recovery | offen |
 | 020 | v1.1-Integration | offen |
 
-## Für Modul 017 relevante bestehende Schnittstellen
+## Für Modul 018 relevant
 
-### `SessionModel`
+Vorhandene Bewertungslogik aus Modul 010:
 
-- `selectedTicketCount`
-- `setTicketCount(_:)`
-- `reset()`
-- `startSession()`
+- `evaluatePriority() -> Bool?`
+- `evaluateTeam() -> Bool?`
+- richtig → +100 / `true`
+- falsch → +0 / `false`
+- erneut/ungültig → `nil`
 
-`setTicketCount(_:)` klemmt auf 1...12.
+Vorhandener Feedbackflow:
 
-`reset()` setzt Ticketanzahl zurück auf 6.
+```text
+gültige Entscheidung
+→ evaluate...
+→ Bool richtig/falsch
+→ passender Sound
+→ ca. 1,5 s
+→ nächster Phasenwechsel
+```
 
-### `StartView`
+Modul 018 darf ausschließlich das bereits vorhandene Bool-Ergebnis zur Darstellung verwenden.
 
-Bestehend aus v1.0:
+Nicht erneut vergleichen:
 
-- Titel
-- `Anzahl Tickets`
-- Slider
-- aktuelle Zahl
-- `Spiel starten`
+- `referencePriority`
+- `referenceTeam`
 
-Slider bindet direkt an `SessionModel.selectedTicketCount`.
+Nicht erneut Punkte vergeben.
 
-## Modul 017
+## F-21-Sichtlogik
 
-Ergänzt ausschließlich:
+Richtig:
 
-- Minus-Button
-- Plus-Button
-- Kurzbeschreibung unter Titel
+- grüner Haken
+- `+100 Punkte`
 
-Slider bleibt bestehen.
+Falsch:
 
-Alle drei Auswahloberflächen:
+- rotes Kreuz
+- kein `+0 Punkte`
+- kein anderer Punktetext
 
-- Minus
-- Slider
-- Plus
+Immer:
 
-müssen exakt denselben `SessionModel.selectedTicketCount` verwenden.
-
-Kein lokaler Spiegelzustand.
+- parallel zu Sound
+- nur im bestehenden Feedbackfenster
+- keine Lösung
+- Lock bleibt bestehen
+- genau ein Sound / eine Bewertung / ein Phasenwechsel

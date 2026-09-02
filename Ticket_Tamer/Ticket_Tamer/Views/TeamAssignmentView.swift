@@ -116,6 +116,8 @@ struct TeamAssignmentView: View {
 
     /// Verhindert mehrfachen Task-Start bei View-Refresh nach gespeichertem Team.
     @State private var feedbackTaskStarted: Bool = false
+    /// Rein lokaler Sichtzustand fuer das bestehende Feedbackfenster (Modul 018).
+    @State private var decisionFeedback: DecisionFeedbackResult? = nil
     /// Lokale Audio-Kapselung — kein globaler Service-Locator.
     @State private var audioService = AudioService()
 
@@ -242,6 +244,13 @@ struct TeamAssignmentView: View {
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
                     .padding(.top, 80)
             }
+
+            if let decisionFeedback {
+                DecisionFeedbackView(result: decisionFeedback)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .transition(.opacity.combined(with: .scale(scale: 0.92)))
+                    .zIndex(3)
+            }
         }
         .ornament(
             attachmentAnchor: .scene(.top),
@@ -264,6 +273,7 @@ struct TeamAssignmentView: View {
         }
         .onAppear {
             isTicketInfoPresented = false
+            decisionFeedback = nil
             // Eingabe nur freigeben, wenn noch keine Teamentscheidung getroffen wurde.
             // beginTeamAssignmentPhase() übernimmt das initiale Unlock; dieser Guard
             // schützt vor erneutem Entsperren bei View-Refresh nach saveTeam(_:).
@@ -276,6 +286,7 @@ struct TeamAssignmentView: View {
         }
         .onChange(of: model.currentPhase) { _, _ in
             isTicketInfoPresented = false
+            decisionFeedback = nil
         }
         // MARK: Modul 010 — Teamfeedback und automatischer Übergang (F-11 / F-12 / F-13)
         .onChange(of: model.selectedTeam) { _, newTeam in
@@ -287,11 +298,13 @@ struct TeamAssignmentView: View {
                     DebugManager.log(.state, "Teambewertung war No-Op — Task beendet")
                     return
                 }
-                // 2. Genau einen Sound abspielen.
+                // 2. Das Bool-Ergebnis ist die einzige Quelle fuer das Sichtfeedback.
+                decisionFeedback = DecisionFeedbackResult(evaluation: isCorrect)
+                // 3. Genau einen Sound parallel zum Sichtfeedback abspielen.
                 audioService.play(isCorrect ? .correct : .incorrect)
-                // 3. Eingabe bleibt gesperrt; Szene steht (kein visuelles Feedback-Label).
-                // 4. Warten.
+                // 4. Eingabe bleibt gesperrt; bestehendes Feedbackfenster abwarten.
                 try? await Task.sleep(for: .seconds(FeedbackConstants.feedbackTransitionDelay))
+                decisionFeedback = nil
                 // 5. Guard: Phase darf sich nicht unerwartet geändert haben.
                 guard model.currentPhase == .teamZuordnen else {
                     DebugManager.log(.state, "Team-Task: Phase hat sich geaendert, kein Uebergang")

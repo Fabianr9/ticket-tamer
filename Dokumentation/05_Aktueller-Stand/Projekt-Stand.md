@@ -1,83 +1,45 @@
 # Projekt-Stand — Ticket Tamer
 
-**Projektversion:** v1.1 in Arbeit
-**Stand:** nach Modul `019`
+> Aktuelle Code-Landkarte nach der finalen Abnahme von Version 1.1.
+
+**Projektversion:** v1.1 abgeschlossen
+**v1.0:** abgeschlossen, Regression AK-01 bis AK-16 PASS
+**Stand:** nach Modul `020` — Integration und Abnahme v1.1
+**Eingearbeitet am:** 2026-09-02
 **Branch:** `A`
-**HEAD vor 019:** `de7e4d6`
-**Modul-018-Commit:** `de7e4d6`
-**Modul-019-Commit:** offen
-**Testdeklarationen:** 298
-**Build/Test/Simulator:** offen
+**HEAD vor Modul 020:** `84e3ca7`
+**Modul-019-Commits:** `0b0d4c1`, `84e3ca7`
+**Teststand:** 298 Tests, vollständig PASS
+**Build:** PASS
 
-## v1.1-Funktionsstand
+## Abnahmestand v1.1
 
-- 015: Session-HUD + Hinweise
-- 016: Kompakte Ticketinfo + Drag-Sperre
-- 017: Startseitenbeschreibung + Minus/Plus
-- 018: Visuelles Entscheidungsfeedback
-- 019: Ladefehler-Recovery
+| Modul | Anforderungen | Status |
+|---|---|---|
+| 015 | AK-18, AK-20 | PASS |
+| 016 | AK-19 | PASS |
+| 017 | AK-22, AK-24 | PASS |
+| 018 | AK-21 | PASS |
+| 019 | AK-23 | PASS |
+| 020 | Integration und Regression | PASS |
 
-## Neue Feedback-Komponente
+## Implementierter Umfang
 
-`Views/Components/DecisionFeedbackView.swift`
+- Session-HUD mit Ticketfortschritt und Phasentitel
+- kompakte, lösungsfreie Ticketinfo mit Drag-Sperre
+- dauerhafte Interaktionshinweise
+- visuelles Richtig-/Falsch-Feedback im bestehenden Übergangsfenster
+- synchrone Minus-/Slider-/Plus-Steuerung von 1 bis 12 Tickets
+- manuelle Ladefehler-Recovery in allen Monsterphasen
+- Startseitenbeschreibung
+- vollständiger v1.0-Spielzyklus mit genau einem zentralen Volume
 
-Correct:
+## Qualitätsstand
 
-- grüner Haken
-- `+100 Punkte`
+- AK-18 bis AK-24: 7 PASS, 0 OPEN, 0 FAIL
+- AK-01 bis AK-16: 16 PASS, 0 OPEN, 0 FAIL
+- Sitzungen mit 1, 2, 6 und 12 Tickets stabil
+- Scoring, Audio, Exactly-once, Transition, Ergebnis und Reset regressionsfrei
+- keine Integrationsfixes in Modul 020 erforderlich
 
-Incorrect:
-
-- rotes Kreuz
-- kein Punktetext
-
-Quelle:
-
-```text
-evaluatePriority()/evaluateTeam() → Bool?
-```
-
-Kein erneuter Referenzvergleich und keine neue Punktevergabe.
-
-## Tests
-
-- vor 018: 261
-- +17
-- nach 018: 278
-- Modul 019: +20
-- aktuell 298 Deklarationen
-- vollständiger Xcode-Lauf offen
-
-## Modul 019
-
-F-23 verlangt bei Monster-Ladefehler in:
-
-- Untersuchung
-- Priorisierung
-- Teamzuordnung
-
-sichtbar:
-
-`Erneut laden`
-
-Retry muss:
-
-- ausschließlich aktuelles Monster neu laden
-- Ladefehler zurücksetzen
-- Ticket/Index/Phase/Score/Entscheidungen unverändert lassen
-- `isInputLocked` nicht verändern
-- keine Prioritäts-/Team-Zielpanels erneut erzeugen
-- keine doppelten Monster erzeugen
-- nach erneutem Fehler wieder Retry ermöglichen
-
-Bestehende Schnittstelle historisch:
-
-```text
-MonsterAssetProvider.loadMonster(assetID:) async throws -> Entity
-```
-
-Umgesetzt über lokalen `MonsterLoadRecovery`-State und getrennte Monster-Ladefunktionen. Retry verändert das `SessionModel` nicht und erzeugt keine Zielpanels neu. Build, vollständiger Testlauf und visionOS-Simulatorprüfung sind offen.
-
-## Für Modul 020
-
-Integration und Laufzeitabnahme von F-18 bis F-24 auf macOS/visionOS durchführen. Für F-23 insbesondere Mehrfach-Retry, genau ein Monster, exakt drei/vier Panels und die unveränderte Sitzungszustandsmatrix prüfen.
+Der vollständige Nachweis steht in `Dokumentation/04_Modul-Reports/020-Report.md`.

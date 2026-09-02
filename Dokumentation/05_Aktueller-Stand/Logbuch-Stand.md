@@ -1,152 +1,48 @@
 # Projektlogbuch — Ticket Tamer
 
-**Projektversion:** v1.1 in Arbeit
-**v1.0:** abgeschlossen
-**Stand:** nach Modul `019` — Ladefehler-Recovery
+> Einziger aktueller Logbuch-Stand nach Abschluss von Version 1.1.
+
+**Projektversion:** v1.1 abgeschlossen
+**Stand:** Modul `020` — Integration und Abnahme v1.1
 **Eingearbeitet am:** 2026-09-02
-**Branch laut 019-Preflight:** `A`
-**HEAD vor Modul 019:** `de7e4d6` (`feat: Modul 18`)
-**Modul-017-Commit:** `6dbd2ba feat: Modul 17`
-**Modul-018-Commit:** `de7e4d6 feat: Modul 18`
-**Testdeklarationen vor 019:** 278
-**Testdeklarationen nach 019:** 298
-**Build/Test/Simulator nach 019:** offen
+**Branch:** `A`
+**HEAD vor Modul 020:** `84e3ca7` (`fix: Modul 19`)
+**Modul-019-Commits:** `0b0d4c1 feat: Modul 19`, `84e3ca7 fix: Modul 19`
+**Tests:** 298, vollständig PASS
+**Build:** PASS
 
-## v1.1-Modulstatus
+## Modulstatus
 
-| Modul | Titel | Anforderungen | Status |
-|---|---|---|---|
-| 015 | Session-HUD und Interaktionshinweise | F-18, F-20 | implementiert; Laufzeitabnahme offen |
-| 016 | Kompakte Ticketinfo | F-19 | implementiert; Laufzeitabnahme offen |
-| 017 | Startseiten-Usability | F-22, F-24 | implementiert; Commit `6dbd2ba`; Laufzeitabnahme offen |
-| 018 | Visuelles Entscheidungsfeedback | F-21 | implementiert; Commit `de7e4d6`; Laufzeitabnahme offen |
-| 019 | Ladefehler-Recovery | F-23 | implementiert; statisch geprüft; Build/Test/Simulator offen; Commit offen |
-| 020 | Integration und Abnahme v1.1 | F-18 bis F-24 | offen |
+| Modul | Titel | Status |
+|---|---|---|
+| 015 | Session-HUD und Interaktionshinweise | abgeschlossen |
+| 016 | Kompakte Ticketinfo | abgeschlossen |
+| 017 | Startseiten-Usability | abgeschlossen |
+| 018 | Visuelles Entscheidungsfeedback | abgeschlossen |
+| 019 | Ladefehler-Recovery | abgeschlossen |
+| 020 | Integration und Abnahme v1.1 | abgeschlossen |
 
-## Stand Modul 018
+## Abnahme Modul 020
 
-Neu:
+- Build erfolgreich.
+- Vollständige Suite mit 298 Tests erfolgreich.
+- AK-18 bis AK-24 im Zusammenspiel geprüft: vollständig PASS.
+- AK-01 bis AK-16 regressionsgeprüft: vollständig PASS.
+- Sitzungen mit 1, 2, 6 und 12 Tickets stabil.
+- HUD, Ticketinfo, Hinweise, Feedback, Ticketsteuerung, Retry und Startbeschreibung funktionieren wie spezifiziert.
+- Scoring, Audio, Lock/Exactly-once, Transition, Ergebnis und Reset ohne Regression.
+- Layout und Accessibility ohne Befund.
+- Keine Integrationsfixes erforderlich.
 
-- `Views/Components/DecisionFeedbackView.swift`
+## Finale Bilanz
 
-Neue Darstellungssemantik:
+| Bereich | PASS | OPEN | FAIL |
+|---|---:|---:|---:|
+| v1.1 AK-18 bis AK-24 | 7 | 0 | 0 |
+| v1.0 AK-01 bis AK-16 | 16 | 0 | 0 |
 
-```text
-DecisionFeedbackResult
-- correct
-- incorrect
-- init?(evaluation: Bool?)
-```
+## Abschluss
 
-Richtig:
+**Ticket Tamer v1.1 ist abgenommen und abgabebereit.**
 
-- grüner Haken
-- `+100 Punkte`
-- Accessibility: `Entscheidung richtig, 100 Punkte`
-
-Falsch:
-
-- rotes Kreuz
-- kein Punktetext
-- Accessibility: `Entscheidung falsch`
-
-Das visuelle Feedback verwendet ausschließlich das bestehende Bool-Ergebnis aus:
-
-- `evaluatePriority()`
-- `evaluateTeam()`
-
-Es wertet Referenzpriorität oder Referenzteam nicht erneut aus.
-
-## Integration
-
-Beide Entscheidungsviews halten lokalen State:
-
-```text
-decisionFeedback: DecisionFeedbackResult?
-```
-
-Ablauf:
-
-```text
-gültige Entscheidung
-→ bestehende Bewertung
-→ Bool
-→ visueller lokaler State
-→ bestehender Sound
-→ bestehende 1,5 s
-→ visueller State zurücksetzen
-→ bestehender Phasenwechsel
-```
-
-Keine zweite Task-Kette.
-
-Unverändert:
-
-- Score
-- AudioService
-- `isInputLocked`
-- Exactly-once
-- Drop-/Drag-Geometrie
-- Startseite
-- HUD
-- Ticketinfo
-- Ergebnisansicht
-
-## Teststand
-
-- vor 018: 261
-- neu: 17
-- nach 018: 278 Testdeklarationen
-- `jq empty`: PASS
-- `git diff --check` für Modul-018-Dateien: PASS
-- vollständiger Xcode-Testlauf: offen
-
-## Status F-21 / AK-21
-
-Code-/strukturseitig umgesetzt:
-
-- richtiger Fall: grüner Haken + `+100 Punkte`
-- falscher Fall: rotes Kreuz ohne Punktetext
-- parallel zum vorhandenen Sound
-- an dasselbe 1,5-s-Fenster gekoppelt
-- keine Lösung
-- Lock/Exactly-once unverändert
-- Accessibility vorhanden
-
-Noch offen:
-
-- Xcode-Build
-- vollständiger 278-Testlauf
-- Simulatorprüfung aller vier Fälle
-- Sound-Synchronität
-- Sichtdauer
-- schnelle Mehrfacheingabe
-- VoiceOver
-
-**F-21 implementiert; AK-21 Laufzeitabnahme offen.**
-
-## Offene Laufzeitprüfungen aus Modul 018
-
-- [ ] Modul 018 bauen
-- [ ] vollständige 278 Tests
-- [ ] richtige/falsche Priorität
-- [ ] richtiges/falsches Team
-- [ ] Sound parallel
-- [ ] 1,5-s-Sichtdauer
-- [ ] Exactly-once Regression
-- [ ] HUD/Ticketinfo/Startseite Regression
-- [x] Modul 018 separat committen (`de7e4d6`)
-
-## Stand Modul 019
-
-- `Erneut laden` ist nach Monster-Ladefehlern in Untersuchung, Priorisierung und Team sichtbar.
-- Retry lädt ausschließlich `currentTicket.monsterAssetId`.
-- `MonsterLoadRecovery` verhindert parallele Loads und erlaubt unbegrenzt neue Versuche.
-- Drei Prioritäts- und vier Teamziele werden nicht erneut erzeugt.
-- Ticket, Index, Phase, Score, Entscheidungen und Input-Lock bleiben unverändert.
-- 20 neue Tests; insgesamt 298 Testdeklarationen.
-- Xcode-Build, vollständiger Testlauf und Simulatorprüfung sind offen.
-
-## Nächster Schritt
-
-Modul 019 auf macOS bauen, testen und im Simulator abnehmen; danach separat committen und Modul 020 ausführen.
+Vollständige technische Übergabe: `Dokumentation/04_Modul-Reports/020-Report.md`.

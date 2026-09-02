@@ -151,12 +151,15 @@ struct InvestigationView: View {
                 Text("investigation.error.monsterLoad")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Button("monsterLoad.retry") {
+                Button("Erneut laden") {
                     loadMonster(for: model.currentTicket)
                 }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
                 .disabled(monsterLoadRecovery.isLoading)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .zIndex(10)
         } else {
             // Initialer Zustand vor erstem Laden (kurze Lücke zwischen Erscheinen und Task-Start)
             Color.clear

@@ -243,15 +243,18 @@ struct TeamAssignmentView: View {
                         .font(.caption)
                         .foregroundStyle(.red)
                     if monsterLoadRecovery.canRetry {
-                        Button("monsterLoad.retry") {
+                        Button("Erneut laden") {
                             Task { await loadCurrentMonster() }
                         }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
                         .disabled(monsterLoadRecovery.isLoading)
                     }
                 }
                 .padding(10)
                 .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
                 .padding(.top, 80)
+                .zIndex(10)
             }
 
             if let decisionFeedback {

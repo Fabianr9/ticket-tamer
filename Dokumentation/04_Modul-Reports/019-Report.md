@@ -57,7 +57,7 @@ Der Retry ruft keine Methode des `SessionModel` auf. Damit bleiben dasselbe Tick
 | `Views/InvestigationView.swift` | Retry im bestehenden Fehlerpanel, Laden über lokalen Recovery-State |
 | `Views/PrioritizationView.swift` | Panelaufbau idempotent getrennt, monster-only Retry und Fehleraktion |
 | `Views/TeamAssignmentView.swift` | analog Priorisierung mit vier Teamzielen |
-| `Resources/Localizable.xcstrings` | `monsterLoad.retry` → exakt `Erneut laden` |
+| `Resources/Localizable.xcstrings` | sichtbarer Quell-/Lokalisierungstext exakt `Erneut laden` |
 | `Ticket_TamerTests/Ticket_TamerTests.swift` | 20 neue Tests für Zustände, Mehrfach-/Parallel-Retry, Session-Schutz und Zielanzahlen/-IDs |
 
 `SessionModel`, Asset-Mapping, Scoring, Audio, Feedback, HUD, Ticketinfo, Startseite, DropEvaluator, DragBounds und ResultView blieben unverändert.

@@ -52,6 +52,18 @@ enum LayoutConstants {
     /// Abstand innerhalb des Textblocks.
     static let textSpacing = 8.0
 
+    /// Maximale Textbreite der kurzen Spielbeschreibung auf der Startseite.
+    static let startDescriptionMaximumWidth = 560.0
+
+    /// Maximale Breite des weiterhin vorhandenen Ticketanzahl-Sliders.
+    static let startSliderMaximumWidth = 320.0
+
+    /// Abstand zwischen Minus, Slider und Plus.
+    static let startTicketControlSpacing = 16.0
+
+    /// Mindestgroesse der direkt bedienbaren Minus-/Plus-Schaltflächen.
+    static let startTicketButtonSize = 44.0
+
     /// Abstand unter dem vorhandenen RealityKit-Default-Modell.
     static let modelBottomPadding = 24.0
 

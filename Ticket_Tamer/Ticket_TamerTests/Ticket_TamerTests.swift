@@ -554,6 +554,123 @@ struct StartViewModelTests {
     }
 }
 
+// MARK: - Modul 017: Startseiten-Usability
+
+/// Tests für Plus/Minus, gemeinsame Source of Truth, Reset und die verbindlichen Texte.
+@MainActor
+struct StartPageUsabilityTests {
+
+    @Test("Plus erhöht 6 genau auf 7")
+    func plusFromSixProducesSeven() {
+        let model = SessionModel()
+        model.setTicketCount(model.selectedTicketCount + 1)
+        #expect(model.selectedTicketCount == 7)
+    }
+
+    @Test("Minus verringert 6 genau auf 5")
+    func minusFromSixProducesFive() {
+        let model = SessionModel()
+        model.setTicketCount(model.selectedTicketCount - 1)
+        #expect(model.selectedTicketCount == 5)
+    }
+
+    @Test("Plus erhöht von jedem inneren Wert um genau eins")
+    func plusAlwaysIncreasesExactlyOnce() {
+        let model = SessionModel()
+        for value in 1..<GameplayConstants.maximumTicketCount {
+            model.setTicketCount(value)
+            model.setTicketCount(model.selectedTicketCount + 1)
+            #expect(model.selectedTicketCount == value + 1)
+        }
+    }
+
+    @Test("Minus verringert von jedem inneren Wert um genau eins")
+    func minusAlwaysDecreasesExactlyOnce() {
+        let model = SessionModel()
+        for value in 2...GameplayConstants.maximumTicketCount {
+            model.setTicketCount(value)
+            model.setTicketCount(model.selectedTicketCount - 1)
+            #expect(model.selectedTicketCount == value - 1)
+        }
+    }
+
+    @Test("Minimum 1 kann nicht unterschritten werden")
+    func minimumCannotBeUnderrun() {
+        let model = SessionModel()
+        model.setTicketCount(1)
+        model.setTicketCount(model.selectedTicketCount - 1)
+        #expect(model.selectedTicketCount == 1)
+    }
+
+    @Test("Maximum 12 kann nicht überschritten werden")
+    func maximumCannotBeExceeded() {
+        let model = SessionModel()
+        model.setTicketCount(12)
+        model.setTicketCount(model.selectedTicketCount + 1)
+        #expect(model.selectedTicketCount == 12)
+    }
+
+    @Test("Minus ist bei 1 als deaktiviert ableitbar")
+    func minusIsDisabledAtMinimum() {
+        #expect(!StartTicketCountControls.canDecrease(1))
+        #expect(StartTicketCountControls.canIncrease(1))
+    }
+
+    @Test("Plus ist bei 12 als deaktiviert ableitbar")
+    func plusIsDisabledAtMaximum() {
+        #expect(!StartTicketCountControls.canIncrease(12))
+        #expect(StartTicketCountControls.canDecrease(12))
+    }
+
+    @Test("Bei 6 sind Minus und Plus aktiviert")
+    func bothButtonsAreEnabledAtSix() {
+        #expect(StartTicketCountControls.canDecrease(6))
+        #expect(StartTicketCountControls.canIncrease(6))
+    }
+
+    @Test("Slider und Buttons ändern dieselbe Ticketanzahl")
+    func sliderAndButtonsShareSelectedTicketCount() {
+        let model = SessionModel()
+        model.setTicketCount(3) // entspricht dem Slider-Binding
+        model.setTicketCount(model.selectedTicketCount - 1)
+        #expect(model.selectedTicketCount == 2)
+        model.setTicketCount(model.selectedTicketCount + 1)
+        #expect(model.selectedTicketCount == 3)
+    }
+
+    @Test("Reset setzt die Ticketanzahl auf 6")
+    func resetRestoresSixTickets() {
+        let model = SessionModel()
+        model.setTicketCount(12)
+        model.reset()
+        #expect(model.selectedTicketCount == 6)
+    }
+
+    @Test("Nach Reset sind Minus und Plus aktiviert")
+    func bothButtonsAreEnabledAfterReset() {
+        let model = SessionModel()
+        model.setTicketCount(1)
+        model.reset()
+        #expect(StartTicketCountControls.canDecrease(model.selectedTicketCount))
+        #expect(StartTicketCountControls.canIncrease(model.selectedTicketCount))
+    }
+
+    @Test("Kurzbeschreibung entspricht exakt der Vorgabe")
+    func descriptionMatchesSpecification() {
+        #expect(StartViewContent.description == "Untersuche Support-Tickets und ordne die Monster einer Priorität und einem Team zu.")
+    }
+
+    @Test("Accessibility-Text Minus entspricht exakt der Vorgabe")
+    func decreaseAccessibilityLabelMatchesSpecification() {
+        #expect(StartViewContent.decreaseAccessibilityLabel == "Ein Ticket weniger")
+    }
+
+    @Test("Accessibility-Text Plus entspricht exakt der Vorgabe")
+    func increaseAccessibilityLabelMatchesSpecification() {
+        #expect(StartViewContent.increaseAccessibilityLabel == "Ein Ticket mehr")
+    }
+}
+
 // MARK: - Modul 005: Monster-Asset-Pipeline
 
 /// Tests für die Monster-Asset-Pipeline (SPEC F-14 / AK-14).

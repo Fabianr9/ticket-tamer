@@ -1,283 +1,302 @@
 # Projektlogbuch — Ticket Tamer
 
-> Einziger aktueller Logbuch-Stand nach Einarbeitung von Modul 015 für Version 1.1.
+> Einziger aktueller Logbuch-Stand nach Einarbeitung von Modul 016 für Version 1.1.
 
 **Projektversion:** v1.1 in Arbeit  
 **v1.0:** abgeschlossen  
-**Stand:** nach Modul `015` — Session-HUD und Interaktionshinweise  
+**Stand:** nach Modul `016` — Kompakte Ticketinfo  
 **Eingearbeitet am:** 2026-09-02  
-**Branch laut 015-Report:** `main`  
-**HEAD vor Modul 015:** `fc39a56939bb9e16f08cd3f352595e8b673d71f6` (`feat: Version 1.1`)  
-**Letzter dokumentierter v1.0-Abschlussstand:** Commit `1532953`  
-**Modul-015-Commit:** noch nicht erzeugt  
-**v1.0-Testbasis laut Report:** 217/217 PASS  
-**Testdeklarationen nach Modul 015:** 228  
-**Build/Test/Simulator nach Modul 015:** offen
+**Branch laut 016-Report:** `side`  
+**HEAD vor Modul 016:** `9fd8706363983cf1ad4ccabbfddab1f5aef08424` (`feat: Eingangsprompt 16`)  
+**Modul-015-Commit:** `afe4bce feat: Modul 15`  
+**Modul-016-Commit:** noch nicht erzeugt  
+**Testdeklarationen vor 016:** 228  
+**Testdeklarationen nach 016:** 246  
+**Build/Test/Simulator nach 016:** offen
 
-## Versionsentscheidung
+## Versionsgrundsatz
 
-Version 1.0 gilt als abgeschlossen und bildet die stabile fachliche Basis.
+Version 1.0 bleibt fachlich abgeschlossen. Version 1.1 ergänzt ausschließlich die neuen Usability-Anforderungen F-18 bis F-24.
 
-Version 1.1 ergänzt ausschließlich Usability-Funktionen F-18 bis F-24. Nicht verändert werden:
+Weiterhin unverändert gelten:
 
-- Ticketdaten und Ticketpool,
-- lineare Phasenlogik,
-- DragBounds,
-- 50-%-Drop-Regel,
-- Z-Toleranz,
-- Snapback,
-- Exactly-once-Semantik,
-- Scoring,
-- Audio,
-- ungefähr 1,5 Sekunden Feedbackdauer,
-- Monster-Asset-Pipeline,
-- Ergebnisansicht und Reset.
-
-`SessionModel` bleibt die einzige Source of Truth für fachlichen Sitzungszustand. Neue v1.1-Darstellungszustände bleiben lokal in den betreffenden Views.
+- `SessionModel` ist einzige fachliche Source of Truth,
+- keine zweite Zustandsmaschine,
+- keine Änderung an Scoring,
+- keine Änderung an Audio,
+- keine Änderung an Exactly-once,
+- keine Änderung an automatischen Phasenwechseln,
+- kein zweites Volume,
+- kein Immersive Space,
+- keine Tutorial-/Persistenzlogik.
 
 ## v1.1-Modulstatus
 
 | Modul | Titel | Anforderungen | Status |
 |---|---|---|---|
-| 015 | Session-HUD und Interaktionshinweise | F-18, F-20 | implementiert; Build/Test/Simulator offen; Commit offen |
-| 016 | Kompakte Ticketinfo | F-19 | als Nächstes |
-| 017 | Startseiten-Usability | F-22, F-24 | offen |
+| 015 | Session-HUD und Interaktionshinweise | F-18, F-20 | implementiert; Commit `afe4bce`; Laufzeitabnahme offen |
+| 016 | Kompakte Ticketinfo | F-19 | implementiert; statisch geprüft; Build/Test/Simulator offen; Commit offen |
+| 017 | Startseiten-Usability | F-22, F-24 | als Nächstes |
 | 018 | Visuelles Entscheidungsfeedback | F-21 | offen |
 | 019 | Ladefehler-Recovery | F-23 | offen |
 | 020 | Integration und Abnahme v1.1 | F-18 bis F-24 | offen |
 
-## Eingearbeiteter Stand Modul 015
+## Eingearbeiteter Stand Modul 016
 
-### Neue Komponenten
+### `CompactTicketInfoView`
 
-#### `SessionHUDView`
+Neu:
 
-Pfad:
+`Ticket_Tamer/Ticket_Tamer/Views/Components/CompactTicketInfoView.swift`
 
-`Ticket_Tamer/Ticket_Tamer/Views/Components/SessionHUDView.swift`
-
-Schnittstelle:
+Schnittstelle laut Report:
 
 ```text
-SessionHUDView(
-    currentTicketIndex: Int,
-    totalTicketCount: Int,
-    phase: GamePhase
-)
+CompactTicketInfoView(ticket:onClose:)
 ```
 
-Eigenschaften:
+Die View leitet intern einen unveränderlichen `CompactTicketInfoContent` ab.
 
-- besitzt keinen fachlichen Zustand,
-- hat keinen Zugriff auf `SessionModel`,
-- zeigt keinen Score,
-- zeigt nur Ticketposition, Phasentitel und linearen Fortschritt,
-- nicht interaktiv.
+Enthalten:
 
-### `SessionHUDContent`
+- `ticketNumber`
+- `title`
+- `shortDescription`
+- `userImpact`
+- `symptoms`
 
-Rein darstellungsbezogene Ableitung.
+Nicht enthalten:
 
-Semantik:
+- `referencePriority`
+- `referenceTeam`
+- `selectedPriority`
+- `selectedTeam`
+- `score`
+- interne Ticket-ID
+- `monsterAssetId`
+- richtige Lösung oder Bewertungsdaten
+
+`currentTicket == nil` führt defensiv zu keinem Info-Button/Overlay.
+
+### Lokaler Overlay-State
+
+In Priorisierung und Teamzuordnung jeweils lokal:
 
 ```text
-currentTicketNumber = clamp(currentTicketIndex + 1, 1...totalTicketCount)
-progress = clamp(currentTicketNumber / totalTicketCount, 0...1)
+@State private var isTicketInfoPresented = false
 ```
 
-Bei leerer Sitzung:
+Der Report beschreibt den Initialwert über `TicketInfoInteraction.initialPresentation`.
 
-- Ticketnummer = 0,
-- Fortschritt = 0,
-- keine Division durch 0.
+Nicht in `SessionModel`.
 
-Phasentitel:
+### Öffnen und Schließen
 
-| Phase | Titel |
-|---|---|
-| `.untersuchen` | `Ticket untersuchen` |
-| `.priorisieren` | `Priorität zuordnen` |
-| `.teamZuordnen` | `Team zuordnen` |
+Info-Button:
 
-Für `.start` und `.ergebnis` kein HUD.
+- geschlossen → öffnen
+- geöffnet → schließen
 
-### `InteractionHintView`
+Zusätzlich:
 
-Pfad:
+- `X` schließt
+- `onAppear` schließt
+- Änderung von `model.currentPhase` schließt
 
-`Ticket_Tamer/Ticket_Tamer/Views/Components/InteractionHintView.swift`
+Damit soll kein Overlay in die nächste Phase übernommen werden.
 
-Schnittstelle:
+### Drag-Sperre
+
+Verbindliche Logik laut Report:
 
 ```text
-InteractionHintView(text: String)
+dragEnabled = !isTicketInfoPresented && !model.isInputLocked
 ```
 
-Exakte sichtbare Texte:
+Umgesetzt durch:
 
-- Priorisierung: `Monster greifen und auf eine Priorität ziehen.`
-- Teamzuordnung: `Monster greifen und dem zuständigen Team zuordnen.`
+- `allowsHitTesting` an der `RealityView`,
+- zusätzliche frühe Guards in beiden Drag-Handlern.
 
-Keine Persistenz, kein Tutorialstatus, keine Gesten.
+Wenn Overlay geöffnet:
 
-## Integration in Views
+- keine Monsterbewegung,
+- keine Drop-Auswertung,
+- keine Entscheidung,
+- kein fachlicher Lock durch Overlay,
+- kein Snapback wegen einer nicht gestarteten Geste.
 
-### InvestigationView
+Beim Schließen:
 
-- Session-HUD oberhalb der Szene.
+- kein `model.unlockInput()`,
+- fachlicher `isInputLocked`-Zustand bleibt unangetastet.
 
-### PrioritizationView
+Diese Trennung ist architektonisch korrekt: Overlay-State ist UI-Zustand; `isInputLocked` bleibt Exactly-once-/Feedbackzustand.
 
-- Session-HUD oberhalb,
-- dauerhafter Priorisierungshinweis unterhalb.
+## Nachbesserung in Modul 016: Layout und Raumgröße
 
-### TeamAssignmentView
+Nach erster Sichtprüfung wurden zusätzlich zur eigentlichen F-19-Umsetzung folgende Größen geändert:
 
-- Session-HUD oberhalb,
-- dauerhafter Teamhinweis unterhalb.
+### Ticketinfo
 
-## Layoutentscheidung
+- feste Designfläche: `520 × 560` Punkte
+- `ScaledToFitView` passt diese Fläche proportional in den verfügbaren Bereich ein
 
-Verwendet werden visionOS-Ornaments:
+### Zentrales Volume
 
-- HUD: `.ornament(attachmentAnchor: .scene(.top))`
-- Hinweis: `.ornament(attachmentAnchor: .scene(.bottom))`
+Geändert von:
 
-Beide Komponenten setzen `.allowsHitTesting(false)`.
+`1.0 × 1.0 × 0.4 m`
 
-Ziel:
+auf:
 
-- keine Änderung an RealityView-Geometrie,
-- keine Änderung an Monster- oder Panelpositionen,
-- keine Blockierung von Blick/Pinch/Drag.
+`1.2 × 1.15 × 0.45 m`
 
-Die tatsächliche Simulatorprüfung steht noch aus.
+### Monster-Zielgröße
 
-## Lokalisierung
+Untersuchung:
 
-Neu in `Localizable.xcstrings`:
+`0.24 m → 0.20 m`
 
-- `hud.ticket.position`
-- `hud.phase.investigation`
-- `hud.phase.prioritization`
-- `hud.phase.teamAssignment`
-- `hud.progress.accessibility`
-- `interactionHint.prioritization`
-- `interactionHint.teamAssignment`
+Priorisierung/Team:
 
-## Accessibility
+`0.13 m → 0.11 m`
 
-Der Fortschrittsbalken besitzt:
+`MonsterAssetProvider.fit` skaliert weiterhin einheitlich über alle Achsen.
 
-- Accessibility-Label `Ticketfortschritt`,
-- Accessibility-Wert als Prozentwert.
+## Wichtige Dokumentationsabweichung im 016-Report
 
-Keine sichtbare Prozentanzeige erforderlich.
+Die Dateiänderungstabelle nennt nur:
 
-## Teststand Modul 015
+- `CompactTicketInfoView.swift`
+- `PrioritizationView.swift`
+- `TeamAssignmentView.swift`
+- `Localizable.xcstrings`
+- Tests
+- Report
+
+Gleichzeitig beschreibt der Report Änderungen an:
+
+- zentraler Volume-Größe,
+- Monster-Zielgröße in Untersuchung,
+- Monster-Zielgröße in Priorisierung/Team.
+
+Diese Werte müssen in realen Projektdateien geändert worden sein, werden in der Änderungsübersicht aber nicht vollständig ausgewiesen.
+
+Daher gilt für Modul 017 zwingend:
+
+- tatsächlichen `git diff` / aktuellen Code prüfen,
+- reale Dateien identifizieren,
+- diese 016-Nachbesserung im Projektstand korrekt nachtragen,
+- Regression der v1.0-Geometrie und Modul-015-Ornaments prüfen,
+- nicht so tun, als sei Modul 016 ausschließlich eine Overlayänderung gewesen.
+
+Die Layoutnachbesserung wird als **begründeter 016-Scope-Übergriff zur Lesbarkeit** geführt, bis der reale Diff bestätigt ist.
+
+## Lokalisierung / Accessibility
+
+Neu beziehungsweise ergänzt:
+
+- Accessibility-Text Info-Button
+- Accessibility-Text Schließen-X
+
+Bestehende semantisch identische Investigation-Schlüssel für Ticketnummer, Auswirkung und Symptome werden wiederverwendet.
+
+Accessibility laut Report:
+
+- Info: `Ticketinformationen anzeigen oder schließen`
+- X: `Ticketinformationen schließen`
+
+## Teststand
 
 | Kennzahl | Stand |
 |---|---:|
-| Testdeklarationen vor 015 | 217 |
-| neue Tests | 11 |
-| Testdeklarationen nach 015 | 228 |
-| `jq empty` String Catalog | PASS |
+| Tests vor 016 | 228 |
+| neue Tests | 18 |
+| Tests nach 016 | 246 |
+| `jq empty Localizable.xcstrings` | PASS |
 | `git diff --check` | PASS |
-| vollständiger Xcode-Testlauf nach 015 | offen |
+| vollständiger Xcode-Lauf | offen |
 
-Neue Tests decken ab:
+Neue Tests prüfen:
 
-- 1/6,
-- 3/6 = 0,5,
-- 6/6 = 1,
-- gleichen Fortschritt in drei Unterphasen,
-- Fortschritt beim nächsten Ticket,
-- leere Sitzung,
-- defensive Indexbegrenzung,
-- alle drei Phasentitel,
-- ausgeblendete Phasen,
-- beide exakten Interaktionshinweise.
+- fünf sichtbare Ticketfelder,
+- alle Symptome,
+- keine Referenzpriorität/-team,
+- keine interne ID/Monster-ID,
+- Overlay initial geschlossen,
+- Toggle in beide Richtungen,
+- Neustartzustand geschlossen,
+- Drag-Freigabe mit Overlay,
+- Zusammenspiel mit fachlichem Input-Lock,
+- Designfläche,
+- vergrößertes Volume,
+- reduzierte Monster-Zielgrößen.
 
-## Status F-18 / AK-18
+## Status F-19 / AK-19
 
-### Implementiert
+### Code-/Strukturseitig implementiert
 
-- HUD in Untersuchung, Priorisierung und Teamzuordnung,
-- `Ticket X von Y`,
-- exakte Phasentitel,
-- lineare Ticketprogression,
-- kein Score,
-- `.allowsHitTesting(false)`.
+- aktuelle Ticketquelle,
+- exakt begrenzter Inhalt,
+- keine Referenzwerte,
+- Drag-Sperre,
+- X,
+- erneuter Info-Tap,
+- Reset bei View-/Phasenwechsel,
+- kein Info-Button in Untersuchung.
 
-### Offen
+### Noch offen
 
 - Xcode-Build,
-- vollständiger 228-Testlauf,
-- Simulator-Sichtprüfung,
-- tatsächlicher Nachweis, dass HUD Drag nicht blockiert.
+- vollständiger 246-Testlauf,
+- Simulator-/Vision-Pro-Sichtprüfung,
+- reale Drag-Sperre,
+- Drag nach Schließen,
+- Overlay-Schließen beim Phasenwechsel,
+- Layoutprüfung nach Volume-/Monstergrößenänderung.
 
 Daher:
 
-**F-18 implementiert; AK-18 Laufzeitabnahme offen.**
+**F-19 implementiert; AK-19 Laufzeitabnahme offen.**
 
-## Status F-20 / AK-20
-
-### Implementiert
-
-- beide exakten Hinweise,
-- dauerhaft,
-- ohne Persistenz,
-- ohne Drag-State,
-- `.allowsHitTesting(false)`.
-
-### Offen
-
-- tatsächliche Simulator-/Drag-Abnahme.
-
-Daher:
-
-**F-20 implementiert; AK-20 Laufzeitabnahme offen.**
-
-## Schutz des v1.0-Kerns
+## Schutz von Modul 015
 
 Laut Report unverändert:
 
-- `SessionModel`,
-- Drop-Regel,
-- DragBounds,
-- Z-Toleranz,
-- Snapback,
-- Zielpanelgeometrie,
-- Scoring,
-- Exactly-once,
-- Audio,
-- Feedback-Transition.
+- `SessionHUDView`
+- `InteractionHintView`
+- `InvestigationView` fachlich
 
-Keine neuen Tasks und keine neuen DebugManager-Kategorien.
+Zu verifizieren:
 
-## Offene Punkte vor Modul 016
+- HUD-Ornament oben trotz größerem Volume,
+- Hint-Ornament unten,
+- keine Überdeckung,
+- keine Drag-Regression.
 
-- [ ] Modul-015-Stand in Xcode bauen
-- [ ] vollständige 228-Test-Suite ausführen
-- [ ] 6-Ticket-Sitzung im Simulator prüfen
-- [ ] Ticket 1/6, 3/6 = 50 %, 6/6 = 100 % prüfen
-- [ ] Prioritätsdrag mit HUD/Hint prüfen
-- [ ] Teamdrag mit HUD/Hint prüfen
-- [ ] vollständigen Ticketzyklus regressionsprüfen
-- [ ] Modul 015 mit echtem Hash committen
+## Offene Punkte vor Modul 017
+
+- [ ] tatsächlichen aktuellen Git-Diff lesen
+- [ ] reale Dateien der Volume-/Monstergrößenänderung identifizieren
+- [ ] Modul 016 Build
+- [ ] vollständige 246 Tests
+- [ ] Simulator Ticketinfo Priorität
+- [ ] Simulator Ticketinfo Team
+- [ ] X / erneuter Info-Tap
+- [ ] Drag offen/geschlossen
+- [ ] Phasenwechsel schließt Overlay
+- [ ] HUD/Hint Regression
+- [ ] Volume-/Monstergrößen Regression
+- [ ] Modul 016 separat committen und echten Hash dokumentieren
 
 ## Nächster Schritt
 
-`016-Eingangsprompt.md` ausführen.
+`017-Eingangsprompt.md` ausführen.
 
-Modul 016 ergänzt ausschließlich:
+Modul 017 bearbeitet ausschließlich:
 
-- einen Info-Button in Priorisierung und Teamzuordnung,
-- `CompactTicketInfoView`,
-- ausschließlich sichere Ticketinformationen aus `model.currentTicket`,
-- Schließen über `X` oder erneuten Info-Tap,
-- lokale Overlay-State-Variablen,
-- deaktivierte Drag-Interaktion solange das Overlay geöffnet ist,
-- automatisches Schließen beim Phasenwechsel.
+- F-22 / AK-22 Minus-/Plus-Buttons für Ticketanzahl,
+- F-24 / AK-24 kurze Startseitenbeschreibung.
 
-HUD und Interaktionshinweise aus Modul 015 bleiben bestehen.
+Keine Ticketinfo-, Entscheidungsfeedback- oder Retry-Erweiterung.

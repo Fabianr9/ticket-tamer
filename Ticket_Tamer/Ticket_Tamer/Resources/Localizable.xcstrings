@@ -245,6 +245,30 @@
         }
       }
     },
+    "Ein Ticket mehr" : {
+      "comment" : "Accessibility-Label der Plus-Schaltfläche für die Ticketanzahl (Modul 017, AK-22).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein Ticket mehr"
+          }
+        }
+      }
+    },
+    "Ein Ticket weniger" : {
+      "comment" : "Accessibility-Label der Minus-Schaltfläche für die Ticketanzahl (Modul 017, AK-22).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein Ticket weniger"
+          }
+        }
+      }
+    },
     "start.button.startGame" : {
       "comment" : "Beschriftung der Startschaltflaeche auf der Startansicht (Modul 004, AK-01).",
       "extractionState" : "manual",
@@ -281,6 +305,18 @@
         }
       }
     }
-  },
+    },
+    "Untersuche Support-Tickets und ordne die Monster einer Priorität und einem Team zu." : {
+      "comment" : "Kurze Beschreibung des Spielziels direkt unter dem Titel (Modul 017, AK-24).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Untersuche Support-Tickets und ordne die Monster einer Priorität und einem Team zu."
+          }
+        }
+      }
+    },
   "version" : "1.1"
 }

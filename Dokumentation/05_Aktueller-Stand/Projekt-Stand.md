@@ -1,231 +1,197 @@
 # Projekt-Stand — Ticket Tamer
 
-> Aktuelle Code-Landkarte nach Modul 015 der Version 1.1.
+> Aktuelle Code-Landkarte nach Modul 016 der Version 1.1.
 
 **Projektversion:** v1.1 in Arbeit  
 **v1.0:** abgeschlossen  
-**Stand:** nach Modul `015` — Session-HUD und Interaktionshinweise  
-**Branch laut Report:** `main`  
-**HEAD vor Modul 015:** `fc39a56939bb9e16f08cd3f352595e8b673d71f6`  
-**Modul-015-Commit:** offen  
-**Testdeklarationen:** 228  
-**Build/Test/Simulator nach Modul 015:** offen
+**Stand:** nach Modul `016` — Kompakte Ticketinfo  
+**Branch laut Report:** `side`  
+**HEAD vor 016:** `9fd8706363983cf1ad4ccabbfddab1f5aef08424`  
+**Modul-015-Commit:** `afe4bce feat: Modul 15`  
+**Modul-016-Commit:** offen  
+**Testdeklarationen:** 246  
+**Build/Test/Simulator nach 016:** offen
 
-## Relevanter aktueller Funktionsstand
+## v1.1-Funktionsstand
 
-v1.0-Kern vorhanden und laut Versionierungsbasis abgeschlossen:
+### Modul 015
 
-- genau ein zentrales Volume,
-- Start,
-- Untersuchung,
-- Priorisierung,
-- Teamzuordnung,
-- Drop/Lock/Exactly-once,
-- Scoring,
-- Audio,
-- Auto-Transition,
-- Ergebnis,
-- Reset,
-- vier lokale Monster.
+Vorhanden:
 
-v1.1 neu nach Modul 015:
+- Session-HUD
+- Ticket X von Y
+- Phasentitel
+- ProgressView
+- dauerhafte Drag-Hinweise
 
-- Session-HUD in drei laufenden Phasen,
-- Ticketfortschritt,
-- Phasentitel,
-- dauerhafte Drag-Hinweise.
+### Modul 016
 
-## Geänderte Dateibereiche Modul 015
+Vorhanden:
+
+- kompakte Ticketinfo in Priorisierung
+- kompakte Ticketinfo in Team
+- lokaler Overlay-State
+- Schließen per X
+- Schließen per erneutem Info-Tap
+- Drag-Sperre bei offenem Overlay
+- Reset des Overlays bei View-/Phasenwechsel
+
+## Relevanter Dateibaum
 
 ```text
 Ticket_Tamer/Ticket_Tamer/
-├── Resources/
-│   └── Localizable.xcstrings
-└── Views/
-    ├── InvestigationView.swift
-    ├── PrioritizationView.swift
-    ├── TeamAssignmentView.swift
-    └── Components/
-        ├── InteractionHintView.swift
-        └── SessionHUDView.swift
+├─ Models/
+│  ├─ SessionModel.swift
+│  └─ Ticket.swift
+├─ Resources/
+│  └─ Localizable.xcstrings
+├─ Views/
+│  ├─ StartView.swift
+│  ├─ InvestigationView.swift
+│  ├─ PrioritizationView.swift
+│  ├─ TeamAssignmentView.swift
+│  └─ Components/
+│     ├─ CompactTicketInfoView.swift
+│     ├─ InteractionHintView.swift
+│     ├─ ScaledToFitView.swift
+│     └─ SessionHUDView.swift
+└─ ...
 ```
 
-## Neue Schnittstellen
+`ScaledToFitView.swift` wird vom 016-Report als vorhandene Layoutkomponente referenziert; tatsächlichen Pfad im nächsten Preflight verifizieren.
 
-### `SessionHUDView`
+## `CompactTicketInfoContent`
 
-```text
-SessionHUDView(
-    currentTicketIndex: Int,
-    totalTicketCount: Int,
-    phase: GamePhase
-)
-```
-
-Reine Darstellung.
-
-### `SessionHUDContent`
-
-Leitet darstellungsbezogen ab:
-
-```text
-currentTicketNumber
-totalTicketCount
-progress
-phaseTitle
-```
-
-Kein SessionModel-State.
-
-### `InteractionHintView`
-
-```text
-InteractionHintView(text: String)
-```
-
-Reine Darstellung.
-
-## HUD-Semantik
-
-```text
-Ticket 1 von 6 → 1/6
-Ticket 3 von 6 → 0.5
-Ticket 6 von 6 → 1.0
-```
-
-Fortschritt bleibt während:
-
-```text
-untersuchen → priorisieren → teamZuordnen
-```
-
-für dasselbe Ticket gleich.
-
-## Phasentitel
-
-- `.untersuchen` → `Ticket untersuchen`
-- `.priorisieren` → `Priorität zuordnen`
-- `.teamZuordnen` → `Team zuordnen`
-
-## Interaktionshinweise
-
-Priorität:
-
-`Monster greifen und auf eine Priorität ziehen.`
-
-Team:
-
-`Monster greifen und dem zuständigen Team zuordnen.`
-
-## Ornaments
-
-- Session-HUD: Szene oben
-- InteractionHint: Szene unten
-- beide `.allowsHitTesting(false)`
-
-Die tatsächliche Simulatorprüfung steht aus.
-
-## Lokalisierung
-
-Neu:
-
-- `hud.ticket.position`
-- `hud.phase.investigation`
-- `hud.phase.prioritization`
-- `hud.phase.teamAssignment`
-- `hud.progress.accessibility`
-- `interactionHint.prioritization`
-- `interactionHint.teamAssignment`
-
-## Teststand
-
-- v1.0 dokumentierte Basis: 217 Tests PASS
-- +11 Modul-015-Tests
-- aktueller Quellstand: 228 Testdeklarationen
-- vollständiger Lauf nach 015 offen
-
-## v1.1-Modul-Landkarte
-
-| Modul | Aufgabe | Status |
-|---|---|---|
-| 015 | HUD + Hinweise | implementiert; Abnahme offen |
-| 016 | Kompakte Ticketinfo | als Nächstes |
-| 017 | Startseiten-Usability | offen |
-| 018 | Visuelles Feedback | offen |
-| 019 | Ladefehler-Recovery | offen |
-| 020 | v1.1-Integration | offen |
-
-## Für Modul 016 relevante bestehende Daten
-
-`Ticket`:
+Enthält ausschließlich:
 
 - ticketNumber
 - title
 - shortDescription
 - userImpact
 - symptoms
+
+Nicht enthalten:
+
 - referencePriority
 - referenceTeam
+- score
+- selectedPriority
+- selectedTeam
+- interne ID
 - monsterAssetId
 
-`model.currentTicket` ist die einzige Quelle für die anzuzeigende Ticketinfo.
+## Overlay-State
 
-In `CompactTicketInfoView` zulässig:
+Jeweils lokal in:
 
-- Ticketnummer
-- Titel
-- Kurzbeschreibung
-- User Impact
-- Symptome/Hinweise
+- `PrioritizationView`
+- `TeamAssignmentView`
 
-Nicht zulässig:
-
-- Referenzpriorität
-- Referenzteam
-- richtige Lösung
-- interne Bewertungsdaten
-- Score
-- monsterAssetId als Nutztext
-
-## Neuer v1.1-Darstellungszustand für Modul 016
-
-Laut SPEC ausdrücklich view-lokal:
+Semantik:
 
 ```text
-PrioritizationView
-- isTicketInfoPresented: Bool
-
-TeamAssignmentView
-- isTicketInfoPresented: Bool
+isTicketInfoPresented = false
 ```
 
-Nicht in `SessionModel`.
+Keine SessionModel-Erweiterung.
 
-## Modul-016-Interaktionsregel
+## Drag-Freigabe
 
-Wenn Ticketinfo geöffnet:
+```text
+!isTicketInfoPresented && !model.isInputLocked
+```
 
-- verdeckte 3D-Szene nimmt keine Drag-Eingaben an,
-- keine Entscheidung wird ausgelöst,
-- kein Score ändert sich,
-- kein Phasenwechsel entsteht.
+Overlay darf den fachlichen Lock weder setzen noch lösen.
 
-Wenn Ticketinfo geschlossen:
+## Nachbesserte Layoutwerte aus Modul 016
 
-- Drag wieder normal möglich.
+Gemeldet:
 
-Schließen:
+### Volume
 
-- `X`,
-- erneuter Info-Tap,
-- Phasenwechsel.
+`1.2 × 1.15 × 0.45 m`
 
-## Offene Vormodul-Verifikation
+vorher:
 
-Vor 016 möglichst nachholen:
+`1.0 × 1.0 × 0.4 m`
 
-- Build 015,
-- 228 Tests,
-- Simulator HUD/Hint,
-- Drag-Regression,
-- Commit 015.
+### Monster-Zielgrößen
+
+Untersuchung:
+
+`0.20 m`
+
+Priorisierung/Team:
+
+`0.11 m`
+
+### Ticketinfo-Designfläche
+
+`520 × 560 pt`
+
+Diese Werte sind laut Report durch Layouttests abgedeckt.
+
+**Achtung:** Die reale Dateiänderungstabelle des Reports weist die Dateien hinter Volume-/Monstergrößenänderungen nicht vollständig aus. Nächster Preflight muss sie im Code/Git-Diff ermitteln.
+
+## Tests
+
+- vor 016: 228
+- neu: 18
+- nach 016: 246 Deklarationen
+- vollständiger Xcode-Lauf offen
+
+## v1.1-Modul-Landkarte
+
+| Modul | Aufgabe | Status |
+|---|---|---|
+| 015 | HUD + Hinweise | implementiert; Laufzeitabnahme offen |
+| 016 | Kompakte Ticketinfo | implementiert; Laufzeitabnahme offen |
+| 017 | Startseiten-Usability | als Nächstes |
+| 018 | Visuelles Feedback | offen |
+| 019 | Ladefehler-Recovery | offen |
+| 020 | v1.1-Integration | offen |
+
+## Für Modul 017 relevante bestehende Schnittstellen
+
+### `SessionModel`
+
+- `selectedTicketCount`
+- `setTicketCount(_:)`
+- `reset()`
+- `startSession()`
+
+`setTicketCount(_:)` klemmt auf 1...12.
+
+`reset()` setzt Ticketanzahl zurück auf 6.
+
+### `StartView`
+
+Bestehend aus v1.0:
+
+- Titel
+- `Anzahl Tickets`
+- Slider
+- aktuelle Zahl
+- `Spiel starten`
+
+Slider bindet direkt an `SessionModel.selectedTicketCount`.
+
+## Modul 017
+
+Ergänzt ausschließlich:
+
+- Minus-Button
+- Plus-Button
+- Kurzbeschreibung unter Titel
+
+Slider bleibt bestehen.
+
+Alle drei Auswahloberflächen:
+
+- Minus
+- Slider
+- Plus
+
+müssen exakt denselben `SessionModel.selectedTicketCount` verwenden.
+
+Kein lokaler Spiegelzustand.

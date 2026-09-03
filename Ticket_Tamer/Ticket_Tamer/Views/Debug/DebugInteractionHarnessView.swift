@@ -10,18 +10,18 @@ import SwiftUI
 /// und einem neutral beschrifteten Testziel (ID: „testTargetA"). Kein Prioritäts-
 /// und kein Teamwert.
 ///
-/// **Sichtbarkeit:** Nur in DEBUG-Builds und ausschließlich in der `.priorisieren`-Phase,
-/// die im Normalbetrieb nach „Weiter zur Priorisierung" erscheint.
-/// In Modul 008 wird diese View durch die echte Priorisierungsansicht ersetzt.
+/// **Sichtbarkeit:** Nur in DEBUG-Builds und ausschließlich über Preview beziehungsweise
+/// einen expliziten Development-Kontext. Der normale App-Flow routet auch in Debug-Builds
+/// in der `.priorisieren`-Phase direkt zur produktiven `PrioritizationView`.
 ///
 /// **Rückkehrsemantik:** Bei ungültigem Drop kehrt das Monster mit einer
 /// `InteractionConstants.monsterReturnDuration`-Sekunden-Animation zur Ausgangsposition
 /// zurück. Die Ausgangsposition driftet nicht: Sie wird einmalig nach dem Laden gespeichert
 /// und bei keinem Drop überschrieben.
 ///
-/// **Verbleib im finalen Modulstand:** Diese Datei bleibt in Modul 007 erhalten und wird
-/// in Modul 008 durch die echte Priorisierungsansicht verdrängt. Die `#if DEBUG`-Direktive
-/// in `RootVolumeView` verhindert, dass sie im Release-Build erscheint.
+/// **Verbleib im finalen Modulstand:** Diese Datei bleibt als getrennte Development-
+/// Testzone erhalten. Das umschließende `#if DEBUG` schließt sie aus Release-Builds aus;
+/// in `RootVolumeView` existiert bewusst kein Routing zu diesem Harness.
 @MainActor
 struct DebugInteractionHarnessView: View {
 

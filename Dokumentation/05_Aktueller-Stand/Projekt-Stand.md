@@ -1,48 +1,67 @@
 # Projekt-Stand — Ticket Tamer
 
-> Aktuelle Code-/Planungsbasis nach Modul 022 der Version 1.2.
+> Aktuelle Code-/Planungsbasis nach Modul 023 der Version 1.2.
 
 **Projektversion:** v1.2 in Arbeit  
-**Stand:** nach Modul 022  
+**Stand:** nach Modul 023  
 **Branch laut Report:** `A`  
-**HEAD vor 022:** `c11b464`  
-**Modul-021-Commits:** `68268cb` bis `c11b464`  
-**Modul-022-Commit:** offen  
-**Testdeklarationen:** **313**  
+**HEAD vor 023:** `3c0b2fb`  
+**Modul-022-Commit:** `3c0b2fb`  
+**Modul-023-Commit:** offen  
+**Testdeklarationen:** **333**  
 **Build/Test/Simulator:** offen
 
 ## v1.2-Funktionsstand
 
 ### Modul 021
 
-Replay-Layoutfix:
+Replay-Layoutstabilisierung implementiert.
 
-- stabile `GeometryReader3D`-Rootbasis
-- feste Slider-Designbreite
-- keine kumulative Skalierung
-- `.defaultSize` nur Cold Start
-- Nutzer-/System-Resize soll erhalten bleiben
-
-AK-25 Laufzeit: OPEN.
+AK-25 Laufzeit OPEN.
 
 ### Modul 022
 
-Ergebnis:
+- Ergebnis: `<score> Punkte`
+- correct: grüner Haken + `+100 Punkte`
+- incorrect: rotes Kreuz + `0 Punkte`
 
-`<score> Punkte`
+AK-26/27 Laufzeit OPEN.
 
-Feedback:
+### Modul 023
 
-- correct → grüner Haken + `+100 Punkte`
-- incorrect → rotes Kreuz + `0 Punkte`
+Teamstationen zeigen jetzt Text + SF Symbol:
 
-AK-26/27 Laufzeit: OPEN.
+- Netzwerk → `network`
+- Konto → `person.crop.circle`
+- Software → `macwindow`
+- Hardware → `desktopcomputer`
+
+AK-28 Laufzeit OPEN.
+
+## Teamstations-Geometrie
+
+Unverändert:
+
+- sichtbare Panelbox
+- DropTargetComponent
+- TargetPanelLayout
+- DropEvaluator
+- `minimumDropOverlapRatio = 0.50`
+- `dropDepthTolerance = 0.05 m`
+
+Referenzwerte:
+
+- Breite `0.195 m`
+- Höhe `0.117 m`
+- Tiefe `0.020 m`
+
+bei der im Report genutzten Referenzgeometrie.
 
 ## Tests
 
-- vor 022: 306
-- +7
-- aktuell: 313 Testdeklarationen
+- vor 023: 313
+- +20
+- aktuell: **333 Testdeklarationen**
 - vollständiger Xcode-Lauf offen
 
 ## v1.2-Modul-Landkarte
@@ -51,53 +70,41 @@ AK-26/27 Laufzeit: OPEN.
 |---|---|
 | 021 | implementiert; AK-25 OPEN |
 | 022 | implementiert; AK-26/27 OPEN |
-| 023 | als Nächstes |
-| 024 | offen |
+| 023 | implementiert; AK-28 OPEN |
+| 024 | als Nächstes |
 | 025 | offen |
 | 026 | offen |
 
-## Für Modul 023 relevant
+## Für Modul 024 relevant
 
-Bestehende Teamstationen:
+F-29 verlangt:
 
-- Netzwerk
-- Konto
-- Software
-- Hardware
+`🔧 Team [DEV]`
 
-v1.2 ergänzt je Station zusätzlich ein semantisch passendes Symbol.
+darf nicht mehr im normalen App-Ablauf erscheinen.
 
-Verbindlich:
+Dies gilt:
 
-- Text bleibt sichtbar
-- Symbol ergänzt nur
-- Farbe ist nicht alleinige Bedeutung
-- sichtbare Zielbox unverändert
-- Drop-Bounds unverändert
-- 50-%-Overlap unverändert
-- Z-Toleranz unverändert
-- DropEvaluator unverändert
+- für normalen Debug-Build über `RootVolumeView`
+- für Release-Build
 
-## Erwartete semantische Zuordnung
+Erlaubt bleibt Entwicklerfunktion nur:
 
-- Netzwerk → Netzwerk-/Verbindungssymbol
-- Konto → Personen-/Schlüsselsymbol
-- Software → App-/Fenstersymbol
-- Hardware → Computer-/Werkzeugsymbol
+- im separaten `DebugInteractionHarnessView`
+- oder in einem explizit aktivierten Debug-Kontext
 
-SF Symbols sind bevorzugt, sofern sie im realen visionOS-Aufbau sinnvoll funktionieren.
+Modul 024 darf Priorisierungs-/Teamlogik nicht verändern.
 
-## Relevante Kandidaten für Modul 023
+## Zu Beginn von Modul 024 real suchen
 
-Zu prüfen:
+Projektweit nach:
 
-- `Views/TeamAssignmentView.swift`
-- `Services/TargetPanelFactory.swift`
-- `Services/TargetPanelLayout.swift`
-- `Components/DropTargetComponent.swift`
-- bestehende Team-Label-/Attachment-Struktur
-- `Resources/Localizable.xcstrings`
-- `Support/AppConstants.swift`
-- Tests
+- `🔧 Team [DEV]`
+- `Team [DEV]`
+- `DebugInteractionHarnessView`
+- `#if DEBUG`
+- Debug-only Buttons/Navigation
+- direkter Einstieg in Teamphase
+- DebugManager-Schalter
 
-Die Symbolergänzung soll in der Darstellungs-/Labelschicht erfolgen, nicht in der Drop-Geometrie.
+Ziel ist die genaue Quelle der produktnah sichtbaren DEV-Schaltfläche zu identifizieren, nicht pauschal Debugcode zu löschen.

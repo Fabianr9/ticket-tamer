@@ -1,128 +1,103 @@
 # Projekt-Stand — Ticket Tamer
 
+> Aktuelle Code-/Planungsbasis nach Modul 022 der Version 1.2.
+
 **Projektversion:** v1.2 in Arbeit  
-**v1.0:** abgeschlossen  
-**v1.1:** abgeschlossen  
-**Nächstes Modul:** 021 — Replay-Layoutstabilisierung
+**Stand:** nach Modul 022  
+**Branch laut Report:** `A`  
+**HEAD vor 022:** `c11b464`  
+**Modul-021-Commits:** `68268cb` bis `c11b464`  
+**Modul-022-Commit:** offen  
+**Testdeklarationen:** **313**  
+**Build/Test/Simulator:** offen
 
-## Bestehender Kern
+## v1.2-Funktionsstand
 
-Vorhanden aus v1.0/v1.1:
+### Modul 021
 
-- Startansicht mit Ticketsteuerung
-- Startseitenbeschreibung
-- lokaler Ticketkatalog
-- SessionModel
-- Untersuchung
-- Priorisierung
-- Teamzuordnung
-- Session-HUD
-- Interaktionshinweise
-- kompakte Ticketinfo
-- Drag-Sperre bei Ticketinfo
-- 50-%-Drop-Regel
-- Snapback
-- Exactly-once
-- Scoring
-- Audio
-- visuelles Feedback
-- Ladefehler-Recovery
-- Ergebnis
-- Reset
-- vier Monstertypen
+Replay-Layoutfix:
 
-## v1.2-Zielstand
+- stabile `GeometryReader3D`-Rootbasis
+- feste Slider-Designbreite
+- keine kumulative Skalierung
+- `.defaultSize` nur Cold Start
+- Nutzer-/System-Resize soll erhalten bleiben
 
-### 021 — Replay-Layoutstabilisierung
-Replaybedingtes Schrumpfen/Wachsen/Driften beseitigen und aktuelle Volume-Größe erhalten.
+AK-25 Laufzeit: OPEN.
 
-### 022 — Punktekommunikation v1.2
-- Ergebnis `X Punkte`
-- falsches Feedback `0 Punkte`
+### Modul 022
 
-### 023 — Teamstation-Symbole
-Text + semantisches Symbol.
+Ergebnis:
 
-### 024 — Debug-UI-Isolation
-DEV-Schaltfläche aus normalem Flow entfernen.
+`<score> Punkte`
 
-### 025 — Monster-Farbvarianten
-16 Varianten mit sitzungsstabiler Auswahl.
+Feedback:
 
-### 026 — Integration v1.2
-AK-25 bis AK-30 gemeinsam abnehmen.
+- correct → grüner Haken + `+100 Punkte`
+- incorrect → rotes Kreuz + `0 Punkte`
 
-## Replay-Layoutregeln
+AK-26/27 Laufzeit: OPEN.
 
-Beim Replay:
+## Tests
 
-- aktuelle Volume-Größe erhalten
-- keine Rückkehr auf Cold-Start-Defaultgröße
-- keine kumulative Größenänderung
-- StartView stabil
-- Slider stabil
-- Prioritätsziele stabil
-- Teamziele stabil
-- mindestens fünf Replay-Zyklen stabil
+- vor 022: 306
+- +7
+- aktuell: 313 Testdeklarationen
+- vollständiger Xcode-Lauf offen
 
-Fachlicher Reset bleibt:
-
-- Ticketanzahl 6
-- Score 0
-- Index 0
-- keine Entscheidungen
-- keine alten Sitzungstickets
-
-## Relevante Architektur für Modul 021
-
-Primäre Kandidaten:
-
-- `Ticket_TamerApp.swift`
-- `RootVolumeView.swift`
-- gemeinsame Root-/Volume-Layoutlogik
-- `StartView.swift`
-- `PrioritizationView.swift`
-- `TeamAssignmentView.swift`
-- `VolumeMetrics`
-- `TargetPanelLayout`
-- `ScaledToFitView`
-
-Verbindlich:
-
-- keine unabhängigen Replay-Hacks in mehreren Phasen
-- tatsächliche gewährte Geometrie verwenden
-- `.defaultSize` nicht als Replay-Reset verwenden
-- Nutzer-/System-Resize erhalten
-- keine kumulativen Scale-Faktoren
-
-## Neue v1.2-Zustände erst ab Modul 025
-
-Monster-Variantenmapping ist noch nicht Teil von Modul 021.
-
-Später fachlich:
-
-```text
-selectedMonsterVariantByTicketID
-```
-
-aber noch nicht jetzt implementieren.
-
-## Modul-Landkarte
+## v1.2-Modul-Landkarte
 
 | Modul | Status |
 |---|---|
-| 021 | als Nächstes |
-| 022 | offen |
-| 023 | offen |
+| 021 | implementiert; AK-25 OPEN |
+| 022 | implementiert; AK-26/27 OPEN |
+| 023 | als Nächstes |
 | 024 | offen |
 | 025 | offen |
 | 026 | offen |
 
-## Im 021-Preflight real zu ermitteln
+## Für Modul 023 relevant
 
-- finaler v1.1-Branch
-- finaler v1.1-Commit
-- tatsächliche aktuelle Testzahl
-- Buildstatus
-- aktuelle Volume-/Window-Konfiguration
-- reproduzierbares Replay-Verhalten
+Bestehende Teamstationen:
+
+- Netzwerk
+- Konto
+- Software
+- Hardware
+
+v1.2 ergänzt je Station zusätzlich ein semantisch passendes Symbol.
+
+Verbindlich:
+
+- Text bleibt sichtbar
+- Symbol ergänzt nur
+- Farbe ist nicht alleinige Bedeutung
+- sichtbare Zielbox unverändert
+- Drop-Bounds unverändert
+- 50-%-Overlap unverändert
+- Z-Toleranz unverändert
+- DropEvaluator unverändert
+
+## Erwartete semantische Zuordnung
+
+- Netzwerk → Netzwerk-/Verbindungssymbol
+- Konto → Personen-/Schlüsselsymbol
+- Software → App-/Fenstersymbol
+- Hardware → Computer-/Werkzeugsymbol
+
+SF Symbols sind bevorzugt, sofern sie im realen visionOS-Aufbau sinnvoll funktionieren.
+
+## Relevante Kandidaten für Modul 023
+
+Zu prüfen:
+
+- `Views/TeamAssignmentView.swift`
+- `Services/TargetPanelFactory.swift`
+- `Services/TargetPanelLayout.swift`
+- `Components/DropTargetComponent.swift`
+- bestehende Team-Label-/Attachment-Struktur
+- `Resources/Localizable.xcstrings`
+- `Support/AppConstants.swift`
+- Tests
+
+Die Symbolergänzung soll in der Darstellungs-/Labelschicht erfolgen, nicht in der Drop-Geometrie.

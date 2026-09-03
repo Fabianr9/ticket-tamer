@@ -23,11 +23,11 @@ enum DecisionFeedbackResult: Equatable {
         }
     }
 
-    /// Nur eine richtige Entscheidung besitzt einen sichtbaren Punktetext.
-    var pointsText: String? {
+    /// Sichtbare Kommunikation der bereits erfolgten Bewertung.
+    var pointsText: String {
         switch self {
         case .correct: "+100 Punkte"
-        case .incorrect: nil
+        case .incorrect: "0 Punkte"
         }
     }
 
@@ -55,11 +55,9 @@ struct DecisionFeedbackView: View {
                 }
                 .accessibilityHidden(true)
 
-            if let pointsText = result.pointsText {
-                Text(LocalizedStringKey(pointsText))
-                    .font(.title.bold())
-                    .foregroundStyle(.primary)
-            }
+            Text(LocalizedStringKey(result.pointsText))
+                .font(.title.bold())
+                .foregroundStyle(.primary)
         }
         .padding(32)
         .background(.thickMaterial, in: RoundedRectangle(cornerRadius: 28))

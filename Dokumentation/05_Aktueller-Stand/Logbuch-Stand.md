@@ -1,116 +1,217 @@
 # Projektlogbuch — Ticket Tamer
 
+> Einziger aktueller Logbuch-Stand nach Einarbeitung von Modul 022 für Version 1.2.
+
 **Projektversion:** v1.2 in Arbeit  
 **v1.0:** abgeschlossen  
 **v1.1:** abgeschlossen  
-**Stand:** Start v1.2 vor Modul `021` — Replay-Layoutstabilisierung  
-**Eingearbeitet am:** 2026-09-03
+**Stand:** nach Modul `022` — Punktekommunikation v1.2  
+**Eingearbeitet am:** 2026-09-03  
+**Branch laut 022-Report:** `A`  
+**HEAD vor Modul 022:** `c11b464 fix: Modul 21`  
+**Modul-021-Commits:** `68268cb` bis `c11b464`  
+**Modul-022-Commit:** offen  
+**Testdeklarationen vor 022:** 306  
+**Neue Tests:** 7  
+**Testdeklarationen nach 022:** **313**  
+**Build/Test/Simulator nach 022:** offen
 
-## Versionsentscheidung
-
-Version 1.1 gilt als abgeschlossen und bildet die stabile Ausgangsbasis für v1.2.
-
-F-01 bis F-24 und AK-01 bis AK-24 werden nicht neu implementiert. Sie bleiben Regression-Basis.
-
-Version 1.2 beginnt mit:
-
-- F-25 / AK-25 — Replay-Layoutstabilität
-- F-26 / AK-26 — Ergebnis als „X Punkte“
-- F-27 / AK-27 — `0 Punkte` bei falscher Entscheidung
-- F-28 / AK-28 — Symbole an Teamstationen
-- F-29 / AK-29 — DEV-Schaltfläche aus normalem Flow entfernen
-- F-30 / AK-30 — 16 Monster-Farbvarianten
-
-## v1.2-Modul-Landkarte
+## v1.2-Modulstatus
 
 | Modul | Titel | Anforderungen | Status |
 |---|---|---|---|
-| 021 | Replay-Layoutstabilisierung | F-25 / AK-25 | als Nächstes |
-| 022 | Punktekommunikation v1.2 | F-26, F-27 / AK-26, AK-27 | offen |
-| 023 | Teamstation-Symbole | F-28 / AK-28 | offen |
+| 021 | Replay-Layoutstabilisierung | F-25 / AK-25 | implementiert; Laufzeitabnahme OPEN |
+| 022 | Punktekommunikation v1.2 | F-26, F-27 / AK-26, AK-27 | implementiert; statisch geprüft; Laufzeitabnahme OPEN; Commit offen |
+| 023 | Teamstation-Symbole | F-28 / AK-28 | als Nächstes |
 | 024 | Debug-UI-Isolation | F-29 / AK-29 | offen |
 | 025 | Monster-Farbvarianten | F-30 / AK-30 | offen |
 | 026 | Integration und Abnahme v1.2 | AK-25 bis AK-30 | offen |
 
-## v1.2-Grundsätze
+## Eingearbeiteter Stand Modul 022
 
-Unverändert bleiben:
+### Ergebnisansicht
 
-- Scoringregeln
-- 50-%-Drop-Regel
-- Z-Toleranz
-- Snapback
+`ResultView` zeigt den unveränderten `SessionModel.score` nun als lokalisierten vollständigen String:
+
+`<score> Punkte`
+
+Beispiele:
+
+- `0 Punkte`
+- `100 Punkte`
+- `600 Punkte`
+- `1200 Punkte`
+
+Keine neuen Ergebnisstatistiken.
+
+Weiterhin vorhanden:
+
+- `Erneut spielen`
+
+Weiterhin nicht vorhanden:
+
+- Maximalpunktzahl
+- Prozentzahl
+- Rang
+- Statistik
+- Badge
+- weitere Ergebniskennzahlen
+
+### Zentrale Ergebnisformatierung
+
+Laut Report:
+
+`ResultPresentation.scoreText(for:)`
+
+verwendet ausschließlich `model.score` und den String-Catalog-Formatstring:
+
+`%lld Punkte`
+
+Keine neue fachliche Ergebnislogik.
+
+### Visuelles Entscheidungsfeedback
+
+`DecisionFeedbackResult` bleibt unverändert:
+
+- `.correct`
+- `.incorrect`
+
+Darstellung:
+
+#### Correct
+
+- grüner Haken
+- `+100 Punkte`
+
+#### Incorrect
+
+- rotes Kreuz
+- `0 Punkte`
+
+Das falsche Feedback kommuniziert nur den bereits bestehenden Scoreeffekt +0.
+
+### Accessibility
+
+Richtig:
+
+`Entscheidung richtig, 100 Punkte`
+
+Falsch:
+
+`Entscheidung falsch, 0 Punkte`
+
+Keine Lösung, Referenzpriorität oder Referenzteam.
+
+## Geschützte Logik
+
+Laut 022-Report unverändert:
+
+- `SessionModel.score`
+- `evaluatePriority()`
+- `evaluateTeam()`
+- AudioService
+- `feedbackTaskStarted`
+- `isInputLocked`
 - Exactly-once
-- lineare Phasenfolge
-- Ticketreferenzwerte
-- Audiofeedback
-- ca. 1,5-s-Transition
-- genau ein zentrales Volume
-- kein Immersive Space
-- kein zweites Volume
+- ca. 1,5-s-Sleep
+- Phasenwechsel
+- Priorisierungs-/Teamlogik
+- Replay-Rootarchitektur aus Modul 021
 
-`SessionModel` bleibt die einzige fachliche Source of Truth.
+`0 Punkte` ist ausschließlich Darstellungslogik.
 
-## Replay-Stabilität
+## Dateien Modul 022
 
-Nach Ergebnis → `Erneut spielen` dürfen Startansicht, Slider, Texte, Prioritätsziele und Teamziele nicht replaybedingt schrumpfen, wachsen oder kumulativ driften.
+Geändert:
 
-Die aktuell tatsächlich verwendete Volume-Größe bleibt erhalten.
+- `Views/ResultView.swift`
+- `Views/Components/DecisionFeedbackView.swift`
+- `Resources/Localizable.xcstrings`
+- `Ticket_TamerTests/Ticket_TamerTests.swift`
 
-`SessionModel.reset()` setzt die fachliche Sitzung zurück, nicht die Volume-/Root-Geometrie.
+## Teststand
 
-Die Replay-Korrektur gehört primär in:
+| Kennzahl | Stand |
+|---|---:|
+| Tests vor 022 | 306 |
+| neue Tests | 7 |
+| Tests nach 022 | **313** |
+| String Catalog JSON | PASS |
+| `git diff --check` Moduldateien | PASS |
+| vollständiger Xcode-Lauf | OPEN |
 
-- `Ticket_TamerApp`
-- `RootVolumeView`
-- gegebenenfalls eine gemeinsame Root-Layoutkomponente
+Die sieben neuen Tests ergänzen vorhandene Scoring-/Feedback-/Reset-/Exactly-once-Tests und decken insbesondere ab:
 
-Nicht in mehrere voneinander unabhängige phasenspezifische Replay-Hacks.
+- Scoreformat `0 Punkte`
+- `100 Punkte`
+- `600 Punkte`
+- `1200 Punkte`
+- keine Prozent-/Maximalwertdarstellung
+- `0 Punkte` bei incorrect
+- unverändertes `+100 Punkte` bei correct
+- Accessibility
 
-## Neue v1.2-Erweiterungen nach Modul 021
+## AK-26
 
-### Modul 022
+Code- und statisch testseitig umgesetzt.
 
-- Ergebnis `X Punkte`
-- falsch: rotes Kreuz + `0 Punkte`
-- richtig bleibt grüner Haken + `+100 Punkte`
+Noch offen:
 
-### Modul 023
+- Xcode-Build
+- vollständige 313 Tests
+- Simulatorprüfung für verschiedene Scores
+- sichtbare/barrierefreie Darstellung
 
-Teamstationen erhalten zusätzlich zum Text semantische Symbole.
+**AK-26 = OPEN bis Laufzeitabnahme.**
 
-### Modul 024
+## AK-27
 
-`🔧 Team [DEV]` verschwindet vollständig aus dem normalen App-Flow.
+Code- und statisch testseitig umgesetzt.
 
-### Modul 025
+Noch offen:
 
-Vier Monstertypen × vier Varianten = 16 lokale Assets.
+- falsche Priorität im Simulator
+- falsches Team im Simulator
+- Sound parallel
+- Exactly-once unter Mehrfacheingabe
+- 1,5-s-Dauer
+- visuelle/Accessibility-Abnahme
 
-Pro Sitzungsticket:
+**AK-27 = OPEN bis Laufzeitabnahme.**
 
-- genau eine konkrete Variante
-- in allen Phasen stabil
-- Retry lädt dieselbe Variante
-- neue Sitzung darf neu wählen
-- Reset verwirft Mapping
+## AK-25 bleibt ebenfalls OPEN
 
-## Offene Ausgangsdaten vor 021
+Modul 022 verändert die Replay-Rootarchitektur nicht.
 
-Ein finaler `020-Report.md` wurde in diesem Logbuch nicht eingearbeitet. v1.1 wurde vom Projektteam als abgeschlossen bestätigt.
+Weiterhin offen:
 
-Modul 021 muss daher real aus dem Repository ermitteln:
+- Build
+- vollständige Tests
+- Cold Start
+- Replay 1–5
+- Resize-Erhalt
+- v1.0/v1.1-Regression
 
-- finalen v1.1-Branch
-- finalen v1.1-Commit
-- aktuelle Testzahl
-- aktuellen Buildstatus
-- Simulator-/Gerätestatus
+## Offene Punkte vor Modul 023
 
-Keine Werte aus älteren Reports erfinden.
+- [ ] Modul 022 bauen
+- [ ] vollständige 313 Tests
+- [ ] ResultView 0/100/600 Punkte
+- [ ] correct +100 Punkte
+- [ ] incorrect 0 Punkte
+- [ ] Sound/Timing/Exactly-once Regression
+- [ ] Replay-Regression 021
+- [ ] Modul 022 separat committen
 
 ## Nächster Schritt
 
-`021-Eingangsprompt.md` ausführen.
+`023-Eingangsprompt.md` ausführen.
 
-Modul 021 reproduziert den Replay-Skalierungsfehler zuerst messbar, behebt ihn zentral und nimmt mindestens fünf aufeinanderfolgende Replay-Zyklen ab.
+Modul 023 bearbeitet ausschließlich F-28 / AK-28:
+
+- jede Teamstation erhält zusätzlich zum bestehenden Text ein semantisch passendes Symbol
+- Text bleibt vollständig sichtbar
+- Farbe bleibt nur ergänzend
+- sichtbare Zielgröße bleibt unverändert
+- Drop-Bounds bleiben unverändert
+- Drop-Auswertung bleibt unverändert

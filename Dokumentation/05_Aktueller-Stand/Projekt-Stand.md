@@ -1,110 +1,55 @@
 # Projekt-Stand — Ticket Tamer
 
-> Aktuelle Code-/Planungsbasis nach Modul 023 der Version 1.2.
+> Aktuelle Code-/Planungsbasis nach Modul 026 und Abschluss von Version 1.2.
 
-**Projektversion:** v1.2 in Arbeit  
-**Stand:** nach Modul 023  
-**Branch laut Report:** `A`  
-**HEAD vor 023:** `3c0b2fb`  
-**Modul-022-Commit:** `3c0b2fb`  
-**Modul-023-Commit:** offen  
-**Testdeklarationen:** **333**  
-**Build/Test/Simulator:** offen
+**Projektversion:** v1.2 abgeschlossen
+**Stand:** nach Modul 026 — Integration und Abnahme
+**Branch:** `A`
+**HEAD vor 026:** `b2f345a feat: Modul 25`
+**Modul-025-Commit:** `b2f345a`
+**Testdeklarationen:** **365**
+**Build/Test/Simulator:** PASS, vom Auftraggeber bestätigt
+**Akzeptanzkriterien:** AK-01 bis AK-30 PASS
+
+## Versionsstand
+
+| Version | Umfang | Status |
+|---|---|---|
+| v1.0 | Kernspiel AK-01 bis AK-17 | abgeschlossen |
+| v1.1 | HUD, Ticketinfo, Hinweise, Feedback, Steuerung und Retry AK-18 bis AK-24 | abgeschlossen |
+| v1.2 | Replay, Punktekommunikation, Teamsymbole, Debug-Isolation und Farbvarianten AK-25 bis AK-30 | abgeschlossen |
 
 ## v1.2-Funktionsstand
 
-### Modul 021
+- Replay erhält Root- und Volume-Geometrie ohne kumulative Layoutdrift.
+- Ergebnis zeigt ausschließlich `<score> Punkte` und „Erneut spielen“.
+- Feedback zeigt bei richtig `+100 Punkte`, bei falsch `0 Punkte`.
+- Teamstationen verwenden `network`, `person.crop.circle`, `macwindow` und
+  `desktopcomputer` zusätzlich zu den deutschen Labels.
+- Der produktive Flow enthält keinen `🔧 Team [DEV]`-Shortcut; der Debug-Harness bleibt
+  separat und DEBUG-only.
+- Vier Monstertypen besitzen je vier, insgesamt 16 produktiv gebündelte Farbvarianten.
+- Eine Variante wird einmal pro Sitzungsticket gewählt und bleibt über Untersuchung,
+  Priorisierung, Team und Retry stabil; Reset verwirft das Mapping.
 
-Replay-Layoutstabilisierung implementiert.
+## Zentrale Schnittstellen
 
-AK-25 Laufzeit OPEN.
+- `SessionModel` — fachliche Source of Truth für Sitzung, Entscheidungen, Score und Reset.
+- `RootVolumeView` — einzige produktive Phasenwurzel im zentralen Volume.
+- `MonsterAssetVariant` / `MonsterVariantCatalog` — expliziter 4×4-Assetkatalog.
+- `SessionModel.startSession(using:variantSelector:)` — testbar injizierbare Variantenwahl.
+- `selectedMonsterVariantByTicketID` / `selectedMonsterVariant(for:)` — sitzungsstabile Zuordnung.
+- `MonsterAssetProvider` / `MonsterLoadRecovery` — gemeinsames Laden und identischer Retry.
+- `DropEvaluator`, `DragBounds`, `PlanarDrag` — gemeinsame Drag-/Drop-Pipeline.
 
-### Modul 022
+## Abnahmenachweis
 
-- Ergebnis: `<score> Punkte`
-- correct: grüner Haken + `+100 Punkte`
-- incorrect: rotes Kreuz + `0 Punkte`
+- 365 Testdeklarationen; vollständige Suite erfolgreich bestätigt.
+- Build und visionOS-Laufzeitprüfung erfolgreich bestätigt.
+- AK-25 bis AK-30 im Zusammenspiel erfolgreich geprüft.
+- AK-01 bis AK-24 ohne kritische Regression.
+- Sitzungen mit 1, 2, 6 und 12 Tickets sowie fünf Replay-Zyklen stabil.
+- Alle 16 USDC-Assets geladen, sichtbar und interaktiv geprüft.
+- Kein physischer Gerätetest separat ausgewiesen; dokumentiertes Restrisiko.
 
-AK-26/27 Laufzeit OPEN.
-
-### Modul 023
-
-Teamstationen zeigen jetzt Text + SF Symbol:
-
-- Netzwerk → `network`
-- Konto → `person.crop.circle`
-- Software → `macwindow`
-- Hardware → `desktopcomputer`
-
-AK-28 Laufzeit OPEN.
-
-## Teamstations-Geometrie
-
-Unverändert:
-
-- sichtbare Panelbox
-- DropTargetComponent
-- TargetPanelLayout
-- DropEvaluator
-- `minimumDropOverlapRatio = 0.50`
-- `dropDepthTolerance = 0.05 m`
-
-Referenzwerte:
-
-- Breite `0.195 m`
-- Höhe `0.117 m`
-- Tiefe `0.020 m`
-
-bei der im Report genutzten Referenzgeometrie.
-
-## Tests
-
-- vor 023: 313
-- +20
-- aktuell: **333 Testdeklarationen**
-- vollständiger Xcode-Lauf offen
-
-## v1.2-Modul-Landkarte
-
-| Modul | Status |
-|---|---|
-| 021 | implementiert; AK-25 OPEN |
-| 022 | implementiert; AK-26/27 OPEN |
-| 023 | implementiert; AK-28 OPEN |
-| 024 | als Nächstes |
-| 025 | offen |
-| 026 | offen |
-
-## Für Modul 024 relevant
-
-F-29 verlangt:
-
-`🔧 Team [DEV]`
-
-darf nicht mehr im normalen App-Ablauf erscheinen.
-
-Dies gilt:
-
-- für normalen Debug-Build über `RootVolumeView`
-- für Release-Build
-
-Erlaubt bleibt Entwicklerfunktion nur:
-
-- im separaten `DebugInteractionHarnessView`
-- oder in einem explizit aktivierten Debug-Kontext
-
-Modul 024 darf Priorisierungs-/Teamlogik nicht verändern.
-
-## Zu Beginn von Modul 024 real suchen
-
-Projektweit nach:
-
-- `🔧 Team [DEV]`
-- `Team [DEV]`
-- `DebugInteractionHarnessView`
-- `#if DEBUG`
-- Debug-only Buttons/Navigation
-- direkter Einstieg in Teamphase
-- DebugManager-Schalter
-
-Ziel ist die genaue Quelle der produktnah sichtbaren DEV-Schaltfläche zu identifizieren, nicht pauschal Debugcode zu löschen.
+Der vollständige Nachweis steht in `Dokumentation/04_Modul-Reports/026-Report.md`.

@@ -27,6 +27,9 @@ final class SessionModel {
     /// Leer vor dem ersten `startSession()`-Aufruf und nach jedem `reset()`.
     private(set) var sessionTickets: [Ticket] = []
 
+    /// Genau eine beim Sitzungsstart gewaehlte konkrete Farbvariante je Sitzungsticket.
+    private(set) var selectedMonsterVariantByTicketID: [Ticket.ID: MonsterAssetVariant] = [:]
+
     /// Index des aktuell betrachteten Tickets innerhalb von `sessionTickets`.
     ///
     /// Startet beim Sitzungsbeginn bei 0. Am Ende der Liste bleibt der Index beim
@@ -91,20 +94,38 @@ final class SessionModel {
     /// Ablauf:
     /// 1. `LocalTicketCatalog.allTickets` wird über `shuffle` gemischt.
     /// 2. Die ersten `selectedTicketCount` Einträge des Ergebnisses werden übernommen.
-    /// 3. Index, Phase, Punkte, Entscheidungen und Eingabesperre werden zurückgesetzt.
+    /// 3. Fuer jedes Sitzungsticket wird genau eine konkrete Monster-Variante gespeichert.
+    /// 4. Index, Phase, Punkte, Entscheidungen und Eingabesperre werden zurückgesetzt.
     ///
     /// Da `shuffle` als Parameter übergeben wird, können Tests eine deterministische
     /// Funktion injizieren, ohne komplexe Abhängigkeiten einzuführen.
     /// Diese minimale Testnaht ist die einzige Abweichung vom sonst direkten Methodenstil.
     ///
-    /// - Parameter shuffle: Funktion, die `[Ticket]` mischt und zurückgibt.
-    ///   Standard ist echter Zufall via `Array.shuffled()`.
-    func startSession(using shuffle: ([Ticket]) -> [Ticket] = { $0.shuffled() }) {
+    /// - Parameters:
+    ///   - shuffle: Funktion, die `[Ticket]` mischt und zurückgibt.
+    ///     Standard ist echter Zufall via `Array.shuffled()`.
+    ///   - variantSelector: Injizierbare Auswahl aus den vier Varianten des Monstertyps.
+    ///     Standard ist `randomElement()`; Tests koennen eine feste Auswahl vorgeben.
+    func startSession(
+        using shuffle: ([Ticket]) -> [Ticket] = { $0.shuffled() },
+        variantSelector: ([MonsterAssetVariant]) -> MonsterAssetVariant? = { $0.randomElement() }
+    ) {
         let shuffled = shuffle(LocalTicketCatalog.allTickets)
         // Defensiv begrenzen: sollte der Katalog je kleiner als selectedTicketCount sein,
         // entstehen keine ungültigen Array-Zugriffe.
         let count = min(selectedTicketCount, shuffled.count)
         sessionTickets = Array(shuffled.prefix(count))
+        selectedMonsterVariantByTicketID = Dictionary(
+            uniqueKeysWithValues: sessionTickets.compactMap { ticket in
+                let available = MonsterVariantCatalog.variants(for: ticket.monsterAssetId)
+                guard let selected = variantSelector(available), available.contains(selected) else {
+                    DebugManager.log(.spawning, "Keine gueltige Variante fuer \(ticket.monsterAssetId)")
+                    return nil
+                }
+                DebugManager.log(.spawning, "Variante gewaehlt: \(ticket.id) → \(selected.assetFileName)")
+                return (ticket.id, selected)
+            }
+        )
         currentTicketIndex = 0
         currentPhase = .untersuchen
         score = 0
@@ -128,6 +149,12 @@ final class SessionModel {
             return nil
         }
         return sessionTickets[currentTicketIndex]
+    }
+
+    /// Liefert ausschliesslich die beim Sitzungsstart gespeicherte Variante.
+    /// Ein fehlendes Mapping loest niemals eine spaete Neuauswahl aus.
+    func selectedMonsterVariant(for ticket: Ticket) -> MonsterAssetVariant? {
+        selectedMonsterVariantByTicketID[ticket.id]
     }
 
     // MARK: - Indexfortschaltung
@@ -459,6 +486,7 @@ final class SessionModel {
     func reset() {
         selectedTicketCount = GameplayConstants.defaultTicketCount  // auf 6 zurücksetzen
         sessionTickets = []
+        selectedMonsterVariantByTicketID = [:]
         currentTicketIndex = 0
         currentPhase = .start
         score = 0

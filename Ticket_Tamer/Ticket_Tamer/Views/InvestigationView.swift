@@ -302,19 +302,26 @@ struct InvestigationView: View {
     // MARK: - Monster laden
 
     private func loadMonster(for ticket: Ticket?) {
-        guard let ticket, monsterLoadRecovery.begin(assetID: ticket.monsterAssetId) else { return }
-        DebugManager.log(.spawning, "Monster-Retry/Laden gestartet: \(ticket.monsterAssetId)")
+        guard let ticket else { return }
+        guard let variant = model.selectedMonsterVariant(for: ticket) else {
+            _ = monsterLoadRecovery.begin(assetID: ticket.monsterAssetId)
+            monsterLoadRecovery.finishWithFailure()
+            DebugManager.log(.spawning, "Keine gespeicherte Monster-Variante fuer \(ticket.id)")
+            return
+        }
+        guard monsterLoadRecovery.begin(assetID: variant.assetFileName) else { return }
+        DebugManager.log(.spawning, "Monster-Retry/Laden gestartet: \(variant.assetFileName)")
         monsterEntity = nil
 
         Task {
             do {
-                let entity = try await MonsterAssetProvider.loadMonster(assetID: ticket.monsterAssetId)
+                let entity = try await MonsterAssetProvider.loadMonster(variant: variant)
                 monsterEntity = entity
                 monsterLoadRecovery.finishSuccessfully()
-                DebugManager.log(.spawning, "Monster-Retry/Laden erfolgreich: \(ticket.monsterAssetId)")
+                DebugManager.log(.spawning, "Monster-Retry/Laden erfolgreich: \(variant.assetFileName)")
             } catch {
                 monsterLoadRecovery.finishWithFailure()
-                DebugManager.log(.spawning, "Monster-Retry/Laden fehlgeschlagen: \(ticket.monsterAssetId) – \(error.localizedDescription)")
+                DebugManager.log(.spawning, "Monster-Retry/Laden fehlgeschlagen: \(variant.assetFileName) – \(error.localizedDescription)")
             }
         }
     }

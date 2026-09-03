@@ -241,6 +241,42 @@
         }
       }
     },
+    "investigation.video.error" : {
+      "comment" : "Verstaendliche Fehlermeldung bei fehlendem oder defektem Ticketvideo (Modul 030).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video konnte nicht geladen werden."
+          }
+        }
+      }
+    },
+    "investigation.video.close" : {
+      "comment" : "Barrierefreie Beschriftung des immer sichtbaren X in der Videoansicht (Modul 030).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video schließen"
+          }
+        }
+      }
+    },
+    "investigation.video.watch" : {
+      "comment" : "Aktion zum ausdruecklichen Oeffnen des Ticketvideos (Modul 030).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video ansehen"
+          }
+        }
+      }
+    },
     "investigation.symptoms.label" : {
       "comment" : "Ueberschrift fuer den Symptome/Hinweise-Abschnitt auf der Ticketkarte (Modul 006, F-06 / AK-06).",
       "extractionState" : "manual",

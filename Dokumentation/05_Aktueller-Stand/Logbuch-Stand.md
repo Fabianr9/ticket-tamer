@@ -1,242 +1,314 @@
 # Projektlogbuch — Ticket Tamer
 
-> Einziger aktueller Logbuch-Stand nach Einarbeitung von Modul 029 für Version 1.3.
+> Einziger aktueller Logbuch-Stand nach Einarbeitung von Modul 030 für Version 1.3.
 
 **Projektversion:** v1.3 in Arbeit  
 **v1.0:** abgeschlossen  
 **v1.1:** abgeschlossen  
 **v1.2:** abgeschlossen  
-**Stand:** nach Modul `029` — Monster- und Streak-Audio  
-**Eingearbeitet am:** 2026-09-03  
-**Branch laut 028-Report:** `v1.3`  
-**HEAD vor Modul 028:** `72d3e0470a7a7ba9591733a5ce0c42e6191b6087` (`feat: Modul 27`)  
-**Modul-027-Commit:** `72d3e04` (`feat: Modul 27`)  
+**Stand:** nach Modul `030` — Ticketvideo-System
+**Eingearbeitet am:** 2026-09-04
+**Branch:** `v1.3`
+**HEAD vor Modul 030:** `baf8a55495e9605bbc011dbf01de061638f6a11c`
 **Modul-028-Commit:** `120ab6d` (`feat: Modul 28`)  
-**Reale Testdeklarationen vor 028:** 372  
-**Neue/Netto-Testdeklarationen 028:** +29  
-**Reale Testdeklarationen nach 028:** **401**  
-**Neue Testdeklarationen 029:** +35  
-**Reale Testdeklarationen nach 029:** **436**  
-**Build/Test/Simulator nach 029:** offen (Apple-Toolchain nicht vorhanden)
+**Modul-029-Commit:** `baf8a55` (`feat: Modul 29`)
+**Modul-030-Commit:** offen
+**Reale Testdeklarationen vor 030:** 436
+**Neue Tests:** 38
+**Reale Testdeklarationen nach 030:** **474**
+**Build/Test/Simulator/Hörprüfung:** offen
 
-## Reale Teststände
+## Wichtige Teststand-Korrektur
 
-Die Gitstände wurden für Modul 029 erneut direkt gezählt:
+Der Eingangsprompt für Modul 029 ging von 369 Tests aus.
 
-- Modul-027-Commit `72d3e04`: 372
-- Modul-028-Commit `120ab6d`: 401
-- Modul 029: +35
-- aktueller Stand: 436
+Der reale committed Modul-028-Stand `120ab6d` enthielt jedoch bereits:
+
+**401 `@Test`-Deklarationen**
+
+Damit gilt für den aktuellen Stand:
+
+- vor Modul 029: 401
+- neu: 35
+- nach Modul 029: **436**
+
+Die frühere 369-Angabe wird nicht weitergeführt.
 
 ## v1.3-Modulstatus
 
 | Modul | Titel | Anforderungen | Status |
 |---|---|---|---|
-| 027 | Neue Ticketdaten und 16er-Sitzung | F-01, F-02, F-03, F-04, F-22, F-31 | committed `72d3e04`; Laufzeitteile weiterhin nachzuholen |
-| 028 | Teamlogos v1.3 | F-28, F-39 | committed `120ab6d`; Code/Test-Anteil PASS; Bundle-/Simulatorlauf OPEN |
-| 029 | Monster- und Streak-Audio | F-12, F-34, F-35, F-39 | implementiert; Ressourcen/Katalog PASS; Laufzeit OPEN |
-| 030 | Ticketvideo-System | F-03, F-32, F-33, F-39 | als Nächstes |
+| 027 | Neue Ticketdaten und 16er-Sitzung | F-01, F-02, F-03, F-04, F-22, F-31 | committed |
+| 028 | Teamlogos v1.3 | F-28, F-39 | committed `120ab6d`; Laufzeitanteile OPEN |
+| 029 | Monster- und Streak-Audio | F-12, F-34, F-35, F-39 | committed `baf8a55`; Hör-/Bundlelauf OPEN |
+| 030 | Ticketvideo-System | F-03, F-32, F-33, F-39 | implementiert; Ressourcen/Code statisch PASS; Playback-/Simulatorlauf OPEN; Commit offen |
 | 031 | Streak-State und Scoring | F-11, F-16, F-36, F-37 | offen |
 | 032 | Streak-Feedback v1.3 | F-18, F-21, F-35, F-38 | offen |
-| 033 | Integration und Abnahme v1.3 | F-01 bis F-39, Schwerpunkt F-31 bis F-39 | offen |
+| 033 | Integration und Abnahme v1.3 | F-01 bis F-39 | offen |
 
-## Modul 028 — Teamlogo-Integration
+## Modul 029 — Audioinventar
 
-### Ressourcenstruktur
+### Correct
 
-Die vier bereitgestellten JPEG-Teamlogos liegen produktiv gemeinsam unter:
+- `monster_correct_01.wav`
+- `monster_correct_02.wav`
+- `monster_correct_03.wav`
+- `monster_correct_04.wav`
 
-`Ticket_Tamer/Ticket_Tamer/Resources/TeamLogos`
+Produktiver Pfad:
 
-Dateien:
+`Resources/Audio/MonsterSounds/Correct/`
 
-- Netzwerk: `Network_team_icon_design_202609032139.jpeg`
-- Konto: `Team_icon_design_profile_lock_202609032138.jpeg`
-- Software: `Software_team_icon_design_202609032138.jpeg`
-- Hardware: `Hardware_team_icon_design_202609032138.jpeg`
+### Incorrect
 
-Alle vier Dateien wurden als valide JFIF-JPEGs mit 1024 × 1024 Pixel bestätigt.
+- `monster_incorrect_01.wav`
+- `monster_incorrect_02.wav`
+- `monster_incorrect_03.wav`
+- `monster_incorrect_04.wav`
 
-Quell- und Zielkopien besitzen laut Report jeweils identischen SHA-256-Hash.
+Produktiver Pfad:
 
-### Zentrale Zuordnung
+`Resources/Audio/MonsterSounds/Incorrect/`
+
+### Streak
+
+- `streak_01.wav` → x2/x3
+- `streak_02.wav` → x4+
+
+Produktiver Pfad:
+
+`Resources/Audio/StreakSounds/`
+
+Alle zehn Dateien wurden statisch als RIFF/WAVE, PCM 16 Bit, Stereo, 48 kHz validiert.
+
+Quell- und Zielkopien besitzen laut Report identische SHA-256-Hashes.
+
+## Audioarchitektur
 
 Neu:
 
-`Support/TeamLogoCatalog.swift`
+`Support/AudioResourceCatalog.swift`
 
-`TeamLogoCatalog` ist die einzige Team→Logo-Zuordnung.
+### `LocalAudioResource`
 
-Eine Logoressource enthält nur:
+Kapselt:
 
 - Ressourcenname
-- JPEG-Endung
+- WAV-Endung
+- Unterordner
+- fehlertoleranten Bundle-Lookup
 
-Keine:
+### `MonsterFeedbackSoundCatalog`
 
-- absolute Entwicklerpfade
-- Netzwerk-URLs
-- Ticketdaten
-- Score
-- Referenzpriorität
-- Dropgeometrie
+Besitzt getrennte Gruppen:
 
-### Teamstationen
+- Correct: exakt 4
+- Incorrect: exakt 4
 
-Historischer v1.2-Stand:
+Auswahl:
 
-- Netzwerk → SF Symbol `network`
-- Konto → `person.crop.circle`
-- Software → `macwindow`
-- Hardware → `desktopcomputer`
+```text
+select(for evaluation: Bool?, using selector:)
+```
 
-v1.3-Stand nach Modul 028:
+Produktiv:
 
-- lokales JPEG-Logo
-- deutscher Teamtext bleibt vollständig sichtbar
+`randomElement()`
 
-Die historischen SF-Symbole werden in der produktiven Teamstation nicht mehr verwendet.
+Tests:
 
-### Darstellung
+injizierbar/deterministisch.
 
-Logo:
+Keine Anti-Repeat-Logik.
 
-- `scaledToFit`
-- maximale Innenbox 34 × 34 pt
-- Seitenverhältnis bleibt erhalten
-- für VoiceOver verborgen
+Direkte Wiederholung derselben Soundvariante ist ausdrücklich zulässig.
 
-Accessibility:
+### `AudioService`
 
-- vollständiger deutscher Teamname bleibt Label der Station.
+Neue Verantwortung:
 
-### Fehlendes Logo
+- `playMonsterFeedback(evaluation:selector:)`
+- separater Monster-Player
+- separater Streak-Player
+- `playStreak(for:)`
 
-Bei fehlender/ungültiger Ressource:
+Fehlende/defekte Audioressourcen:
 
-- kein Crash
-- Teamtext bleibt sichtbar
-- Ziel-Entity bleibt vorhanden
-- Target-ID bleibt vorhanden
-- Dropgeometrie bleibt vorhanden
-- fachliche Teamzuordnung funktioniert weiter
-- Ressourcenfehler wird einmal über `.spawning` protokolliert
+- werden über `.audio` geloggt
+- verändern keinen fachlichen Flow
 
-## Geometrieschutz
+## Entscheidungsflow
 
-Unverändert:
+```text
+gültige Entscheidung
+→ Exactly-once-Bewertung
+→ Correct/Incorrect-Gruppe
+→ genau 1 von 4 auswählen
+→ genau 1 Monster-Sound
+→ bestehendes visuelles Feedback
+→ bestehender Transitionflow
+```
 
-- `TargetPanelLayout`
-- `TargetPanelFactory`
-- `DropTargetComponent`
-- `DropEvaluator`
+Ungültiger Drop oder `nil`-Bewertung:
 
-Referenzgeometrie:
+kein Bewertungssound.
 
-| Wert | vorher | nachher |
-|---|---:|---:|
-| Panelbreite | 0.195 m | 0.195 m |
-| Panelhöhe | 0.117 m | 0.117 m |
-| Paneltiefe | 0.020 m | 0.020 m |
-| Targetzentren | x ±0.1075; y 0.160/0.023; z -0.085 m | identisch |
-| Drop halfExtents | (0.0975; 0.0585; 0.0100) m | identisch |
-| Overlap | 0.50 | 0.50 |
-| Z-Toleranz | 0.05 m | 0.05 m |
+## Streak-Mapping
 
-Das SwiftUI-Attachment mit Logo und Text beeinflusst weder Panelmesh noch Drop-Bounds.
+| Streak | Sound |
+|---:|---|
+| <= 1 | keiner |
+| 2 | 01 |
+| 3 | 01 |
+| >= 4 | 02 |
 
-## Dateien Modul 028
+Wichtig:
+
+Der produktive Teamabschluss-Trigger ist **noch nicht** aktiv.
+
+Modul 029 führt nicht ein:
+
+- `SessionModel.streak`
+- Multiplikator-Scoring
+- Streak-Overlay
+- fachliche Streak-Mutation
+
+Diese folgen erst in Modul 031/032.
+
+## Historische Sounds
+
+Weiter vorhanden, aber produktiv unreferenziert:
+
+- `Resources/correct.wav`
+- `Resources/incorrect.wav`
+
+Kein produktiver Code spielt diese Dateien noch ab.
+
+Sie können später als reine Ressourcenbereinigung entfernt werden.
+
+## Dateien Modul 029
 
 Neu:
 
-- `Support/TeamLogoCatalog.swift`
-- `Resources/TeamLogos/Network_team_icon_design_202609032139.jpeg`
-- `Resources/TeamLogos/Team_icon_design_profile_lock_202609032138.jpeg`
-- `Resources/TeamLogos/Software_team_icon_design_202609032138.jpeg`
-- `Resources/TeamLogos/Hardware_team_icon_design_202609032138.jpeg`
+- `Support/AudioResourceCatalog.swift`
+- `Resources/Audio/MonsterSounds/Correct/*.wav`
+- `Resources/Audio/MonsterSounds/Incorrect/*.wav`
+- `Resources/Audio/StreakSounds/*.wav`
+- `AudioResourceCatalogTests.swift`
 
 Geändert:
 
+- `Services/AudioService.swift`
+- `Views/PrioritizationView.swift`
 - `Views/TeamAssignmentView.swift`
-- `Ticket_TamerTests/Ticket_TamerTests.swift`
+- `Support/AppConstants.swift`
+- `Ticket_TamerTests.swift`
+
+Nicht verändert:
+
+- `SessionModel`
+- Ticketdaten
+- Teamlogos
+- Dropgeometrie
+- Monster-Farbvarianten
+- Replay-Root
 
 ## Test-/Prüfstand
 
 | Prüfung | Status |
 |---|---|
-| reale Tests vor 028 | 372 |
-| reale Tests nach 028 | **401** |
-| JPEG-Signatur/Abmessungen | PASS |
-| Quell-/Zielintegrität | PASS |
-| historische SF-Symbole produktiv entfernt | PASS statisch |
-| Modul-028 `git diff --check` | PASS |
+| Tests vor 029 | 401 |
+| neue Tests | 35 |
+| Tests nach 029 | **436** |
+| neue Tests Modul 030 | 38 |
+| Tests nach 030 | **474** |
+| WAV-Struktur 4+4+2 | PASS |
+| WAV-Dateiformat | PASS |
+| Quell-/Zielhash | PASS |
+| produktive Alt-Soundreferenzen | keine |
+| Soundpfade in Views/SessionModel | keine |
+| Modul-029 `git diff --check` | PASS |
 | vollständiger Testlauf | OPEN |
-| Xcode-Build | OPEN |
-| Simulator | OPEN |
-| tatsächliche Bundle-Auffindbarkeit | OPEN |
+| Build | OPEN |
+| Simulator/Hörprüfung | OPEN |
 
 ## Akzeptanzstatus
 
-### AK-28
+### AK-12
 
-Code-/Testebene:
-
-PASS.
-
-Laufzeit weiterhin OPEN für:
-
-- vier Logos sichtbar
-- Textlesbarkeit
-- Blickwinkel
-- Drag auf alle vier Ziele
-- Invalid Drop/Snapback
-- kontrollierter Fallback
-
-### AK-39 — Teamlogo-Anteil
-
-Code-/Testebene:
+Code-/statische Testebene:
 
 PASS.
 
-Bundle-/Release-/Simulatorlauf:
+Reale Wiedergabe:
 
 OPEN.
 
-Der Videoanteil von AK-39 ist noch nicht bearbeitet.
+### AK-34
 
-## Modul 029 — Monster- und Streak-Audio
+Katalog, Zufallsauswahl, deterministische Auswahl und direkte Wiederholung:
 
-- zehn valide lokale WAVs unter `Resources/Audio` integriert
-- Correct und Incorrect als getrennte 4er-Kataloge
-- zufällige Auswahl mit injizierbarem Selector
-- direkte Wiederholung ausdrücklich möglich; keine Anti-Repeat-Logik
-- bestehende Exactly-once-Feedbacktasks verwenden je genau einen Monster-Sound
-- Streak 2/3 → Sound 01, Streak 4+ → Sound 02, ≤1 → kein Sound
-- separater Streak-Player für die spätere zeitversetzte Integration
-- historische `correct.wav`/`incorrect.wav` unreferenziert
-- kein Streak-State, Multiplikator oder produktiver Streak-Trigger vorgezogen
+PASS.
 
-Details: `Dokumentation/04_Modul-Reports/029-Report.md`.
+Hörprüfung:
 
-## Geschützter Bestand für Modul 030
+OPEN.
+
+### AK-35
+
+Ressourcen/Mapping/API:
+
+PASS.
+
+Produktiver Teamabschluss-Streaktrigger:
+
+OPEN bis Modul 031/032.
+
+### AK-39 Audio-Anteil
+
+Code-/Ressourcenebene:
+
+PASS.
+
+Bundle-/Simulatorlauf:
+
+OPEN.
+
+## Modul 030 — Ticketvideo-System
+
+- `TT-001.mp4` bis `TT-016.mp4` liegen gemeinsam unter `Resources/Videos/`.
+- `TicketVideoResourceProvider` löst ausschließlich lokale MP4-Dateinamen aus dem Bundle auf.
+- `TicketVideoPresentationState` hält den lokalen, nicht fachlichen Präsentationszustand.
+- `TicketVideoView` bietet Auto-Play nach Tap, Standardcontrols, sichtbares X, Auto-Close und Fehleranzeige.
+- Hintergrundinteraktionen sind während des Overlays gesperrt.
+- Ticket-, Phasenwechsel und Verschwinden der Investigation räumen die Videopräsentation auf.
+- `SessionModel`, Score, Entscheidungen, Input-Lock und Monster-Mapping bleiben unverändert.
+
+Statisch geprüft: 16 ISO-MP4-Dateien, Größen > 0, identische Quell-/Zielhashes und valider String Catalog. Xcode-Build, Testlauf und Simulator-Playback bleiben OPEN.
+
+## Geschützter Bestand für Modul 031
 
 Nicht verändern:
 
-- `TeamLogoCatalog`
+- Audio-Katalog
+- 4+4 Monster-Sounds
+- Streak-Soundmapping
+- AudioService-Schnittstellen
+- TeamLogoCatalog
 - Teamlogos
-- Teamstation-Text
-- Teamgeometrie
-- Drop-Bounds
-- 50-%-Overlap
-- Z-Toleranz
-- 16 Ticketdaten
-- 1...16-Auswahl
-- Video-Referenzen
+- Tickettexte
+- Ticketanzahl 1...16
 - Monster-Farbvarianten
-- Replay-Root
+- Dropgeometrie
+- Replay
 - Punktefeedback
-- Debug-UI-Isolation
+- Debug-Isolation
+- Ticketvideo-Provider und Videoressourcen
+- lokaler Video-Presentation-State
+- Video darf kein fachlicher `SessionModel`-State werden
 
 ## Nächster Schritt
 
-Modul 030 — Ticketvideo-System umsetzen.
+Modul 031 — Streak-State und Scoring vorbereiten beziehungsweise den zugehörigen Eingangsprompt erzeugen.
+
+Modul 031 bearbeitet ausschließlich den vorgesehenen Streak- und Multiplikator-Fachzustand. Es darf das abgeschlossene Video-System nicht mit Audiofeedback oder Scoring koppeln.

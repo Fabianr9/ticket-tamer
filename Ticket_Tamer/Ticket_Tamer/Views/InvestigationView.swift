@@ -31,11 +31,25 @@ struct InvestigationView: View {
     /// auf die bisherige Schaetzung zurueck.
     @State private var framing: InvestigationFraming? = nil
 
+    /// Lokaler Medienzustand; bewusst nicht Teil des fachlichen SessionModel.
+    @State private var videoPresentation = TicketVideoPresentationState()
+
     // MARK: - Body
 
     var body: some View {
         if let ticket = model.currentTicket {
-            mainContent(ticket: ticket)
+            ZStack {
+                mainContent(ticket: ticket)
+                    .allowsHitTesting(!videoPresentation.isPresented)
+
+                if let videoAssetName = videoPresentation.presentedAssetName {
+                    TicketVideoView(videoAssetName: videoAssetName) {
+                        videoPresentation.close()
+                    }
+                    .id(videoAssetName)
+                    .zIndex(100)
+                }
+            }
                 .ornament(
                     attachmentAnchor: .scene(
                         UnitPoint3D(
@@ -53,10 +67,17 @@ struct InvestigationView: View {
                     loadMonster(for: ticket)
                 }
                 .onChange(of: model.currentTicketIndex) { _, _ in
+                    videoPresentation.closeIfTicketChanged(to: model.currentTicket?.videoAssetName)
                     resetMonster()
                     if let updated = model.currentTicket {
                         loadMonster(for: updated)
                     }
+                }
+                .onChange(of: model.currentPhase) { _, phase in
+                    videoPresentation.closeIfInvestigationEnded(phase)
+                }
+                .onDisappear {
+                    videoPresentation.close()
                 }
         } else {
             noTicketView
@@ -99,10 +120,17 @@ struct InvestigationView: View {
                         height: LayoutConstants.ticketCardDesignHeight
                     )
                 ) {
-                    TicketCardView(ticket: ticket) {
-                        DebugManager.log(.input, "Weiter zur Priorisierung ausgeloest: \(ticket.ticketNumber)")
-                        model.beginPrioritizationPhase()
-                    }
+                    TicketCardView(
+                        ticket: ticket,
+                        onWatchVideo: {
+                            DebugManager.log(.input, "Ticketvideo geoeffnet: \(ticket.ticketNumber)")
+                            videoPresentation.present(videoAssetName: ticket.videoAssetName)
+                        },
+                        onContinue: {
+                            DebugManager.log(.input, "Weiter zur Priorisierung ausgeloest: \(ticket.ticketNumber)")
+                            model.beginPrioritizationPhase()
+                        }
+                    )
                 }
                 .frame(width: cardWidth, height: proxy.size.height)
             }

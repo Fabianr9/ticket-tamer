@@ -26,6 +26,15 @@ struct TicketCardView: View {
     /// Aktion der Schaltflaeche „Weiter zur Priorisierung" (F-07).
     let onContinue: () -> Void
 
+    /// Optionale Aktion fuer das lokale Ticketvideo (Modul 030).
+    let onWatchVideo: (() -> Void)?
+
+    init(ticket: Ticket, onWatchVideo: (() -> Void)? = nil, onContinue: @escaping () -> Void) {
+        self.ticket = ticket
+        self.onWatchVideo = onWatchVideo
+        self.onContinue = onContinue
+    }
+
     // MARK: - Body
 
     var body: some View {
@@ -44,7 +53,19 @@ struct TicketCardView: View {
 
             Divider()
 
-            continueButton
+            HStack(spacing: 12) {
+                if let onWatchVideo {
+                    Button(action: onWatchVideo) {
+                        Label("investigation.video.watch", systemImage: "play.rectangle.fill")
+                            .lineLimit(1)
+                            .minimumScaleFactor(LayoutConstants.ticketCardTextMinimumScaleFactor)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                }
+
+                continueButton
+            }
         }
         .padding(LayoutConstants.ticketCardPadding)
         .frame(

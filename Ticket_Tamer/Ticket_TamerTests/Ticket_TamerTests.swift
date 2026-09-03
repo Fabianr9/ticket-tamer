@@ -1,4 +1,5 @@
 import CoreGraphics
+import Foundation
 import RealityKit
 import Testing
 import simd
@@ -461,8 +462,8 @@ struct PointsCommunicationTests {
     }
 }
 
-@Suite("Modul 023 — Teamstation-Symbole")
-struct TeamStationSymbolTests {
+@Suite("Modul 028 — Teamlogos")
+struct TeamStationLogoTests {
     private let teams = SupportTeam.allCases
 
     private var resolved: TargetPanelLayout.Resolved {
@@ -479,27 +480,46 @@ struct TeamStationSymbolTests {
         )
     }
 
-    @Test("Netzwerk besitzt eine Symbolkonfiguration")
-    func networkHasSymbol() { #expect(TeamTargetMapping.presentation(for: .netzwerk).systemImageName == "network") }
+    @Test("Der Katalog enthaelt genau vier Teamlogo-Zuordnungen")
+    func catalogContainsExactlyFourMappings() { #expect(TeamLogoCatalog.entries.count == 4) }
 
-    @Test("Konto besitzt eine Symbolkonfiguration")
-    func accountHasSymbol() { #expect(TeamTargetMapping.presentation(for: .konto).systemImageName == "person.crop.circle") }
-
-    @Test("Software besitzt eine Symbolkonfiguration")
-    func softwareHasSymbol() { #expect(TeamTargetMapping.presentation(for: .software).systemImageName == "macwindow") }
-
-    @Test("Hardware besitzt eine Symbolkonfiguration")
-    func hardwareHasSymbol() { #expect(TeamTargetMapping.presentation(for: .hardware).systemImageName == "desktopcomputer") }
-
-    @Test("Alle vier Symbolwerte sind nicht leer")
-    func symbolsAreNotEmpty() {
-        #expect(teams.allSatisfy { !TeamTargetMapping.presentation(for: $0).systemImageName.isEmpty })
+    @Test("Jedes Team kommt genau einmal im Logo-Katalog vor")
+    func everyTeamOccursOnce() {
+        let teams = TeamLogoCatalog.entries.map(\.team)
+        #expect(teams.count == SupportTeam.allCases.count)
+        #expect(SupportTeam.allCases.allSatisfy { team in teams.filter { $0 == team }.count == 1 })
     }
 
-    @Test("Alle vier Symbolwerte sind eindeutig")
-    func symbolsAreUnique() {
-        let symbols = teams.map { TeamTargetMapping.presentation(for: $0).systemImageName }
-        #expect(Set(symbols).count == 4)
+    @Test("Netzwerk besitzt eine JPEG-Ressource")
+    func networkHasLogo() { #expect(!TeamLogoCatalog.resource(for: .netzwerk).name.isEmpty) }
+
+    @Test("Konto besitzt eine JPEG-Ressource")
+    func accountHasLogo() { #expect(!TeamLogoCatalog.resource(for: .konto).name.isEmpty) }
+
+    @Test("Software besitzt eine JPEG-Ressource")
+    func softwareHasLogo() { #expect(!TeamLogoCatalog.resource(for: .software).name.isEmpty) }
+
+    @Test("Hardware besitzt eine JPEG-Ressource")
+    func hardwareHasLogo() { #expect(!TeamLogoCatalog.resource(for: .hardware).name.isEmpty) }
+
+    @Test("Alle vier Logo-Dateinamen sind eindeutig")
+    func logoNamesAreUnique() {
+        let names = teams.map { TeamLogoCatalog.resource(for: $0).fileName }
+        #expect(Set(names).count == 4)
+    }
+
+    @Test("Alle Logos besitzen eine JPEG-Endung")
+    func logosUseJPEGExtensions() {
+        #expect(teams.allSatisfy {
+            ["jpg", "jpeg"].contains(TeamLogoCatalog.resource(for: $0).fileExtension.lowercased())
+        })
+    }
+
+    @Test("Logo-Referenzen sind lokal und relativ")
+    func logoReferencesAreLocalAndRelative() {
+        let names = teams.map { TeamLogoCatalog.resource(for: $0).fileName.lowercased() }
+        #expect(names.allSatisfy { !$0.contains("http://") && !$0.contains("https://") })
+        #expect(names.allSatisfy { !$0.hasPrefix("/") && !$0.contains("/users/") })
     }
 
     @Test("Netzwerk-Text bleibt deutsch und vollstaendig")
@@ -526,29 +546,29 @@ struct TeamStationSymbolTests {
     @Test("Hardware-Target-ID bleibt unveraendert")
     func hardwareIDStaysStable() { #expect(TeamTargetMapping.targetID(for: .hardware) == "team_hardware") }
 
-    @Test("Symbolzugriff veraendert die Panelbreite nicht")
-    func symbolAccessPreservesPanelWidth() {
+    @Test("Logozugriff veraendert die Panelbreite nicht")
+    func logoAccessPreservesPanelWidth() {
         let before = resolved.panelSize.x
         _ = teams.map { TeamTargetMapping.presentation(for: $0) }
         #expect(resolved.panelSize.x == before)
     }
 
-    @Test("Symbolzugriff veraendert die Panelhoehe nicht")
-    func symbolAccessPreservesPanelHeight() {
+    @Test("Logozugriff veraendert die Panelhoehe nicht")
+    func logoAccessPreservesPanelHeight() {
         let before = resolved.panelSize.y
         _ = teams.map { TeamTargetMapping.presentation(for: $0) }
         #expect(resolved.panelSize.y == before)
     }
 
-    @Test("Symbolzugriff veraendert die Paneltiefe nicht")
-    func symbolAccessPreservesPanelDepth() {
+    @Test("Logozugriff veraendert die Paneltiefe nicht")
+    func logoAccessPreservesPanelDepth() {
         let before = resolved.panelSize.z
         _ = teams.map { TeamTargetMapping.presentation(for: $0) }
         #expect(resolved.panelSize.z == before)
     }
 
-    @Test("Symbolzugriff veraendert die Drop-Bounds nicht")
-    func symbolAccessPreservesDropBounds() {
+    @Test("Logozugriff veraendert die Drop-Bounds nicht")
+    func logoAccessPreservesDropBounds() {
         let before = TeamTargetMapping.allTargets.compactMap { resolved.bounds(for: $0.id) }
         _ = teams.map { TeamTargetMapping.presentation(for: $0) }
         let after = TeamTargetMapping.allTargets.compactMap { resolved.bounds(for: $0.id) }
@@ -560,12 +580,141 @@ struct TeamStationSymbolTests {
     @Test("50-Prozent-Overlap bleibt unveraendert")
     func overlapThresholdStaysStable() { #expect(InteractionConstants.minimumDropOverlapRatio == 0.50) }
 
-    @Test("Praesentation enthaelt nur Text und Symbol")
+    @Test("Z-Toleranz bleibt unveraendert")
+    func depthToleranceStaysStable() { #expect(InteractionConstants.dropDepthTolerance == 0.05) }
+
+    @Test("Praesentation enthaelt nur Text und Logoressource")
     func presentationContainsNoReferenceSolutionOrGeometry() {
         let labels = Set(Mirror(reflecting: TeamTargetMapping.presentation(for: .netzwerk)).children.compactMap(\.label))
-        #expect(labels == ["title", "systemImageName"])
+        #expect(labels == ["title", "logoResource"])
+    }
+
+    @Test("Fehlende Ressource laesst Team und Ziel bestehen")
+    func missingResourcePreservesTeamAndTarget() {
+        let missing = TeamLogoResource(name: "missing-team-logo", fileExtension: "jpeg")
+        #expect(missing.url(in: Bundle(for: BundleMarker.self)) == nil)
+        #expect(TeamTargetMapping.team(for: TeamTargetMapping.ID.netzwerk) == .netzwerk)
+        #expect(TeamTargetMapping.allTargets.contains { $0.id == TeamTargetMapping.ID.netzwerk })
+    }
+
+    @Test("Fehlende Ressource veraendert Teamtext und Dropgeometrie nicht")
+    func missingResourcePreservesTitleAndGeometry() {
+        let before = resolved.bounds(for: TeamTargetMapping.ID.netzwerk)
+        let presentation = TeamTargetMapping.Presentation(
+            title: SupportTeam.netzwerk.displayName,
+            logoResource: .init(name: "missing-team-logo", fileExtension: "jpeg")
+        )
+        #expect(presentation.title == "Netzwerk")
+        #expect(resolved.bounds(for: TeamTargetMapping.ID.netzwerk)?.min == before?.min)
+        #expect(resolved.bounds(for: TeamTargetMapping.ID.netzwerk)?.max == before?.max)
+    }
+
+    @Test("Netzwerk verwendet die bereitgestellte Datei")
+    func networkUsesProvidedFile() {
+        #expect(TeamLogoCatalog.resource(for: .netzwerk).fileName == "Network_team_icon_design_202609032139.jpeg")
+    }
+
+    @Test("Konto verwendet die bereitgestellte Datei")
+    func accountUsesProvidedFile() {
+        #expect(TeamLogoCatalog.resource(for: .konto).fileName == "Team_icon_design_profile_lock_202609032138.jpeg")
+    }
+
+    @Test("Software verwendet die bereitgestellte Datei")
+    func softwareUsesProvidedFile() {
+        #expect(TeamLogoCatalog.resource(for: .software).fileName == "Software_team_icon_design_202609032138.jpeg")
+    }
+
+    @Test("Hardware verwendet die bereitgestellte Datei")
+    func hardwareUsesProvidedFile() {
+        #expect(TeamLogoCatalog.resource(for: .hardware).fileName == "Hardware_team_icon_design_202609032138.jpeg")
+    }
+
+    @Test("Historische SF-Symbole sind keine Logoressourcen")
+    func historicSymbolsAreNotLogoResources() {
+        let names = Set(teams.map { TeamLogoCatalog.resource(for: $0).name })
+        #expect(names.isDisjoint(with: ["network", "person.crop.circle", "macwindow", "desktopcomputer"]))
+    }
+
+    @Test("Logo-Dateinamen enthalten keine Pfadsegmente")
+    func logoNamesContainNoPaths() {
+        #expect(teams.allSatisfy { !TeamLogoCatalog.resource(for: $0).fileName.contains("/") })
+    }
+
+    @Test("Teamlogos besitzen einen gemeinsamen Bundle-Unterordner")
+    func logosShareBundleDirectory() { #expect(TeamLogoCatalog.bundleSubdirectory == "TeamLogos") }
+
+    @Test("Netzwerk-Praesentation benoetigt nur das Team")
+    func networkPresentationNeedsOnlyTeam() {
+        #expect(TeamTargetMapping.presentation(for: .netzwerk).logoResource == TeamLogoCatalog.resource(for: .netzwerk))
+    }
+
+    @Test("Konto-Praesentation benoetigt nur das Team")
+    func accountPresentationNeedsOnlyTeam() {
+        #expect(TeamTargetMapping.presentation(for: .konto).logoResource == TeamLogoCatalog.resource(for: .konto))
+    }
+
+    @Test("Software-Praesentation benoetigt nur das Team")
+    func softwarePresentationNeedsOnlyTeam() {
+        #expect(TeamTargetMapping.presentation(for: .software).logoResource == TeamLogoCatalog.resource(for: .software))
+    }
+
+    @Test("Hardware-Praesentation benoetigt nur das Team")
+    func hardwarePresentationNeedsOnlyTeam() {
+        #expect(TeamTargetMapping.presentation(for: .hardware).logoResource == TeamLogoCatalog.resource(for: .hardware))
+    }
+
+    @Test("Logozugriff veraendert Targetpositionen nicht")
+    func logoAccessPreservesTargetPositions() {
+        let before = TeamTargetMapping.allTargets.map(\.position)
+        _ = teams.map { TeamTargetMapping.presentation(for: $0) }
+        #expect(TeamTargetMapping.allTargets.map(\.position) == before)
+    }
+
+    @Test("Drop-halfExtents bleiben halbe Panelmasse")
+    func dropHalfExtentsStayTiedToPanelSize() {
+        let bounds = resolved.bounds(for: TeamTargetMapping.ID.netzwerk)
+        #expect(bounds?.extents == resolved.panelSize)
+    }
+
+    @Test("Netzwerk-Fallback behaelt fachliches Team")
+    func networkFallbackPreservesTeam() { #expect(TeamTargetMapping.team(for: TeamTargetMapping.ID.netzwerk) == .netzwerk) }
+
+    @Test("Konto-Fallback behaelt fachliches Team")
+    func accountFallbackPreservesTeam() { #expect(TeamTargetMapping.team(for: TeamTargetMapping.ID.konto) == .konto) }
+
+    @Test("Software-Fallback behaelt fachliches Team")
+    func softwareFallbackPreservesTeam() { #expect(TeamTargetMapping.team(for: TeamTargetMapping.ID.software) == .software) }
+
+    @Test("Hardware-Fallback behaelt fachliches Team")
+    func hardwareFallbackPreservesTeam() { #expect(TeamTargetMapping.team(for: TeamTargetMapping.ID.hardware) == .hardware) }
+
+    @Test("Netzwerk-Fallback behaelt Text")
+    func networkFallbackPreservesText() { #expect(SupportTeam.netzwerk.displayName == "Netzwerk") }
+
+    @Test("Konto-Fallback behaelt Text")
+    func accountFallbackPreservesText() { #expect(SupportTeam.konto.displayName == "Konto") }
+
+    @Test("Software-Fallback behaelt Text")
+    func softwareFallbackPreservesText() { #expect(SupportTeam.software.displayName == "Software") }
+
+    @Test("Hardware-Fallback behaelt Text")
+    func hardwareFallbackPreservesText() { #expect(SupportTeam.hardware.displayName == "Hardware") }
+
+    @Test("Alle Zielzentren bleiben nach Logozugriff identisch")
+    func logoAccessPreservesResolvedCenters() {
+        let before = resolved.centers
+        _ = teams.map { TeamLogoCatalog.resource(for: $0) }
+        #expect(resolved.centers == before)
+    }
+
+    @Test("Unbekannte Ziel-ID bleibt trotz Logo-Katalog unbekannt")
+    func logoCatalogDoesNotCreateTeamLogic() {
+        _ = TeamLogoCatalog.entries
+        #expect(TeamTargetMapping.team(for: "missing-team") == nil)
     }
 }
+
+private final class BundleMarker {}
 
 /// Smoke-Tests für die technische Grundlage aus Modul 001.
 struct TicketTamerTests {

@@ -1,79 +1,32 @@
 # Projekt-Stand — Ticket Tamer
 
+> Aktuelle technische Landkarte nach Modul 027 der Version 1.3.
+
 **Projektversion:** v1.3 in Arbeit  
-**v1.0:** abgeschlossen  
-**v1.1:** abgeschlossen  
-**v1.2:** abgeschlossen  
-**Nächstes Modul:** 027 — Neue Ticketdaten und 16er-Sitzung
+**Stand:** nach Modul 027  
+**Branch laut Report:** `v1.3`  
+**v1.2-Abschlusscommit:** `44430b7`  
+**Modul-027-Commit:** offen  
+**Testdeklarationen:** **372**  
+**Build/Test/Simulator:** offen
 
-## Bestehender stabiler Kern
+## v1.3-Funktionsstand
 
-Aus v1.0–v1.2 vorhanden:
+### 027 — Neue Ticketdaten und 16er-Sitzung
 
-- genau ein zentrales Volume
-- Startansicht
-- Minus/Slider/Plus
-- Standard 6
-- SessionModel
-- zufällige Auswahl ohne Wiederholung
-- Untersuchung
-- Priorisierung
-- Teamzuordnung
-- HUD
-- Ticketinfo
-- Interaktionshinweise
-- Drag/Drop
-- 50-%-Dropregel
-- Snapback
-- Exactly-once
-- Scoring
-- Audiofeedback
-- visuelles Punktefeedback
-- Monster-Retry
-- Replay-Layoutstabilisierung
-- Ergebnis `X Punkte`
-- Debug-UI-Isolation
-- vier Monstertypen mit 16 Farbvarianten
+Implementiert:
 
-## v1.3-Modul-Landkarte
+- genau TT-001 bis TT-016
+- neue Quelltexte aus `Tickets/Ticket-Tamer_Tickets.md`
+- Auswahlbereich 1...16
+- Standard/Reset 6
+- Video-Datenreferenz `TT-xxx.mp4`
+- bestätigte Teamverteilung 4/4/4/4
+- bestätigte Prioritätsverteilung 5/6/5
 
-| Modul | Titel |
-|---|---|
-| 027 | Neue Ticketdaten und 16er-Sitzung |
-| 028 | Teamlogos v1.3 |
-| 029 | Monster- und Streak-Audio |
-| 030 | Ticketvideo-System |
-| 031 | Streak-State und Scoring |
-| 032 | Streak-Feedback v1.3 |
-| 033 | Integration und Abnahme v1.3 |
+## Ticketmodell
 
-## Modul 027 — Zielzustand
-
-### Ticketpool
-
-Genau TT-001 bis TT-016.
-
-### Verteilung
-
-- jedes Team exakt 4 Tickets
-- Normal 5
-- Wichtig 6
-- Kritisch 5
-
-### Referenzmatrix
-
-TT-001 bis TT-012 behalten die bestehende 4×3-Matrix.
-
-Zusätzlich:
-
-- TT-013 Netzwerk + Wichtig
-- TT-014 Konto + Normal
-- TT-015 Software + Wichtig
-- TT-016 Hardware + Kritisch
-
-## Ticketmodell v1.3
-
-Zielstruktur laut SPEC:
+Relevante Felder:
 
 ```text
 Ticket
@@ -85,54 +38,138 @@ Ticket
 - symptoms
 - referencePriority
 - referenceTeam
-- monsterTypeId
+- monsterAssetId
 - videoAssetName
 ```
 
-Modul 027 darf `videoAssetName` als Datenreferenz ergänzen, falls der reale Tickettyp es noch nicht besitzt.
+## Ticketmatrix-Erweiterung
 
-Wiedergabe gehört erst zu Modul 030.
+TT-001...TT-012:
 
-## Ticketquelle
-
-Verbindlich:
-
-`Tickets/Ticket-Tamer_Tickets.md`
-
-Die 16 sichtbaren Tickettexte müssen daraus übernommen werden.
-
-Nicht aus diesem Projektstand erfinden.
-
-## Auswahlgrenze
+vollständige 4×3-Matrix.
 
 Neu:
 
-`1...16`
+- TT-013 → Netzwerk / Wichtig / monster01 / TT-013.mp4
+- TT-014 → Konto / Normal / monster02 / TT-014.mp4
+- TT-015 → Software / Wichtig / monster03 / TT-015.mp4
+- TT-016 → Hardware / Kritisch / monster04 / TT-016.mp4
 
-Standard:
+## Session
 
-`6`
+Grenzen:
 
-Slider, Minus/Plus und technische Clamp müssen dieselbe Grenze verwenden.
+```text
+minimumTicketCount = 1
+maximumTicketCount = 16
+defaultTicketCount = 6
+```
 
-## Noch nicht in Modul 027
+Eine 16er-Sitzung erzeugt weiterhin 16 eindeutige Monster-Variantenzuordnungen.
 
-Nicht implementieren:
+## Tests
 
-- JPEG-Teamlogos
-- neue Monster-/Streak-Sounds
-- Videoansicht
-- AVPlayer/AVKit
-- Streak-State
-- Streak-Scoring
-- Streak-Overlay
-- Streak-Sounds
+Aktuell:
 
-## Preflight erforderlich
+**372 Testdeklarationen**
 
-Da kein 026-Report in diesem Logbuch vorliegt:
+Vollständiger Apple-Toolchain-Lauf noch offen.
 
-- finalen v1.2-Gitstand real ermitteln
-- reale aktuelle Testzahl ermitteln
-- aktuellen Tickettyp/Katalog lesen
-- Ticket-Markdown real lesen
+## v1.3-Modul-Landkarte
+
+| Modul | Status |
+|---|---|
+| 027 | implementiert; AK-31 Laufzeit OPEN |
+| 028 | als Nächstes |
+| 029 | offen |
+| 030 | offen |
+| 031 | offen |
+| 032 | offen |
+| 033 | offen |
+
+## Für Modul 028 relevant
+
+Bestehende Teamstationen:
+
+- Netzwerk
+- Konto
+- Software
+- Hardware
+
+Modul 023 hatte SF Symbols ergänzt:
+
+- Netzwerk → `network`
+- Konto → `person.crop.circle`
+- Software → `macwindow`
+- Hardware → `desktopcomputer`
+
+v1.3-F-28 konkretisiert den aktuellen Zielstand:
+
+**Die bereitgestellten JPEG-Teamlogos ersetzen diese Symbole.**
+
+Die deutschen Texte bleiben sichtbar.
+
+## Geometrie-Schutz
+
+Aus Modul 023:
+
+Bei Referenzgeometrie:
+
+- Panelbreite `0.195 m`
+- Panelhöhe `0.117 m`
+- Paneltiefe `0.020 m`
+- `minimumDropOverlapRatio = 0.50`
+- `dropDepthTolerance = 0.05 m`
+
+Diese Werte beziehungsweise die dynamisch daraus abgeleitete reale Geometrie dürfen durch Logos nicht verändert werden.
+
+## Ressourcenarchitektur v1.3
+
+Ziel für Modul 028:
+
+```text
+Resources/
+└── TeamLogos/
+    ├── <Netzwerk-JPEG>
+    ├── <Konto-JPEG>
+    ├── <Software-JPEG>
+    └── <Hardware-JPEG>
+```
+
+Exakte Dateinamen nicht erfinden.
+
+Im Repository zunächst die bereitgestellten JPEG-Dateien inventarisieren.
+
+Zentrale Zuordnung statt Dateipfade in `TeamAssignmentView`.
+
+Geeignet ist eine kleine Präsentations-/Assetstruktur, sinngemäß:
+
+```text
+SupportTeam
+→ TeamLogoCatalog
+→ logoResourceName
+```
+
+oder eine Erweiterung der vorhandenen `TeamTargetMapping.Presentation`.
+
+Fachliche Teamlogik und Dropgeometrie dürfen keine Ressourcenpfade kennen.
+
+## Geschützt
+
+Nicht ändern:
+
+- Ticketdaten Modul 027
+- `videoAssetName`
+- Sessionauswahl 1...16
+- Monster-Variantenauswahl
+- Scoring
+- Audio
+- Streak noch nicht einführen
+- `TargetPanelLayout`
+- `DropTargetComponent`
+- `DropEvaluator`
+- 50-%-Overlap
+- Z-Toleranz
+- Replay-Root
+- Punktefeedback
+- Debug-UI-Isolation

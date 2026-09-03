@@ -15,12 +15,12 @@ enum TeamTargetMapping {
 
     /// Reine Darstellungskonfiguration einer Teamstation.
     ///
-    /// Sie enthaelt absichtlich keine Position oder Treffergeometrie. Symbole koennen
+    /// Sie enthaelt absichtlich keine Position oder Treffergeometrie. Logos koennen
     /// dadurch die sichtbare Beschriftung ergaenzen, ohne Panel- oder Drop-Masse zu
     /// beeinflussen (Modul 023 — F-28 / AK-28).
     struct Presentation {
         let title: String
-        let systemImageName: String
+        let logoResource: TeamLogoResource
     }
 
     // MARK: - Technische Ziel-IDs
@@ -93,16 +93,9 @@ enum TeamTargetMapping {
         allTargets.first { $0.team == team }?.id
     }
 
-    /// Deutsche Beschriftung und semantisch passendes SF Symbol eines Teams.
+    /// Deutsche Beschriftung und zentral zugeordnetes lokales JPEG-Logo eines Teams.
     static func presentation(for team: SupportTeam) -> Presentation {
-        let systemImageName: String
-        switch team {
-        case .netzwerk: systemImageName = "network"
-        case .konto: systemImageName = "person.crop.circle"
-        case .software: systemImageName = "macwindow"
-        case .hardware: systemImageName = "desktopcomputer"
-        }
-        return Presentation(title: team.displayName, systemImageName: systemImageName)
+        Presentation(title: team.displayName, logoResource: TeamLogoCatalog.resource(for: team))
     }
 }
 
@@ -367,15 +360,21 @@ struct TeamAssignmentView: View {
 
     // MARK: - Panel-Beschriftung
 
-    /// Teamname und semantisches Symbol als reine Attachment-Darstellung.
+    /// Teamname und lokales JPEG-Logo als reine Attachment-Darstellung.
     /// Das Attachment liegt vor dem Panel und ist von dessen Mesh- und Drop-Massen
     /// vollstaendig entkoppelt.
     @ViewBuilder
     private func panelLabel(_ presentation: TeamTargetMapping.Presentation) -> some View {
         HStack(spacing: 6) {
-            Image(systemName: presentation.systemImageName)
-                .imageScale(.medium)
-                .accessibilityHidden(true)
+            if let url = presentation.logoResource.url(),
+               let image = UIImage(contentsOfFile: url.path) {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: 34, maxHeight: 34)
+                    .clipShape(RoundedRectangle(cornerRadius: 5))
+                    .accessibilityHidden(true)
+            }
             Text(presentation.title)
                 .lineLimit(1)
                 .minimumScaleFactor(LayoutConstants.targetLabelMinimumScaleFactor)
@@ -411,6 +410,13 @@ struct TeamAssignmentView: View {
     private func setupScene() async {
         if targetEntities.isEmpty {
             for targetDef in TeamTargetMapping.allTargets {
+                let logo = TeamLogoCatalog.resource(for: targetDef.team)
+                if let url = logo.url(), UIImage(contentsOfFile: url.path) != nil {
+                    DebugManager.log(.spawning, "Teamlogo gefunden: \(targetDef.team.rawValue) → \(logo.fileName)")
+                } else {
+                    DebugManager.log(.spawning, "Teamlogo fehlt/ungueltig, Text-Fallback: \(targetDef.team.rawValue) → \(logo.fileName)")
+                }
+
                 let entity = TargetPanelFactory.makeTarget(
                     id: targetDef.id,
                     debugName: targetDef.team.displayName

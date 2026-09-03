@@ -1,164 +1,201 @@
 # Projektlogbuch — Ticket Tamer
 
+> Einziger aktueller Logbuch-Stand nach Einarbeitung von Modul 027 für Version 1.3.
+
 **Projektversion:** v1.3 in Arbeit  
 **v1.0:** abgeschlossen  
 **v1.1:** abgeschlossen  
 **v1.2:** abgeschlossen  
-**Stand:** Start v1.3 vor Modul `027` — Neue Ticketdaten und 16er-Sitzung  
-**Eingearbeitet am:** 2026-09-03
+**Stand:** nach Modul `027` — Neue Ticketdaten und 16er-Sitzung  
+**Eingearbeitet am:** 2026-09-03  
+**Branch laut 027-Report:** `v1.3`  
+**HEAD vor Modul 027:** `44430b7daeb8c6b53f1266cb9ac781e6c6330dd4` (`feat: Modul 26`)  
+**Finaler v1.2-Abschlusscommit:** `44430b7` (`feat: Modul 26`)  
+**Modul-027-Commit:** offen  
+**Testdeklarationen vor 027:** 365  
+**Testdeklarationen nach 027:** **372**  
+**Build/Test/Simulator nach 027:** offen
 
-## Versionsentscheidung
-
-Version 1.2 gilt auf ausdrückliche Projektentscheidung als abgeschlossen und bildet die stabile Ausgangsbasis für v1.3.
-
-Die neue v1.3-Planung erweitert gezielt den bestehenden Stand. Navigation, räumliche Kerninteraktion, Replay-Fix, Monster-Farbvarianten, Drop-Regeln und Exactly-once werden nicht neu aufgebaut.
-
-## Neue v1.3-Anforderungen
-
-- 16 vollständig neue Ticketinhalte TT-001 bis TT-016
-- Ticketanzahlbereich 1...16 bei Standard 6
-- feste lokale Video-Referenz pro Ticket
-- optionale lokale Ticketvideos
-- vier bereitgestellte JPEG-Teamlogos
-- 4 Correct- + 4 Incorrect-Monster-Sounds
-- 2 zusätzliche Streak-Sounds
-- zentraler Streak-State
-- Multiplikator-Scoring vollständig korrekter Tickets
-- temporäre x2/x3/x4+-Streakvisualisierung
-- klare Ressourcenstruktur für Audio, Logos und Videos
-
-## v1.3-Modul-Landkarte
+## v1.3-Modulstatus
 
 | Modul | Titel | Anforderungen | Status |
 |---|---|---|---|
-| 027 | Neue Ticketdaten und 16er-Sitzung | F-01, F-02, F-03, F-04, F-22, F-31 | als Nächstes |
-| 028 | Teamlogos v1.3 | F-28, F-39 | offen |
+| 027 | Neue Ticketdaten und 16er-Sitzung | F-01, F-02, F-03, F-04, F-22, F-31 | implementiert; Code/Test-Anteile erfüllt; AK-31 Laufzeit OPEN; Commit offen |
+| 028 | Teamlogos v1.3 | F-28, F-39 | als Nächstes |
 | 029 | Monster- und Streak-Audio | F-12, F-34, F-35, F-39 | offen |
 | 030 | Ticketvideo-System | F-03, F-32, F-33, F-39 | offen |
 | 031 | Streak-State und Scoring | F-11, F-16, F-36, F-37 | offen |
 | 032 | Streak-Feedback v1.3 | F-18, F-21, F-35, F-38 | offen |
 | 033 | Integration und Abnahme v1.3 | F-01 bis F-39, Schwerpunkt F-31 bis F-39 | offen |
 
-## Verbindliche Ticketverteilung
+## Modul 027 — realer Stand
 
-TT-001 bis TT-012 behalten die bestätigten Referenzlösungen der bisherigen vollständigen 4×3-Matrix.
+### Ticketkatalog
 
-Zusätzliche Tickets:
+Der produktive lokale Katalog enthält jetzt genau:
 
-- TT-013 → Netzwerk + Wichtig
-- TT-014 → Konto + Normal
-- TT-015 → Software + Wichtig
-- TT-016 → Hardware + Kritisch
+TT-001 bis TT-016.
 
-Gesamt:
-
-| Team | Normal | Wichtig | Kritisch | Gesamt |
-|---|---|---|---|---:|
-| Netzwerk | TT-001 | TT-002, TT-013 | TT-003 | 4 |
-| Konto | TT-004, TT-014 | TT-005 | TT-006 | 4 |
-| Software | TT-007 | TT-008, TT-015 | TT-009 | 4 |
-| Hardware | TT-010 | TT-011 | TT-012, TT-016 | 4 |
-| **Gesamt** | **5** | **6** | **5** | **16** |
-
-## Verbindliche Ticketquelle
-
-Neue sichtbare Ticketinhalte werden nicht erfunden.
-
-Verbindliche Quelle:
+Die historischen Tickettexte wurden vollständig durch die Inhalte aus:
 
 `Tickets/Ticket-Tamer_Tickets.md`
 
-Diese Datei wird in Modul 027 vollständig gelesen und strukturiert in den lokalen Swift-Ticketkatalog übertragen.
+ersetzt.
 
 Die Markdown-Datei wird nicht zur Laufzeit geparst.
 
-## Ticketvideo-Referenzen
+### Ticketmatrix
 
-Jedes Ticket besitzt genau eine feste Referenz:
+| ID | Titel | Priorität | Team | MonsterType | Video |
+|---|---|---|---|---|---|
+| TT-001 | Das WLAN hat einen Lieblingsplatz | Normal | Netzwerk | monster01 | TT-001.mp4 |
+| TT-002 | Die Videokonferenz teleportiert uns | Wichtig | Netzwerk | monster02 | TT-002.mp4 |
+| TT-003 | Das Internet ist spontan in den Urlaub gefahren | Kritisch | Netzwerk | monster03 | TT-003.mp4 |
+| TT-004 | Mein Passwort kennt mich nicht mehr | Normal | Konto | monster04 | TT-004.mp4 |
+| TT-005 | Die Buchhaltung steht vor der digitalen Zugbrücke | Wichtig | Konto | monster01 | TT-005.mp4 |
+| TT-006 | Der digitale Türsteher lässt niemanden mehr rein | Kritisch | Konto | monster02 | TT-006.mp4 |
+| TT-007 | Meine Tabelle spricht plötzlich Hieroglyphen | Normal | Software | monster03 | TT-007.mp4 |
+| TT-008 | Die Präsentation frisst ihre eigenen Folien | Wichtig | Software | monster04 | TT-008.mp4 |
+| TT-009 | Das Bestellsystem ist in der Zeit eingefroren | Kritisch | Software | monster01 | TT-009.mp4 |
+| TT-010 | Der Drucker übt für seine Traktorprüfung | Normal | Hardware | monster02 | TT-010.mp4 |
+| TT-011 | Der Konferenzbildschirm hat Schneetag | Wichtig | Hardware | monster03 | TT-011.mp4 |
+| TT-012 | Der Dateiserver veranstaltet eine Lichtshow | Kritisch | Hardware | monster04 | TT-012.mp4 |
+| TT-013 | Das Homeoffice steckt im VPN-Labyrinth | Wichtig | Netzwerk | monster01 | TT-013.mp4 |
+| TT-014 | Die Zwei-Faktor-Anmeldung lebt in einer Zeitschleife | Normal | Konto | monster02 | TT-014.mp4 |
+| TT-015 | Das Ticketsystem züchtet Klone | Wichtig | Software | monster03 | TT-015.mp4 |
+| TT-016 | Die Lager-Scanner haben kollektiv Feierabend | Kritisch | Hardware | monster04 | TT-016.mp4 |
 
-- TT-001 → `TT-001.mp4`
-- ...
-- TT-016 → `TT-016.mp4`
+### Verteilung
 
-Modul 027 darf die Datenreferenz ergänzen; die Videoansicht und Wiedergabelogik gehören zu Modul 030.
+Teams:
 
-## Ticketanzahl
+- Netzwerk 4
+- Konto 4
+- Software 4
+- Hardware 4
 
-Neue Grenze:
+Prioritäten:
 
-`1...16`
+- Normal 5
+- Wichtig 6
+- Kritisch 5
 
-Standard:
+TT-001 bis TT-012 bilden weiterhin die vollständige 4×3-Matrix.
 
-`6`
+Zusätzlich:
 
-Bei 1 Minus disabled, bei 16 Plus disabled.
+- TT-013 Netzwerk/Wichtig
+- TT-014 Konto/Normal
+- TT-015 Software/Wichtig
+- TT-016 Hardware/Kritisch
 
-## Streak-Grundsatz für spätere Module
+## Ticketmodell
 
-Noch nicht in Modul 027 implementieren.
+Neu:
 
-Verbindlich:
+`Ticket.videoAssetName`
 
-- neue Sitzung `streak = 0`
-- nur vollständig korrektes Ticket erhöht Streak
-- teilweise/falsches Ticket setzt auf 0
-- kein künstlicher Cap
-- vollständig korrektes Ticket bei Streak n → `200 × n` Ticketpunkte
-- Multiplikator erst bei Teamabschluss sichtbar
-- x2/x3 normal, x4+ prägnanter
-- kein dauerhafter Streak im HUD
+Jedes Ticket besitzt exakt die reine Datenreferenz:
 
-## Ressourcenstruktur v1.3
+`TT-xxx.mp4`
 
-```text
-Resources/
-├── Audio/
-│   ├── MonsterSounds/
-│   │   ├── Correct/
-│   │   └── Incorrect/
-│   └── StreakSounds/
-├── TeamLogos/
-└── Videos/
-```
+Keine Videoansicht oder Wiedergabelogik wurde vorgezogen.
 
-Die konkrete Übernahme erfolgt in den Modulen 028–030.
+Die zusätzliche vorhandene Datei `TT-002A.mp4` ist ausdrücklich **keine** produktive Ticketreferenz.
 
-## Geschützter v1.2-Bestand
+## Ticketanzahlsteuerung
 
-Nicht regressieren:
+`GameplayConstants.maximumTicketCount = 16`
 
-- Replay-Layoutstabilität
-- Ergebnis `X Punkte`
-- falsches Feedback `0 Punkte`
-- Debug-UI-Isolation
-- 16 Monster-Farbvarianten
-- Session-HUD
+Startsteuerung und Sessionlogik verwenden zentral:
+
+- Minimum 1
+- Maximum 16
+- Standard 6
+
+Slider, Plus/Minus und technische Clamp beziehen sich auf dieselbe Grenze.
+
+Reset bleibt 6.
+
+## Monster-Farbvarianten-Regressionsschutz
+
+Die v1.2-Variantenlogik wurde nicht umgebaut.
+
+Eine 16er-Sitzung erzeugt weiterhin genau 16 Ticket→Monster-Variantenzuordnungen.
+
+Reset leert das Mapping.
+
+Die vier neuen Tickets ergänzen jeden Monstertyp einmal.
+
+## Nicht vorgezogen
+
+Keine Arbeit an:
+
+- Teamlogos
+- neuen Audioressourcen
+- Streak-State
+- Streak-Scoring
+- Video-UI
+
+Replay-Root, Punktekommunikation, Dropgeometrie, 50-%-Overlap, Z-Toleranz, Snapback und Exactly-once blieben unverändert.
+
+## Teststand
+
+| Kennzahl | Stand |
+|---|---:|
+| Tests vor 027 | 365 |
+| Tests nach 027 | **372** |
+| Katalog/IDs/Pflichtfelder | PASS statisch/Testabdeckung |
+| Referenzmatrix/Verteilung | PASS statisch/Testabdeckung |
+| Video-Mapping | PASS statisch/Testabdeckung |
+| Auswahl/Clamp/Reset | PASS statisch/Testabdeckung |
+| Scope `git diff --check` | PASS |
+| vollständiger Build/Testlauf | OPEN |
+| Simulator | OPEN |
+
+## Akzeptanzstatus Modul 027
+
+| AK | Status |
+|---|---|
+| AK-01 | PASS (Code/Test) |
+| AK-02 | PASS (Code/Test) |
+| AK-03 | PASS (Code/Test) |
+| AK-04 | PASS (Code/Test) |
+| AK-22 | PASS (Code/Test) |
+| AK-31 | OPEN (Laufzeit) |
+
+Für AK-31 noch manuell zu prüfen:
+
+- TT-001
+- TT-007
+- TT-013
+- TT-016
+- HUD bis `Ticket 16 von 16`
 - Ticketinfo
-- Interaktionshinweise
-- Monster-Retry
-- Drag/Drop
-- 50-%-Overlap
-- Z-Toleranz
-- Snapback
-- Exactly-once
-- zentrales Volume
+- Reset
+- Replay-/Punkte-/Monsterfarben-Regression
 
-## Offene Ausgangsdaten vor Modul 027
+## Werkzeugstatus
 
-Ein finaler `026-Report.md` wurde in diesem Logbuch nicht eingearbeitet. v1.2 wurde vom Projektteam ausdrücklich als abgeschlossen bestätigt.
+Im Modul-027-Ausführungsumfeld fehlten:
 
-Modul 027 muss deshalb im Repository real feststellen:
+- `xcodebuild`
+- `swift`
+- visionOS-Simulator
 
-- finalen v1.2-Branch
-- finalen v1.2-Commit
-- aktuelle Testzahl
-- aktuellen Build-/Simulatorstatus
-- aktuellen lokalen Ticketkatalog
-- tatsächliche Position von `Tickets/Ticket-Tamer_Tickets.md`
-
-Keine alten Werte erfinden.
+Daher keine erfundenen Laufzeit-PASS-Angaben.
 
 ## Nächster Schritt
 
-`027-Eingangsprompt.md` ausführen.
+`028-Eingangsprompt.md` ausführen.
+
+Modul 028 bearbeitet ausschließlich den Teamlogo-Anteil von v1.3:
+
+- vier bereitgestellte JPEG-Teamlogos inventarisieren,
+- sauber unter einem gemeinsamen Teamlogo-Ressourcenbereich ablegen,
+- zentrale Team→Logo-Zuordnung einführen,
+- bisherige SF-Symbole aus Modul 023 in der sichtbaren Teamstation durch Logos ersetzen,
+- Teamtext vollständig sichtbar lassen,
+- Panel-/Drop-Geometrie vollständig unverändert lassen,
+- fehlende Logos robust behandeln,
+- Ticket-, Video-, Session-, Monster-, Audio- und Streaklogik nicht verändern.

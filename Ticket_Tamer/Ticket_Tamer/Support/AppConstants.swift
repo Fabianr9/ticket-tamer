@@ -55,8 +55,12 @@ enum LayoutConstants {
     /// Maximale Textbreite der kurzen Spielbeschreibung auf der Startseite.
     static let startDescriptionMaximumWidth = 560.0
 
-    /// Maximale Breite des weiterhin vorhandenen Ticketanzahl-Sliders.
-    static let startSliderMaximumWidth = 320.0
+    /// Stabile Designbreite des Ticketanzahl-Sliders.
+    ///
+    /// Anders als eine reine Maximalbreite ist dieser Wert kein Angebot, das SwiftUI
+    /// beim Phasenwechsel beliebig komprimieren darf. Die volumenfuellende Root-Huelle
+    /// stellt den dafuer benoetigten Layoutraum phasenuebergreifend bereit.
+    static let startSliderDesignWidth = 320.0
 
     /// Abstand zwischen Minus, Slider und Plus.
     static let startTicketControlSpacing = 16.0

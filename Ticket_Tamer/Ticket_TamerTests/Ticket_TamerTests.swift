@@ -198,6 +198,111 @@ struct MonsterLoadRecoveryTests {
     }
 }
 
+// MARK: - Modul 021 — Replay-Layoutstabilisierung
+
+@MainActor
+@Suite("Modul 021 — Replay-Layoutstabilisierung")
+struct ReplayLayoutStabilityTests {
+    private let coldStartVolume = BoundingBox(
+        min: SIMD3<Float>(-0.60, -0.575, -0.225),
+        max: SIMD3<Float>(0.60, 0.575, 0.225)
+    )
+    private let resizedVolume = BoundingBox(
+        min: SIMD3<Float>(-0.48, -0.50, -0.20),
+        max: SIMD3<Float>(0.48, 0.50, 0.20)
+    )
+    private let monsterBounds = BoundingBox(
+        min: SIMD3<Float>(-0.05, -0.055, -0.04),
+        max: SIMD3<Float>(0.05, 0.055, 0.04)
+    )
+
+    @Test("Start-Slider besitzt eine feste positive Designbreite")
+    func startSliderHasStableDesignWidth() {
+        #expect(LayoutConstants.startSliderDesignWidth == 320)
+        #expect(LayoutConstants.startSliderDesignWidth > 0)
+    }
+
+    @Test("Gleiche Volume-Geometrie ergibt gleiche Prioritaetspanels")
+    func identicalVolumeProducesIdenticalPriorityPanels() {
+        let first = priorityLayout(in: coldStartVolume)
+        let replay = priorityLayout(in: coldStartVolume)
+
+        #expect(first.panelSize == replay.panelSize)
+        #expect(first.centers == replay.centers)
+    }
+
+    @Test("Gleiche Volume-Geometrie ergibt gleiche Teampanels")
+    func identicalVolumeProducesIdenticalTeamPanels() {
+        let first = teamLayout(in: coldStartVolume)
+        let replay = teamLayout(in: coldStartVolume)
+
+        #expect(first.panelSize == replay.panelSize)
+        #expect(first.centers == replay.centers)
+    }
+
+    @Test("Fuenf Replay-Berechnungen mit gleicher Geometry driften nicht")
+    func fiveRepeatedCalculationsDoNotDrift() {
+        let priorityReference = priorityLayout(in: coldStartVolume)
+        let teamReference = teamLayout(in: coldStartVolume)
+
+        for _ in 1...5 {
+            let priorityReplay = priorityLayout(in: coldStartVolume)
+            let teamReplay = teamLayout(in: coldStartVolume)
+            #expect(priorityReplay.panelSize == priorityReference.panelSize)
+            #expect(priorityReplay.centers == priorityReference.centers)
+            #expect(teamReplay.panelSize == teamReference.panelSize)
+            #expect(teamReplay.centers == teamReference.centers)
+        }
+    }
+
+    @Test("Eine gueltig veraenderte Geometry wird statt der Defaultgroesse verwendet")
+    func resizedGeometryProducesNewLayout() {
+        let initial = priorityLayout(in: coldStartVolume)
+        let resized = priorityLayout(in: resizedVolume)
+
+        #expect(resized.panelSize != initial.panelSize)
+        #expect(resized.centers != initial.centers)
+    }
+
+    @Test("Fachlicher Reset ist kein Input der Panelgeometrie")
+    func sessionResetDoesNotChangeLayoutCalculation() {
+        let model = SessionModel()
+        let before = priorityLayout(in: resizedVolume)
+
+        model.setTicketCount(12)
+        model.startSession(using: { $0 })
+        model.reset()
+
+        let after = priorityLayout(in: resizedVolume)
+        #expect(before.panelSize == after.panelSize)
+        #expect(before.centers == after.centers)
+        #expect(model.selectedTicketCount == GameplayConstants.defaultTicketCount)
+        #expect(model.sessionTickets.isEmpty)
+        #expect(model.currentTicketIndex == 0)
+        #expect(model.currentPhase == .start)
+        #expect(model.score == 0)
+        #expect(model.selectedPriority == nil)
+        #expect(model.selectedTeam == nil)
+        #expect(model.isInputLocked == false)
+    }
+
+    private func priorityLayout(in volume: BoundingBox) -> TargetPanelLayout.Resolved {
+        PriorityTargetMapping.panelLayout.resolve(
+            volume: volume,
+            monsterBounds: monsterBounds,
+            monsterPlaneZ: PrioritizationConstants.monsterStartPosition.z
+        )
+    }
+
+    private func teamLayout(in volume: BoundingBox) -> TargetPanelLayout.Resolved {
+        TeamTargetMapping.panelLayout.resolve(
+            volume: volume,
+            monsterBounds: monsterBounds,
+            monsterPlaneZ: TeamAssignmentConstants.monsterStartPosition.z
+        )
+    }
+}
+
 // MARK: - Modul 018 — Visuelles Entscheidungsfeedback
 
 @MainActor

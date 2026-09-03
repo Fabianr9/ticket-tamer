@@ -56,6 +56,8 @@ Nach Simulator-Gegenpruefung wurde die Cold-Start-Vorgabe ergonomisch von 1,2 x 
 
 In der anschliessenden Feinabstimmung wurde die zwischenzeitliche Änderung des Panelabstands zurückgenommen; die Boxen verwenden wieder 0,02 m Abstand. Das Prioritätsraster ist mit maximal 0,70 m wieder deutlich länglicher, während das 2x2-Teamraster bei maximal 0,45 m kompakt bleibt. Das Untersuchungsmonster wurde auf 0,24 m und das Drag-/Drop-Monster auf 0,17 m vergroessert. In der Teamphase startet es nun etwas höher bei y = -0,16 m unterhalb der unteren Panelreihe. Ein erster Versuch, HUD und Hinweis per `offset` zu verschieben, liess beide Ornaments im Simulator verschwinden und wurde vollständig entfernt. Sie verwenden nun explizite normalisierte `UnitPoint3D`-Scene-Anker bei y = 0,14 beziehungsweise y = 0,84. Sichtbare Panelboxen und Drop-Bounds stammen weiterhin aus derselben Geometrie.
 
+Das Untersuchungs-HUD verwendet abweichend einen eigenen Scene-Anker bei y = 0,06. Es sitzt damit oberhalb der grossen Ticketkarte und überdeckt deren Kopfbereich nicht; die bereits abgenommenen HUD-Positionen der beiden Zuordnungsphasen bleiben unverändert.
+
 Die unstrukturierten Geometry-Tasks in den Spielansichten wurden nicht als gemeinsame Ursache bewertet: Ihr lokaler State verschwindet beim Phasenwechsel, und sie koennen den bereits vorher sichtbaren Start-Slider nicht beeinflussen. In diesem Modul wurde deshalb keine neue Task-Kaskade und kein phasenspezifischer Cancellation-Hack eingefuehrt.
 
 ## 5. Änderungen je Datei

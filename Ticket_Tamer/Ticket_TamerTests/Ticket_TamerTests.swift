@@ -612,8 +612,10 @@ struct CompactTicketInfoTests {
 
     @Test("HUD und Hinweis verwenden sichtbare Scene-Anker innerhalb des Volumes")
     func ornamentAnchorsStayInsideScene() {
+        #expect((0...1).contains(LayoutConstants.investigationHUDSceneAnchorY))
         #expect((0...1).contains(LayoutConstants.sessionHUDSceneAnchorY))
         #expect((0...1).contains(LayoutConstants.interactionHintSceneAnchorY))
+        #expect(LayoutConstants.investigationHUDSceneAnchorY < LayoutConstants.sessionHUDSceneAnchorY)
         #expect(LayoutConstants.sessionHUDSceneAnchorY < LayoutConstants.interactionHintSceneAnchorY)
     }
 

@@ -54,7 +54,12 @@ enum LayoutConstants {
     /// Abstand innerhalb des Textblocks.
     static let textSpacing = 8.0
 
-    /// Normalisierte Y-Position des HUD innerhalb der Scene (0 = oben, 1 = unten).
+    /// Normalisierte Y-Position des Untersuchungs-HUD.
+    /// Es sitzt hoeher als in den Zuordnungsphasen, damit es die grosse Ticketkarte
+    /// nicht ueberdeckt.
+    static let investigationHUDSceneAnchorY: CGFloat = 0.06
+
+    /// Normalisierte Y-Position des Zuordnungs-HUD innerhalb der Scene (0 = oben, 1 = unten).
     /// Ein echter Scene-Anker bleibt im Volume sichtbar; ein nachtraeglicher View-Offset
     /// kann ein Ornament dagegen aus dessen Darstellungsbereich verschieben.
     static let sessionHUDSceneAnchorY: CGFloat = 0.14

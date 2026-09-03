@@ -40,7 +40,7 @@ struct InvestigationView: View {
                     attachmentAnchor: .scene(
                         UnitPoint3D(
                             x: 0.5,
-                            y: LayoutConstants.sessionHUDSceneAnchorY,
+                            y: LayoutConstants.investigationHUDSceneAnchorY,
                             z: 0.5
                         )
                     ),

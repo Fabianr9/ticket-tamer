@@ -50,7 +50,9 @@ Eine reale Laufzeitmessung ist ohne visionOS-Simulator nicht moeglich und wird n
 
 `RootVolumeView` besitzt jetzt einen dauerhaften `GeometryReader3D` ausserhalb des Phasenrouters und reicht dessen vollständige Breite, Höhe und Tiefe weiter. Dadurch bleiben HUD, Ticketkarte, Monster und SwiftUI-/RealityKit-Konvertierung proportional korrekt. `TargetPanelLayout` begrenzt ausschließlich das zentral angeordnete Zielraster auf 0,45 m Gesamtbreite und die obere Reihe auf höchstens 0,16 m über der Volume-Mitte. Kleine Volumes bleiben anhand ihrer realen Grenzen adaptiv. Es wird keine alte Größe gespeichert, kein Replay-Faktor angewandt und kein Windowzustand in `SessionModel` aufgenommen.
 
-`Ticket_TamerApp.defaultSize(...)` bleibt unveraendert die Cold-Start-Vorgabe. Ein Nutzer-/System-Resize wird nicht auf Default zurueckgesetzt, weil Replay ausschließlich den fachlichen Modelzustand aendert. Priority- und Teamziele bleiben adaptiv und werden weiterhin aus den real gemessenen VolumeBounds berechnet.
+`Ticket_TamerApp.defaultSize(...)` bleibt semantisch ausschließlich die Cold-Start-Vorgabe. Ein Nutzer-/System-Resize wird nicht auf Default zurueckgesetzt, weil Replay ausschließlich den fachlichen Modelzustand aendert. Priority- und Teamziele bleiben adaptiv und werden weiterhin aus den real gemessenen VolumeBounds berechnet.
+
+Nach Simulator-Gegenpruefung wurde die Cold-Start-Vorgabe ergonomisch von 1,2 x 1,15 x 0,45 m auf 0,8 x 0,75 x 0,38 m reduziert. Damit ruecken das an der Oberkante verankerte HUD, die zentrale Spielflaeche und der untere Interaktionshinweis gemeinsam zusammen, ohne einzelne Ornaments mit phasenspezifischen Offsets zu verschieben. Ein bereits vom Nutzer/System veraendertes Volume wird beim Replay weiterhin nicht auf diese Defaultwerte zurueckgesetzt.
 
 Die unstrukturierten Geometry-Tasks in den Spielansichten wurden nicht als gemeinsame Ursache bewertet: Ihr lokaler State verschwindet beim Phasenwechsel, und sie koennen den bereits vorher sichtbaren Start-Slider nicht beeinflussen. In diesem Modul wurde deshalb keine neue Task-Kaskade und kein phasenspezifischer Cancellation-Hack eingefuehrt.
 

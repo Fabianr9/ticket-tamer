@@ -602,11 +602,12 @@ struct CompactTicketInfoTests {
         #expect(LayoutConstants.compactTicketInfoOuterPadding > 0)
     }
 
-    @Test("Das zentrale Volume ist fuer die vollstaendige Ticketinfo vergroessert")
-    func centralVolumeIsEnlarged() {
-        #expect(LayoutConstants.centralVolumeWidth == 1.2)
-        #expect(LayoutConstants.centralVolumeHeight == 1.15)
-        #expect(LayoutConstants.centralVolumeDepth == 0.45)
+    @Test("Das zentrale Volume bleibt kompakt und bietet genug Tiefe")
+    func centralVolumeIsCompact() {
+        #expect(LayoutConstants.centralVolumeWidth == 0.8)
+        #expect(LayoutConstants.centralVolumeHeight == 0.75)
+        #expect(LayoutConstants.centralVolumeDepth == 0.38)
+        #expect(LayoutConstants.centralVolumeDepth > LayoutConstants.monsterPanelDepth)
     }
 
     @Test("Die Monster-Zielgroessen sind reduziert")

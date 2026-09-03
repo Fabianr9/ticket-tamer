@@ -21,17 +21,19 @@ enum LayoutConstants {
 
     /// Breite des zentralen Volumes in Metern.
     ///
-    /// Fuer die Entscheidungsansichten und ihre kompakte Ticketinfo verbreitert.
-    static let centralVolumeWidth = 1.2
+    /// Kompakte Arbeitsbreite: genug Platz fuer Untersuchung und Ticketinfo, ohne
+    /// HUD, Ziele und Monster raeumlich zu weit auseinanderzuziehen.
+    static let centralVolumeWidth = 0.8
 
     /// Hoehe des zentralen Volumes in Metern.
     ///
-    /// Verlauf: 0.6 → 0.8 → 1.0 → 1.15. Die zusaetzliche Hoehe stellt die komplette
-    /// Ticketinfo dar und laesst weiterhin Abstand zu HUD und Interaktionshinweis.
-    static let centralVolumeHeight = 1.15
+    /// Ergonomische Arbeitshoehe. HUD und Interaktionshinweis bleiben dadurch nahe
+    /// an der zentralen Spielflaeche; die Ticketinfo wird weiterhin proportional
+    /// ueber `ScaledToFitView` eingepasst.
+    static let centralVolumeHeight = 0.75
 
     /// Tiefe des zentralen Volumes in Metern.
-    static let centralVolumeDepth = 0.45
+    static let centralVolumeDepth = 0.38
 
     // MARK: - Compact Ticket Info (Modul 016)
 
@@ -171,7 +173,7 @@ enum LayoutConstants {
     ///
     /// Ohne explizite Tiefe hat die `RealityView` in einem 2D-Layout praktisch keine
     /// Z-Ausdehnung; Modellteile vor und hinter der Ebene werden dann beschnitten.
-    /// Bleibt deutlich unter `centralVolumeDepth` (0.45 m), damit das Panel nicht
+    /// Bleibt unter `centralVolumeDepth` (0.38 m), damit das Panel nicht
     /// an die Volume-Grenzen stoesst.
     static let monsterPanelDepth = 0.34
 

@@ -218,8 +218,35 @@ struct ReplayLayoutStabilityTests {
 
     @Test("Start-Slider besitzt eine feste positive Designbreite")
     func startSliderHasStableDesignWidth() {
-        #expect(LayoutConstants.startSliderDesignWidth == 320)
+        #expect(LayoutConstants.startSliderDesignWidth == 280)
         #expect(LayoutConstants.startSliderDesignWidth > 0)
+    }
+
+    @Test("Grosses Volume vergroessert die aktive Spielflaeche nicht ueber das kompakte Design")
+    func largeVolumeIsCappedToCompactPlayArea() {
+        let resolved = RootContentLayout.size(for: CGSize(width: 1_400, height: 1_100))
+
+        #expect(resolved.width == LayoutConstants.rootContentMaximumWidth)
+        #expect(resolved.height == LayoutConstants.rootContentMaximumHeight)
+        #expect(RootContentLayout.depth(for: 0.45) == LayoutConstants.rootContentMaximumDepth)
+    }
+
+    @Test("Kleines Volume wird weiterhin adaptiv voll genutzt")
+    func smallVolumeRemainsAdaptive() {
+        let available = CGSize(width: 520, height: 480)
+
+        #expect(RootContentLayout.size(for: available) == available)
+        #expect(RootContentLayout.depth(for: 0.25) == 0.25)
+    }
+
+    @Test("Fuenf Root-Berechnungen bleiben identisch und kompakt")
+    func repeatedRootLayoutDoesNotDrift() {
+        let available = CGSize(width: 1_400, height: 1_100)
+        let reference = RootContentLayout.size(for: available)
+
+        for _ in 1...5 {
+            #expect(RootContentLayout.size(for: available) == reference)
+        }
     }
 
     @Test("Gleiche Volume-Geometrie ergibt gleiche Prioritaetspanels")

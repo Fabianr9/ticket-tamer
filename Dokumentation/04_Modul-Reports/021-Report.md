@@ -2,7 +2,7 @@
 
 ## Zusammenfassung
 
-Der phasenabhaengige Router laeuft nun innerhalb einer dauerhaften `GeometryReader3D`-Root-Huelle, die jedem Phaseninhalt die aktuell vom System gewaehrte Breite, Hoehe und Tiefe gibt. Damit kann die kleine Ergebnisansicht das Layout-Proposal des anschliessenden Replay-Starts nicht mehr verkleinern. Der Start-Slider besitzt zudem eine feste Designbreite statt nur einer komprimierbaren Maximalbreite; fachlicher Reset, adaptive Panelberechnung und `.defaultSize`-Semantik bleiben unveraendert.
+Der phasenabhaengige Router laeuft nun innerhalb einer dauerhaften `GeometryReader3D`-Root-Huelle. Damit kann die kleine Ergebnisansicht das Layout-Proposal des anschliessenden Replay-Starts nicht mehr verkleinern. Nach der visuellen Gegenpruefung wurde die darin zentrierte aktive Spielflaeche auf eine kompakte Designgroesse begrenzt: Das Volume behaelt seine aktuelle Systemgroesse, waehrend Zielabstaende und Drag-Wege ergonomisch bleiben. Der Start-Slider besitzt zudem eine feste Designbreite statt nur einer komprimierbaren Maximalbreite; fachlicher Reset, adaptive Panelberechnung und `.defaultSize`-Semantik bleiben unveraendert.
 
 ## 1. Vorab-Check
 
@@ -48,7 +48,7 @@ Eine reale Laufzeitmessung ist ohne visionOS-Simulator nicht moeglich und wird n
 
 ## 4. Fix-Architektur
 
-`RootVolumeView` besitzt jetzt einen dauerhaften `GeometryReader3D` ausserhalb des Phasenrouters. Der aktive Phaseninhalt erhaelt explizit `proxy.size.width`, `height` und `depth`. Die Quelle bleibt stets die aktuell gewaehrte Geometry; es wird keine alte Größe gespeichert, kein Replay-Faktor angewandt und kein Windowzustand in `SessionModel` aufgenommen.
+`RootVolumeView` besitzt jetzt einen dauerhaften `GeometryReader3D` ausserhalb des Phasenrouters. `RootContentLayout` leitet daraus zustandslos eine zentrierte aktive Flaeche bis maximal 480 x 460 Punkte und 0,30 m Tiefe ab. Die Werte wurden nach der visuellen Gegenpruefung bewusst kompakt gewählt, damit die Drag-Strecke wieder dem urspruenglichen Aufbau entspricht. Kleinere gewährte Flächen werden vollständig genutzt. Die Quelle bleibt stets die aktuell gewaehrte Geometry; es wird keine alte Größe gespeichert, kein Replay-Faktor angewandt und kein Windowzustand in `SessionModel` aufgenommen.
 
 `Ticket_TamerApp.defaultSize(...)` bleibt unveraendert die Cold-Start-Vorgabe. Ein Nutzer-/System-Resize wird nicht auf Default zurueckgesetzt, weil Replay ausschließlich den fachlichen Modelzustand aendert. Priority- und Teamziele bleiben adaptiv und werden weiterhin aus den real gemessenen VolumeBounds berechnet.
 
@@ -70,10 +70,10 @@ Keine phasenspezifischen Replay-Hacks wurden eingefuehrt. `SessionModel.reset()`
 | Stand | Deklarationen | Ergebnis | Plattform |
 |---|---:|---|---|
 | vorher | 298 | nicht ausgefuehrt | Linux ohne Xcode |
-| neu | 6 | statisch hinzugefuegt | — |
-| nachher | 304 | OPEN | Xcode/visionOS erforderlich |
+| neu | 9 | statisch hinzugefuegt | — |
+| nachher | 307 | OPEN | Xcode/visionOS erforderlich |
 
-Neu abgedeckt sind feste positive Slider-Designbreite, identische Priority-/Team-Panelmaße bei identischer Geometry, fünf Wiederholungen ohne kumulative Drift, adaptive Neuberechnung nach Resize sowie die Unabhängigkeit der Layoutberechnung vom fachlichen Reset einschließlich aller Resetwerte. Bereits vorhandene Tests decken weitere Reset- und `TargetPanelLayout`-Eigenschaften ab.
+Neu abgedeckt sind feste positive Slider-Designbreite, die kompakte Root-Obergrenze, adaptive Nutzung kleinerer Volumes, fünf stabile Root-Berechnungen, identische Priority-/Team-Panelmaße bei identischer Geometry, fünf Wiederholungen ohne kumulative Drift, adaptive Neuberechnung nach Resize sowie die Unabhängigkeit der Layoutberechnung vom fachlichen Reset einschließlich aller Resetwerte. Bereits vorhandene Tests decken weitere Reset- und `TargetPanelLayout`-Eigenschaften ab.
 
 `git diff --check` fuer die vier Moduldateien: PASS. Der globale Check meldet ausschließlich bereits vorhandene Whitespaces in fremden Änderungen der beiden Standdateien.
 

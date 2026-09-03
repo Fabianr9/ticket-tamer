@@ -31,9 +31,17 @@ struct RootVolumeView: View {
         // ein Nutzer-Resize bleibt deshalb auch nach `reset()` erhalten und
         // `.defaultSize` wird nicht als Replay-Reset missbraucht.
         GeometryReader3D { proxy in
+            let contentSize = RootContentLayout.size(
+                for: CGSize(width: proxy.size.width, height: proxy.size.height)
+            )
+            let contentDepth = RootContentLayout.depth(for: proxy.size.depth)
+
             phaseContent
-                .frame(width: proxy.size.width, height: proxy.size.height)
-                .frame(depth: proxy.size.depth)
+                // Das Fenster darf seine aktuelle Groesse behalten, die aktive
+                // Spielflaeche waechst aber nicht ins ergonomisch unguenstige Maximum.
+                // Kleinere Volumes werden weiterhin adaptiv voll genutzt.
+                .frame(width: contentSize.width, height: contentSize.height)
+                .frame(depth: contentDepth)
         }
     }
 

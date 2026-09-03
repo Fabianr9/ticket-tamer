@@ -233,24 +233,6 @@ struct PrioritizationView: View {
                 .zIndex(2)
             }
 
-            // DEBUG-Einstieg in die Teamphase — nur für Entwicklung/Simulator-Prüfung.
-            // Nicht im Release-Build, nicht als F-09-Nutzerfunktion (AK-09).
-            #if DEBUG
-            if model.selectedPriority != nil {
-                VStack {
-                    Spacer()
-                    Button("🔧 Team [DEV]") {
-                        model.beginTeamAssignmentPhase()
-                        DebugManager.log(.state, "[DEV] beginTeamAssignmentPhase manuell ausgeloest")
-                    }
-                    .font(.caption)
-                    .padding(8)
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
-                    .padding(.bottom, 12)
-                }
-            }
-            #endif
-
             // Ladeindikator — liest monsterEntity im Body (SwiftUI-Dependency-Tracking).
             if monsterLoadRecovery.isLoading {
                 ProgressView()

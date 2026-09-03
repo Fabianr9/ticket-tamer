@@ -409,13 +409,17 @@ struct PrioritizationView: View {
             loadError = "Kein aktives Ticket."
             return
         }
-        guard monsterLoadRecovery.begin(assetID: ticket.monsterAssetId) else { return }
+        guard let variant = model.selectedMonsterVariant(for: ticket) else {
+            loadError = "Keine Monster-Variante fuer dieses Ticket."
+            return
+        }
+        guard monsterLoadRecovery.begin(assetID: variant.assetFileName) else { return }
         loadError = nil
         monsterEntity = nil
-        DebugManager.log(.spawning, "Monster-Retry/Laden gestartet: \(ticket.monsterAssetId)")
+        DebugManager.log(.spawning, "Monster-Retry/Laden gestartet: \(variant.assetFileName)")
 
         do {
-            let entity = try await MonsterAssetProvider.loadMonster(assetID: ticket.monsterAssetId)
+            let entity = try await MonsterAssetProvider.loadMonster(variant: variant)
             // Größe aus den tatsächlichen Modellmaßen ableiten statt aus einem festen Faktor —
             // sonst ist die physische Größe je Blender-Export unterschiedlich.
             MonsterAssetProvider.fit(entity, toMaxExtent: LayoutConstants.monsterDragDropTargetSize)
@@ -427,10 +431,10 @@ struct PrioritizationView: View {
 
             // Tatsächliche sichtbare Hülle messen — Grundlage für den sicheren
             // Zieh-Bereich, für die Panelhöhe und für die 50-%-Prüfung.
-            geometry.measureMonster(entity, assetID: ticket.monsterAssetId)
+            geometry.measureMonster(entity, assetID: variant.assetFileName)
             syncPanels()
 
-            DebugManager.log(.spawning, "Monster-Retry/Laden erfolgreich: \(ticket.monsterAssetId), Modus: dragDrop")
+            DebugManager.log(.spawning, "Monster-Retry/Laden erfolgreich: \(variant.assetFileName), Modus: dragDrop")
         } catch {
             monsterLoadRecovery.finishWithFailure()
             DebugManager.log(.spawning, "Monster-Retry/Laden fehlgeschlagen: \(error.localizedDescription)")

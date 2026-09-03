@@ -1,36 +1,29 @@
 # Projekt-Stand — Ticket Tamer
 
-> Aktuelle Code-/Planungsbasis nach Modul 023 der Version 1.2.
+> Aktuelle Code-/Planungsbasis nach Modul 024 der Version 1.2.
 
 **Projektversion:** v1.2 in Arbeit  
-**Stand:** nach Modul 023  
+**Stand:** nach Modul 024  
 **Branch laut Report:** `A`  
-**HEAD vor 023:** `3c0b2fb`  
-**Modul-022-Commit:** `3c0b2fb`  
-**Modul-023-Commit:** offen  
+**HEAD vor 024:** `4ced478`  
+**Modul-023-Commit:** `4ced478`  
+**Modul-024-Commit:** offen  
 **Testdeklarationen:** **333**  
 **Build/Test/Simulator:** offen
 
 ## v1.2-Funktionsstand
 
-### Modul 021
+### 021 — Replay
+Zentrale Root-/Volume-Stabilisierung implementiert. AK-25 Laufzeit OPEN.
 
-Replay-Layoutstabilisierung implementiert.
-
-AK-25 Laufzeit OPEN.
-
-### Modul 022
-
-- Ergebnis: `<score> Punkte`
-- correct: grüner Haken + `+100 Punkte`
-- incorrect: rotes Kreuz + `0 Punkte`
+### 022 — Punkte
+- Ergebnis `<score> Punkte`
+- correct `+100 Punkte`
+- incorrect `0 Punkte`
 
 AK-26/27 Laufzeit OPEN.
 
-### Modul 023
-
-Teamstationen zeigen jetzt Text + SF Symbol:
-
+### 023 — Teamsymbole
 - Netzwerk → `network`
 - Konto → `person.crop.circle`
 - Software → `macwindow`
@@ -38,31 +31,20 @@ Teamstationen zeigen jetzt Text + SF Symbol:
 
 AK-28 Laufzeit OPEN.
 
-## Teamstations-Geometrie
+### 024 — Debug-Isolation
+Produktiver `🔧 Team [DEV]`-Shortcut aus `PrioritizationView` entfernt.
 
-Unverändert:
+Debug-Harness bleibt separat und DEBUG-only.
 
-- sichtbare Panelbox
-- DropTargetComponent
-- TargetPanelLayout
-- DropEvaluator
-- `minimumDropOverlapRatio = 0.50`
-- `dropDepthTolerance = 0.05 m`
-
-Referenzwerte:
-
-- Breite `0.195 m`
-- Höhe `0.117 m`
-- Tiefe `0.020 m`
-
-bei der im Report genutzten Referenzgeometrie.
+AK-29 Laufzeit OPEN.
 
 ## Tests
 
-- vor 023: 313
-- +20
-- aktuell: **333 Testdeklarationen**
-- vollständiger Xcode-Lauf offen
+Aktuell:
+
+**333 Testdeklarationen**
+
+Vollständiger Apple-Toolchain-Lauf offen.
 
 ## v1.2-Modul-Landkarte
 
@@ -71,40 +53,60 @@ bei der im Report genutzten Referenzgeometrie.
 | 021 | implementiert; AK-25 OPEN |
 | 022 | implementiert; AK-26/27 OPEN |
 | 023 | implementiert; AK-28 OPEN |
-| 024 | als Nächstes |
-| 025 | offen |
+| 024 | implementiert; AK-29 OPEN |
+| 025 | als Nächstes |
 | 026 | offen |
 
-## Für Modul 024 relevant
+## Für Modul 025 verbindlich
 
-F-29 verlangt:
+Vier Monstertypen.
 
-`🔧 Team [DEV]`
+Je Typ vier vorhandene Farbvarianten.
 
-darf nicht mehr im normalen App-Ablauf erscheinen.
+Gesamt:
 
-Dies gilt:
+**16 lokale Monsterassets**
 
-- für normalen Debug-Build über `RootVolumeView`
-- für Release-Build
+SPEC-Hinweis:
 
-Erlaubt bleibt Entwicklerfunktion nur:
+- Monstertyp 3 besitzt laut Bestandsanalyse Varianten `blue`, `green`, `pink`, `yellow`
+- die übrigen Typen besitzen `blue`, `green`, `pink`, `red`
 
-- im separaten `DebugInteractionHarnessView`
-- oder in einem explizit aktivierten Debug-Kontext
+Konkrete Dateinamen müssen im Repository/RealityKitContent real ermittelt und explizit gemappt werden.
 
-Modul 024 darf Priorisierungs-/Teamlogik nicht verändern.
+Keine Dateinamen algorithmisch aus angenommenen Farbnamen erzeugen.
 
-## Zu Beginn von Modul 024 real suchen
+## Sitzungsspezifische Auswahl
 
-Projektweit nach:
+Pro ausgewähltem Ticket:
 
-- `🔧 Team [DEV]`
-- `Team [DEV]`
-- `DebugInteractionHarnessView`
-- `#if DEBUG`
-- Debug-only Buttons/Navigation
-- direkter Einstieg in Teamphase
-- DebugManager-Schalter
+```text
+Ticket-ID → konkrete MonsterAssetVariant
+```
 
-Ziel ist die genaue Quelle der produktnah sichtbaren DEV-Schaltfläche zu identifizieren, nicht pauschal Debugcode zu löschen.
+Auswahl genau einmal beim Sitzungsaufbau.
+
+Danach dieselbe Variante in:
+
+- Untersuchung
+- Priorisierung
+- Teamzuordnung
+- Retry
+
+Neue Sitzung darf neu auswählen.
+
+`reset()` verwirft das Variantenmapping.
+
+## Architektur
+
+`SessionModel` bleibt fachliche Source of Truth.
+
+Sitzungsbezogenes Variantenmapping darf dort oder in einer eindeutig sitzungsbezogenen Struktur geführt werden.
+
+Die Auswahlfunktion muss injizierbar/deterministisch testbar sein.
+
+Keine Persistenz.
+
+Keine Cloud.
+
+Keine neue Monsterlogik außerhalb der Assetwahl.

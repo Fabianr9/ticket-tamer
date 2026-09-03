@@ -1,188 +1,197 @@
 # Projektlogbuch — Ticket Tamer
 
-> Einziger aktueller Logbuch-Stand nach Einarbeitung von Modul 023 für Version 1.2.
+> Einziger aktueller Logbuch-Stand nach Einarbeitung von Modul 024 für Version 1.2.
 
 **Projektversion:** v1.2 in Arbeit  
 **v1.0:** abgeschlossen  
 **v1.1:** abgeschlossen  
-**Stand:** nach Modul `023` — Teamstation-Symbole  
+**Stand:** nach Modul `024` — Debug-UI-Isolation  
 **Eingearbeitet am:** 2026-09-03  
-**Branch laut 023-Report:** `A`  
-**HEAD vor Modul 023:** `3c0b2fb feat: Modul 22`  
-**Modul-022-Commit:** `3c0b2fb`  
-**Modul-023-Commit:** offen  
-**Testdeklarationen vor 023:** 313  
-**Neue Tests:** 20  
-**Testdeklarationen nach 023:** **333**  
-**Build/Test/Simulator nach 023:** offen
+**Branch laut 024-Report:** `A`  
+**HEAD vor Modul 024:** `4ced478 feat: Modul 23`  
+**Modul-023-Commit:** `4ced478`  
+**Modul-024-Commit:** offen  
+**Testdeklarationen vor 024:** 333  
+**Neue Tests:** 0  
+**Testdeklarationen nach 024:** **333**  
+**Build/Test/Simulator nach 024:** offen
 
 ## v1.2-Modulstatus
 
 | Modul | Titel | Anforderungen | Status |
 |---|---|---|---|
 | 021 | Replay-Layoutstabilisierung | F-25 / AK-25 | implementiert; Laufzeitabnahme OPEN |
-| 022 | Punktekommunikation v1.2 | F-26, F-27 / AK-26, AK-27 | implementiert; Commit `3c0b2fb`; Laufzeitabnahme OPEN |
-| 023 | Teamstation-Symbole | F-28 / AK-28 | implementiert; statisch geprüft; Laufzeitabnahme OPEN; Commit offen |
-| 024 | Debug-UI-Isolation | F-29 / AK-29 | als Nächstes |
-| 025 | Monster-Farbvarianten | F-30 / AK-30 | offen |
+| 022 | Punktekommunikation v1.2 | F-26, F-27 / AK-26, AK-27 | implementiert; Laufzeitabnahme OPEN |
+| 023 | Teamstation-Symbole | F-28 / AK-28 | implementiert; Commit `4ced478`; Laufzeitabnahme OPEN |
+| 024 | Debug-UI-Isolation | F-29 / AK-29 | implementiert; statisch geprüft; Laufzeitabnahme OPEN; Commit offen |
+| 025 | Monster-Farbvarianten | F-30 / AK-30 | als Nächstes |
 | 026 | Integration und Abnahme v1.2 | AK-25 bis AK-30 | offen |
 
-## Eingearbeiteter Stand Modul 023
+## Eingearbeiteter Stand Modul 024
 
-### Bestehende Teamstationsarchitektur
+### Entfernte produktive DEV-Schaltfläche
 
-- `TeamTargetMapping` definiert stabile IDs, `SupportTeam`-Mapping und 2×2-Raster.
-- `TargetPanelLayout.resolve` berechnet Größe und Position aus realer Volume-/Monster-Geometrie.
-- `TargetPanelFactory` erzeugt die RealityKit-Panelbox.
-- Dieselbe Panelgröße bildet die `halfExtents` der `DropTargetComponent`.
-- `TeamAssignmentView` hängt die sichtbare SwiftUI-Beschriftung als `ViewAttachmentEntity` vor die Box.
-- `DropEvaluator` wertet davon unabhängig die `DropTargetComponent` aus.
+Die einzige produktnahe Fundstelle von:
 
-Modul 023 verändert ausschließlich die sichtbare Attachment-Präsentation.
+`🔧 Team [DEV]`
 
-## Finale Symbolzuordnung
+lag in:
 
-| Team | Text | SF Symbol |
-|---|---|---|
-| Netzwerk | `Netzwerk` | `network` |
-| Konto | `Konto` | `person.crop.circle` |
-| Software | `Software` | `macwindow` |
-| Hardware | `Hardware` | `desktopcomputer` |
+`Views/PrioritizationView.swift`
 
-Die deutschen Teamtexte bleiben vollständig sichtbar.
+Dort existierte in Debug-Builds ein direkter manueller Aufruf von:
 
-Die Farbe ist nur ergänzend; jede Station kann über Text plus Symbol erkannt werden.
+`beginTeamAssignmentPhase()`
 
-## Accessibility
+Modul 024 hat entfernt:
 
-Das Symbol wird für Accessibility verborgen.
+- sichtbaren DEV-Button,
+- zugehörige Action,
+- zugehörigen produktiven `#if DEBUG`-Block.
 
-Das kombinierte Teamziel liest weiterhin den vollständigen Teamnamen vor.
-
-Keine zusätzliche Lokalisierung war erforderlich, weil bestehende `SupportTeam.displayName`-Texte wiederverwendet werden.
-
-## Geometrieschutz
-
-Für die im Report verwendete Referenzgeometrie:
-
-- Volume: `0.8 × 0.75 × 0.38 m`
-- Monsterhülle: `0.13 m` je Achse
-
-bleiben vor/nach Modul 023:
-
-| Wert | Vorher | Nachher |
-|---|---:|---:|
-| Panelbreite | `0.195 m` | `0.195 m` |
-| Panelhöhe | `0.117 m` | `0.117 m` |
-| Paneltiefe | `0.020 m` | `0.020 m` |
-| Drop-Bounds | `center ± panelSize / 2` | identisch |
-
-Referenzzentren:
-
-- Netzwerk: `(-0.1075, 0.1600, -0.0850) m`
-- Konto: `(0.1075, 0.1600, -0.0850) m`
-- Software: `(-0.1075, 0.0230, -0.0850) m`
-- Hardware: `(0.1075, 0.0230, -0.0850) m`
+## Normaler Routingpfad
 
 Unverändert:
 
-- `TargetPanelLayout`
-- `TargetPanelFactory`
-- `DropTargetComponent`
-- `DropEvaluator`
-- `minimumDropOverlapRatio = 0.50`
-- `dropDepthTolerance = 0.05 m`
+```text
+Ticket_TamerApp
+→ RootVolumeView
+→ Start
+→ Untersuchung
+→ Priorisierung
+→ Team
+→ Ergebnis
+```
 
-## Dateien Modul 023
+Der reguläre Übergang Priorisierung → Team erfolgt weiterhin ausschließlich über:
+
+```text
+Priorität speichern
+→ bewerten
+→ Feedback
+→ automatischer fachlicher Übergang
+```
+
+Kein produktiver Debugshortcut bleibt.
+
+## Debug-Harness
+
+`Views/Debug/DebugInteractionHarnessView.swift`
+
+bleibt:
+
+- vollständig DEBUG-only,
+- separat,
+- nicht durch `RootVolumeView` geroutet,
+- nur expliziter Development-Kontext.
+
+F-29 verlangt Isolation, nicht Entfernung aller Debugmöglichkeiten.
+
+## DebugManager
+
+Unverändert.
+
+Debug-Logging bleibt zulässig, weil F-29 sichtbare DEV-Navigation betrifft, nicht Logging.
+
+## Statische DEV-Suche
+
+Nach Änderung:
+
+- kein `🔧 Team [DEV]` im App- oder Testquellcode,
+- keine produktive Team-Shortcut-Action,
+- verbleibende Treffer nur in Dokumentation/Anforderungen/Reports.
+
+Weitere `#if DEBUG`-Stellen sind klassifiziert und zulässig:
+
+- Debug-Logging,
+- Debug-Harness,
+- Preview-/Development-Kontext.
+
+## Dateien Modul 024
 
 Geändert:
 
-- `Views/TeamAssignmentView.swift`
-- `Ticket_TamerTests/Ticket_TamerTests.swift`
+- `Views/PrioritizationView.swift`
+- `Views/Debug/DebugInteractionHarnessView.swift` nur Dokumentationsklarstellung
 
 Neu/aktualisiert:
 
-- `Dokumentation/04_Modul-Reports/023-Report.md`
+- `Dokumentation/04_Modul-Reports/024-Report.md`
 
-Keine Änderung am String Catalog erforderlich.
+Nicht verändert:
+
+- `SessionModel`
+- Prioritätsbewertung
+- Teambewertung
+- `beginTeamAssignmentPhase`
+- Score
+- Audio
+- Feedback
+- Input-Lock
+- Team-Mapping
+- Team-Symbole
+- Attachments
+- Panelgeometrie
+- Drop-Auswertung
+- Replay-Root
+- Punktekommunikation
 
 ## Teststand
 
 | Kennzahl | Stand |
 |---|---:|
-| Tests vor 023 | 313 |
-| neue Tests | 20 |
-| Tests nach 023 | **333** |
-| statische Scope-Prüfung | PASS |
-| `git diff --check` Moduldateien | PASS |
+| Tests vor 024 | 333 |
+| neue Tests | 0 |
+| Tests nach 024 | **333** |
+| DEV-Label-Suche App/Test | PASS |
+| Routing-/Transition-Check | PASS statisch |
+| scoped `git diff --check` | PASS |
 | vollständiger Xcode-Lauf | OPEN |
 
-Neue Tests sichern:
+Es wurde bewusst kein fragiler Sourcecode-String-Test neu eingeführt.
 
-- vier konkrete Symbolnamen,
-- Nichtleere/Eindeutigkeit,
-- vier deutsche Texte,
-- vier stabilen Target-IDs,
-- unveränderte Panelmaße,
-- unveränderte Drop-Bounds,
-- unveränderte 50-%-Schwelle,
-- fachlich neutrale Präsentation.
+## AK-29
 
-## AK-28
+Statisch erfüllt:
 
-Code-/statisch erfüllt:
-
-- vier Symbole vorhanden,
-- vier Texte bleiben,
-- Farbe nicht alleinige Bedeutung,
-- Panel-/Drop-Geometrie unverändert,
-- 50-%-Overlap unverändert.
+- normaler App-Flow enthält keinen DEV-Button mehr,
+- Release kann den produktiven Button ebenfalls nicht rendern, da er entfernt ist,
+- Debug-Harness bleibt separat,
+- Priorisierungs-/Teamlogik unverändert.
 
 Noch offen:
 
-- Xcode-Build,
-- vollständige 333 Tests,
-- Sichtbarkeit/Lesbarkeit im Simulator,
-- Betrachtungswinkel frontal/links/rechts/oben,
-- Drag auf alle vier Teams,
-- ungültiger Drop/Snapback,
-- Replay-/Punktekommunikations-Regression.
+- realer Debug-Build,
+- realer Release-Build beziehungsweise Release-nahe Prüfung,
+- kompletter Simulatorflow,
+- Bestätigung, dass während Feedback/Transition kein unerwarteter DEV-Button erscheint.
 
-**AK-28 = OPEN bis visueller/gestischer Laufzeitabnahme.**
+**AK-29 = OPEN bis Laufzeitabnahme.**
 
-## Geschützter Bestand für Modul 024
+## Geschützter Bestand für Modul 025
 
 Nicht verändern:
 
-- `TeamTargetMapping.Presentation`
-- Symbolnamen
-- Team-Attachments
-- Panelgrößen
-- Drop-Bounds
-- `TargetPanelLayout`
-- `DropEvaluator`
-- 50-%-Overlap
-
-## Offene Punkte vor Modul 024
-
-- [ ] Modul 023 bauen
-- [ ] vollständige 333 Tests
-- [ ] alle vier Symbole visuell prüfen
-- [ ] Text-Clipping prüfen
-- [ ] Drag auf alle vier Teamziele
-- [ ] Snapback prüfen
-- [ ] Replay-Regression 021
-- [ ] Punktekommunikation 022
-- [ ] Modul 023 separat committen
+- produktives Routing aus 024,
+- Debug-Harness-Isolation,
+- Team-Symbole aus 023,
+- Punktekommunikation aus 022,
+- Replay-Rootarchitektur aus 021,
+- Scoring,
+- Drop-Regeln,
+- Exactly-once,
+- Audio.
 
 ## Nächster Schritt
 
-`024-Eingangsprompt.md` ausführen.
+`025-Eingangsprompt.md` ausführen.
 
-Modul 024 bearbeitet ausschließlich F-29 / AK-29:
+Modul 025 bearbeitet ausschließlich F-30 / AK-30:
 
-- `🔧 Team [DEV]` aus dem normalen App-Flow entfernen,
-- auch im regulären Debug-Build nicht anzeigen,
-- Release ebenfalls ohne DEV-Schaltfläche,
-- Entwicklerfunktion ausschließlich im separaten `DebugInteractionHarnessView` oder explizit aktiviertem Debug-Kontext erhalten,
-- Priorisierungs- und Teamlogik unverändert lassen.
+- alle 16 vorhandenen Monster-Farbvarianten produktiv verfügbar machen,
+- explizites Variantenmapping pro Monstertyp,
+- pro Sitzungsticket genau eine Variante auswählen,
+- dieselbe Variante in Untersuchung, Priorisierung, Team und Retry verwenden,
+- neue Sitzung darf neu wählen,
+- Reset verwirft Variantenmapping,
+- Auswahl deterministisch testbar machen.

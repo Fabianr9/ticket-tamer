@@ -329,7 +329,7 @@ struct PrioritizationView: View {
                 // 2. Das Bool-Ergebnis ist die einzige Quelle fuer das Sichtfeedback.
                 decisionFeedback = DecisionFeedbackResult(evaluation: isCorrect)
                 // 3. Genau einen Sound parallel zum Sichtfeedback abspielen.
-                audioService.play(isCorrect ? .correct : .incorrect)
+                audioService.playMonsterFeedback(evaluation: isCorrect)
                 // 4. Eingabe bleibt gesperrt; bestehendes Feedbackfenster abwarten.
                 try? await Task.sleep(for: .seconds(FeedbackConstants.feedbackTransitionDelay))
                 decisionFeedback = nil

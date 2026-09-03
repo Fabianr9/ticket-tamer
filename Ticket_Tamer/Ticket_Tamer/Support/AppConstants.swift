@@ -636,17 +636,6 @@ enum FeedbackConstants {
     /// Zentrale Konstante — keine Magic Numbers in Views oder Services.
     static let feedbackTransitionDelay: Double = 1.5
 
-    // MARK: - Sound-Ressourcen-IDs
-
-    /// Dateiname (ohne Endung) des Richtig-Sounds im App-Bundle.
-    static let correctSoundName = "correct"
-
-    /// Dateiname (ohne Endung) des Falsch-Sounds im App-Bundle.
-    static let incorrectSoundName = "incorrect"
-
-    /// Bundle-Ressourcenformat der Feedback-Sounds.
-    static let soundExtension = "wav"
-
     // MARK: - Punkte
 
     /// Punkte für eine richtige Teilentscheidung (F-11).

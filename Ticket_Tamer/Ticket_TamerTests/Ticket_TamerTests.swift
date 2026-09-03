@@ -3224,21 +3224,23 @@ struct ScoringAndFeedbackTests {
 
     // MARK: - 28–30: AudioService-Mapping
 
-    @Test("FeedbackConstants.correctSoundName ist nicht leer und lokal benannt")
+    @Test("Correct-Monsterressourcen sind nicht leer und lokal benannt")
     func correctSoundNameIsNonEmptyAndLocal() {
-        #expect(!FeedbackConstants.correctSoundName.isEmpty)
-        #expect(!FeedbackConstants.correctSoundName.hasPrefix("http"))
+        #expect(MonsterFeedbackSoundCatalog.correct.allSatisfy { !$0.name.isEmpty })
+        #expect(MonsterFeedbackSoundCatalog.correct.allSatisfy { !$0.name.hasPrefix("http") })
     }
 
-    @Test("FeedbackConstants.incorrectSoundName ist nicht leer und lokal benannt")
+    @Test("Incorrect-Monsterressourcen sind nicht leer und lokal benannt")
     func incorrectSoundNameIsNonEmptyAndLocal() {
-        #expect(!FeedbackConstants.incorrectSoundName.isEmpty)
-        #expect(!FeedbackConstants.incorrectSoundName.hasPrefix("http"))
+        #expect(MonsterFeedbackSoundCatalog.incorrect.allSatisfy { !$0.name.isEmpty })
+        #expect(MonsterFeedbackSoundCatalog.incorrect.allSatisfy { !$0.name.hasPrefix("http") })
     }
 
-    @Test("Beide Sound-Namen sind eindeutig (kein Alias)")
+    @Test("Correct- und Incorrect-Gruppen besitzen keine Aliase")
     func soundNamesAreDistinct() {
-        #expect(FeedbackConstants.correctSoundName != FeedbackConstants.incorrectSoundName)
+        let correct = Set(MonsterFeedbackSoundCatalog.correct.map(\.fileName))
+        let incorrect = Set(MonsterFeedbackSoundCatalog.incorrect.map(\.fileName))
+        #expect(correct.isDisjoint(with: incorrect))
     }
 
     // MARK: - 141–155: Ergebnis und Neustart (Modul 011 — F-15 / F-16 / AK-15 / AK-16)

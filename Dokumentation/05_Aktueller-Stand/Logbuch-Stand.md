@@ -1,201 +1,242 @@
 # Projektlogbuch — Ticket Tamer
 
-> Einziger aktueller Logbuch-Stand nach Einarbeitung von Modul 027 für Version 1.3.
+> Einziger aktueller Logbuch-Stand nach Einarbeitung von Modul 029 für Version 1.3.
 
 **Projektversion:** v1.3 in Arbeit  
 **v1.0:** abgeschlossen  
 **v1.1:** abgeschlossen  
 **v1.2:** abgeschlossen  
-**Stand:** nach Modul `027` — Neue Ticketdaten und 16er-Sitzung  
+**Stand:** nach Modul `029` — Monster- und Streak-Audio  
 **Eingearbeitet am:** 2026-09-03  
-**Branch laut 027-Report:** `v1.3`  
-**HEAD vor Modul 027:** `44430b7daeb8c6b53f1266cb9ac781e6c6330dd4` (`feat: Modul 26`)  
-**Finaler v1.2-Abschlusscommit:** `44430b7` (`feat: Modul 26`)  
-**Modul-027-Commit:** offen  
-**Testdeklarationen vor 027:** 365  
-**Testdeklarationen nach 027:** **372**  
-**Build/Test/Simulator nach 027:** offen
+**Branch laut 028-Report:** `v1.3`  
+**HEAD vor Modul 028:** `72d3e0470a7a7ba9591733a5ce0c42e6191b6087` (`feat: Modul 27`)  
+**Modul-027-Commit:** `72d3e04` (`feat: Modul 27`)  
+**Modul-028-Commit:** `120ab6d` (`feat: Modul 28`)  
+**Reale Testdeklarationen vor 028:** 372  
+**Neue/Netto-Testdeklarationen 028:** +29  
+**Reale Testdeklarationen nach 028:** **401**  
+**Neue Testdeklarationen 029:** +35  
+**Reale Testdeklarationen nach 029:** **436**  
+**Build/Test/Simulator nach 029:** offen (Apple-Toolchain nicht vorhanden)
+
+## Reale Teststände
+
+Die Gitstände wurden für Modul 029 erneut direkt gezählt:
+
+- Modul-027-Commit `72d3e04`: 372
+- Modul-028-Commit `120ab6d`: 401
+- Modul 029: +35
+- aktueller Stand: 436
 
 ## v1.3-Modulstatus
 
 | Modul | Titel | Anforderungen | Status |
 |---|---|---|---|
-| 027 | Neue Ticketdaten und 16er-Sitzung | F-01, F-02, F-03, F-04, F-22, F-31 | implementiert; Code/Test-Anteile erfüllt; AK-31 Laufzeit OPEN; Commit offen |
-| 028 | Teamlogos v1.3 | F-28, F-39 | als Nächstes |
-| 029 | Monster- und Streak-Audio | F-12, F-34, F-35, F-39 | offen |
-| 030 | Ticketvideo-System | F-03, F-32, F-33, F-39 | offen |
+| 027 | Neue Ticketdaten und 16er-Sitzung | F-01, F-02, F-03, F-04, F-22, F-31 | committed `72d3e04`; Laufzeitteile weiterhin nachzuholen |
+| 028 | Teamlogos v1.3 | F-28, F-39 | committed `120ab6d`; Code/Test-Anteil PASS; Bundle-/Simulatorlauf OPEN |
+| 029 | Monster- und Streak-Audio | F-12, F-34, F-35, F-39 | implementiert; Ressourcen/Katalog PASS; Laufzeit OPEN |
+| 030 | Ticketvideo-System | F-03, F-32, F-33, F-39 | als Nächstes |
 | 031 | Streak-State und Scoring | F-11, F-16, F-36, F-37 | offen |
 | 032 | Streak-Feedback v1.3 | F-18, F-21, F-35, F-38 | offen |
 | 033 | Integration und Abnahme v1.3 | F-01 bis F-39, Schwerpunkt F-31 bis F-39 | offen |
 
-## Modul 027 — realer Stand
+## Modul 028 — Teamlogo-Integration
 
-### Ticketkatalog
+### Ressourcenstruktur
 
-Der produktive lokale Katalog enthält jetzt genau:
+Die vier bereitgestellten JPEG-Teamlogos liegen produktiv gemeinsam unter:
 
-TT-001 bis TT-016.
+`Ticket_Tamer/Ticket_Tamer/Resources/TeamLogos`
 
-Die historischen Tickettexte wurden vollständig durch die Inhalte aus:
+Dateien:
 
-`Tickets/Ticket-Tamer_Tickets.md`
+- Netzwerk: `Network_team_icon_design_202609032139.jpeg`
+- Konto: `Team_icon_design_profile_lock_202609032138.jpeg`
+- Software: `Software_team_icon_design_202609032138.jpeg`
+- Hardware: `Hardware_team_icon_design_202609032138.jpeg`
 
-ersetzt.
+Alle vier Dateien wurden als valide JFIF-JPEGs mit 1024 × 1024 Pixel bestätigt.
 
-Die Markdown-Datei wird nicht zur Laufzeit geparst.
+Quell- und Zielkopien besitzen laut Report jeweils identischen SHA-256-Hash.
 
-### Ticketmatrix
-
-| ID | Titel | Priorität | Team | MonsterType | Video |
-|---|---|---|---|---|---|
-| TT-001 | Das WLAN hat einen Lieblingsplatz | Normal | Netzwerk | monster01 | TT-001.mp4 |
-| TT-002 | Die Videokonferenz teleportiert uns | Wichtig | Netzwerk | monster02 | TT-002.mp4 |
-| TT-003 | Das Internet ist spontan in den Urlaub gefahren | Kritisch | Netzwerk | monster03 | TT-003.mp4 |
-| TT-004 | Mein Passwort kennt mich nicht mehr | Normal | Konto | monster04 | TT-004.mp4 |
-| TT-005 | Die Buchhaltung steht vor der digitalen Zugbrücke | Wichtig | Konto | monster01 | TT-005.mp4 |
-| TT-006 | Der digitale Türsteher lässt niemanden mehr rein | Kritisch | Konto | monster02 | TT-006.mp4 |
-| TT-007 | Meine Tabelle spricht plötzlich Hieroglyphen | Normal | Software | monster03 | TT-007.mp4 |
-| TT-008 | Die Präsentation frisst ihre eigenen Folien | Wichtig | Software | monster04 | TT-008.mp4 |
-| TT-009 | Das Bestellsystem ist in der Zeit eingefroren | Kritisch | Software | monster01 | TT-009.mp4 |
-| TT-010 | Der Drucker übt für seine Traktorprüfung | Normal | Hardware | monster02 | TT-010.mp4 |
-| TT-011 | Der Konferenzbildschirm hat Schneetag | Wichtig | Hardware | monster03 | TT-011.mp4 |
-| TT-012 | Der Dateiserver veranstaltet eine Lichtshow | Kritisch | Hardware | monster04 | TT-012.mp4 |
-| TT-013 | Das Homeoffice steckt im VPN-Labyrinth | Wichtig | Netzwerk | monster01 | TT-013.mp4 |
-| TT-014 | Die Zwei-Faktor-Anmeldung lebt in einer Zeitschleife | Normal | Konto | monster02 | TT-014.mp4 |
-| TT-015 | Das Ticketsystem züchtet Klone | Wichtig | Software | monster03 | TT-015.mp4 |
-| TT-016 | Die Lager-Scanner haben kollektiv Feierabend | Kritisch | Hardware | monster04 | TT-016.mp4 |
-
-### Verteilung
-
-Teams:
-
-- Netzwerk 4
-- Konto 4
-- Software 4
-- Hardware 4
-
-Prioritäten:
-
-- Normal 5
-- Wichtig 6
-- Kritisch 5
-
-TT-001 bis TT-012 bilden weiterhin die vollständige 4×3-Matrix.
-
-Zusätzlich:
-
-- TT-013 Netzwerk/Wichtig
-- TT-014 Konto/Normal
-- TT-015 Software/Wichtig
-- TT-016 Hardware/Kritisch
-
-## Ticketmodell
+### Zentrale Zuordnung
 
 Neu:
 
-`Ticket.videoAssetName`
+`Support/TeamLogoCatalog.swift`
 
-Jedes Ticket besitzt exakt die reine Datenreferenz:
+`TeamLogoCatalog` ist die einzige Team→Logo-Zuordnung.
 
-`TT-xxx.mp4`
+Eine Logoressource enthält nur:
 
-Keine Videoansicht oder Wiedergabelogik wurde vorgezogen.
+- Ressourcenname
+- JPEG-Endung
 
-Die zusätzliche vorhandene Datei `TT-002A.mp4` ist ausdrücklich **keine** produktive Ticketreferenz.
+Keine:
 
-## Ticketanzahlsteuerung
+- absolute Entwicklerpfade
+- Netzwerk-URLs
+- Ticketdaten
+- Score
+- Referenzpriorität
+- Dropgeometrie
 
-`GameplayConstants.maximumTicketCount = 16`
+### Teamstationen
 
-Startsteuerung und Sessionlogik verwenden zentral:
+Historischer v1.2-Stand:
 
-- Minimum 1
-- Maximum 16
-- Standard 6
+- Netzwerk → SF Symbol `network`
+- Konto → `person.crop.circle`
+- Software → `macwindow`
+- Hardware → `desktopcomputer`
 
-Slider, Plus/Minus und technische Clamp beziehen sich auf dieselbe Grenze.
+v1.3-Stand nach Modul 028:
 
-Reset bleibt 6.
+- lokales JPEG-Logo
+- deutscher Teamtext bleibt vollständig sichtbar
 
-## Monster-Farbvarianten-Regressionsschutz
+Die historischen SF-Symbole werden in der produktiven Teamstation nicht mehr verwendet.
 
-Die v1.2-Variantenlogik wurde nicht umgebaut.
+### Darstellung
 
-Eine 16er-Sitzung erzeugt weiterhin genau 16 Ticket→Monster-Variantenzuordnungen.
+Logo:
 
-Reset leert das Mapping.
+- `scaledToFit`
+- maximale Innenbox 34 × 34 pt
+- Seitenverhältnis bleibt erhalten
+- für VoiceOver verborgen
 
-Die vier neuen Tickets ergänzen jeden Monstertyp einmal.
+Accessibility:
 
-## Nicht vorgezogen
+- vollständiger deutscher Teamname bleibt Label der Station.
 
-Keine Arbeit an:
+### Fehlendes Logo
 
-- Teamlogos
-- neuen Audioressourcen
-- Streak-State
-- Streak-Scoring
-- Video-UI
+Bei fehlender/ungültiger Ressource:
 
-Replay-Root, Punktekommunikation, Dropgeometrie, 50-%-Overlap, Z-Toleranz, Snapback und Exactly-once blieben unverändert.
+- kein Crash
+- Teamtext bleibt sichtbar
+- Ziel-Entity bleibt vorhanden
+- Target-ID bleibt vorhanden
+- Dropgeometrie bleibt vorhanden
+- fachliche Teamzuordnung funktioniert weiter
+- Ressourcenfehler wird einmal über `.spawning` protokolliert
 
-## Teststand
+## Geometrieschutz
 
-| Kennzahl | Stand |
-|---|---:|
-| Tests vor 027 | 365 |
-| Tests nach 027 | **372** |
-| Katalog/IDs/Pflichtfelder | PASS statisch/Testabdeckung |
-| Referenzmatrix/Verteilung | PASS statisch/Testabdeckung |
-| Video-Mapping | PASS statisch/Testabdeckung |
-| Auswahl/Clamp/Reset | PASS statisch/Testabdeckung |
-| Scope `git diff --check` | PASS |
-| vollständiger Build/Testlauf | OPEN |
-| Simulator | OPEN |
+Unverändert:
 
-## Akzeptanzstatus Modul 027
+- `TargetPanelLayout`
+- `TargetPanelFactory`
+- `DropTargetComponent`
+- `DropEvaluator`
 
-| AK | Status |
+Referenzgeometrie:
+
+| Wert | vorher | nachher |
+|---|---:|---:|
+| Panelbreite | 0.195 m | 0.195 m |
+| Panelhöhe | 0.117 m | 0.117 m |
+| Paneltiefe | 0.020 m | 0.020 m |
+| Targetzentren | x ±0.1075; y 0.160/0.023; z -0.085 m | identisch |
+| Drop halfExtents | (0.0975; 0.0585; 0.0100) m | identisch |
+| Overlap | 0.50 | 0.50 |
+| Z-Toleranz | 0.05 m | 0.05 m |
+
+Das SwiftUI-Attachment mit Logo und Text beeinflusst weder Panelmesh noch Drop-Bounds.
+
+## Dateien Modul 028
+
+Neu:
+
+- `Support/TeamLogoCatalog.swift`
+- `Resources/TeamLogos/Network_team_icon_design_202609032139.jpeg`
+- `Resources/TeamLogos/Team_icon_design_profile_lock_202609032138.jpeg`
+- `Resources/TeamLogos/Software_team_icon_design_202609032138.jpeg`
+- `Resources/TeamLogos/Hardware_team_icon_design_202609032138.jpeg`
+
+Geändert:
+
+- `Views/TeamAssignmentView.swift`
+- `Ticket_TamerTests/Ticket_TamerTests.swift`
+
+## Test-/Prüfstand
+
+| Prüfung | Status |
 |---|---|
-| AK-01 | PASS (Code/Test) |
-| AK-02 | PASS (Code/Test) |
-| AK-03 | PASS (Code/Test) |
-| AK-04 | PASS (Code/Test) |
-| AK-22 | PASS (Code/Test) |
-| AK-31 | OPEN (Laufzeit) |
+| reale Tests vor 028 | 372 |
+| reale Tests nach 028 | **401** |
+| JPEG-Signatur/Abmessungen | PASS |
+| Quell-/Zielintegrität | PASS |
+| historische SF-Symbole produktiv entfernt | PASS statisch |
+| Modul-028 `git diff --check` | PASS |
+| vollständiger Testlauf | OPEN |
+| Xcode-Build | OPEN |
+| Simulator | OPEN |
+| tatsächliche Bundle-Auffindbarkeit | OPEN |
 
-Für AK-31 noch manuell zu prüfen:
+## Akzeptanzstatus
 
-- TT-001
-- TT-007
-- TT-013
-- TT-016
-- HUD bis `Ticket 16 von 16`
-- Ticketinfo
-- Reset
-- Replay-/Punkte-/Monsterfarben-Regression
+### AK-28
 
-## Werkzeugstatus
+Code-/Testebene:
 
-Im Modul-027-Ausführungsumfeld fehlten:
+PASS.
 
-- `xcodebuild`
-- `swift`
-- visionOS-Simulator
+Laufzeit weiterhin OPEN für:
 
-Daher keine erfundenen Laufzeit-PASS-Angaben.
+- vier Logos sichtbar
+- Textlesbarkeit
+- Blickwinkel
+- Drag auf alle vier Ziele
+- Invalid Drop/Snapback
+- kontrollierter Fallback
+
+### AK-39 — Teamlogo-Anteil
+
+Code-/Testebene:
+
+PASS.
+
+Bundle-/Release-/Simulatorlauf:
+
+OPEN.
+
+Der Videoanteil von AK-39 ist noch nicht bearbeitet.
+
+## Modul 029 — Monster- und Streak-Audio
+
+- zehn valide lokale WAVs unter `Resources/Audio` integriert
+- Correct und Incorrect als getrennte 4er-Kataloge
+- zufällige Auswahl mit injizierbarem Selector
+- direkte Wiederholung ausdrücklich möglich; keine Anti-Repeat-Logik
+- bestehende Exactly-once-Feedbacktasks verwenden je genau einen Monster-Sound
+- Streak 2/3 → Sound 01, Streak 4+ → Sound 02, ≤1 → kein Sound
+- separater Streak-Player für die spätere zeitversetzte Integration
+- historische `correct.wav`/`incorrect.wav` unreferenziert
+- kein Streak-State, Multiplikator oder produktiver Streak-Trigger vorgezogen
+
+Details: `Dokumentation/04_Modul-Reports/029-Report.md`.
+
+## Geschützter Bestand für Modul 030
+
+Nicht verändern:
+
+- `TeamLogoCatalog`
+- Teamlogos
+- Teamstation-Text
+- Teamgeometrie
+- Drop-Bounds
+- 50-%-Overlap
+- Z-Toleranz
+- 16 Ticketdaten
+- 1...16-Auswahl
+- Video-Referenzen
+- Monster-Farbvarianten
+- Replay-Root
+- Punktefeedback
+- Debug-UI-Isolation
 
 ## Nächster Schritt
 
-`028-Eingangsprompt.md` ausführen.
-
-Modul 028 bearbeitet ausschließlich den Teamlogo-Anteil von v1.3:
-
-- vier bereitgestellte JPEG-Teamlogos inventarisieren,
-- sauber unter einem gemeinsamen Teamlogo-Ressourcenbereich ablegen,
-- zentrale Team→Logo-Zuordnung einführen,
-- bisherige SF-Symbole aus Modul 023 in der sichtbaren Teamstation durch Logos ersetzen,
-- Teamtext vollständig sichtbar lassen,
-- Panel-/Drop-Geometrie vollständig unverändert lassen,
-- fehlende Logos robust behandeln,
-- Ticket-, Video-, Session-, Monster-, Audio- und Streaklogik nicht verändern.
+Modul 030 — Ticketvideo-System umsetzen.

@@ -1,175 +1,130 @@
 # Projekt-Stand — Ticket Tamer
 
-> Aktuelle technische Landkarte nach Modul 027 der Version 1.3.
+> Aktuelle technische Landkarte nach Modul 029 der Version 1.3.
 
 **Projektversion:** v1.3 in Arbeit  
-**Stand:** nach Modul 027  
-**Branch laut Report:** `v1.3`  
-**v1.2-Abschlusscommit:** `44430b7`  
-**Modul-027-Commit:** offen  
-**Testdeklarationen:** **372**  
+**Stand:** nach Modul 029  
+**Branch:** `v1.3`  
+**Modul-027-Commit:** `72d3e04`  
+**Modul-028-Commit:** `120ab6d`  
+**Reale Testdeklarationen:** **436**  
 **Build/Test/Simulator:** offen
+
+## Teststand
+
+Die realen Gitstände ergeben:
+
+- Modul-027-Commit `72d3e04`: 372 Testdeklarationen
+- Modul-028-Commit `120ab6d`: 401 Testdeklarationen
+- Modul 029: +35
+- aktueller Stand: 436
 
 ## v1.3-Funktionsstand
 
-### 027 — Neue Ticketdaten und 16er-Sitzung
+### 027 — Tickets
 
-Implementiert:
-
-- genau TT-001 bis TT-016
-- neue Quelltexte aus `Tickets/Ticket-Tamer_Tickets.md`
-- Auswahlbereich 1...16
+- TT-001 bis TT-016
+- Auswahl 1...16
 - Standard/Reset 6
-- Video-Datenreferenz `TT-xxx.mp4`
-- bestätigte Teamverteilung 4/4/4/4
-- bestätigte Prioritätsverteilung 5/6/5
+- Video-Datenreferenz TT-xxx.mp4
 
-## Ticketmodell
+### 028 — Teamlogos
 
-Relevante Felder:
+Zentrale Ressource:
 
-```text
-Ticket
-- id
-- ticketNumber
-- title
-- shortDescription
-- userImpact
-- symptoms
-- referencePriority
-- referenceTeam
-- monsterAssetId
-- videoAssetName
-```
+`Support/TeamLogoCatalog.swift`
 
-## Ticketmatrix-Erweiterung
+Produktive Logos:
 
-TT-001...TT-012:
+- Netzwerk → `Network_team_icon_design_202609032139.jpeg`
+- Konto → `Team_icon_design_profile_lock_202609032138.jpeg`
+- Software → `Software_team_icon_design_202609032138.jpeg`
+- Hardware → `Hardware_team_icon_design_202609032138.jpeg`
 
-vollständige 4×3-Matrix.
+Zielpfad:
 
-Neu:
+`Resources/TeamLogos/`
 
-- TT-013 → Netzwerk / Wichtig / monster01 / TT-013.mp4
-- TT-014 → Konto / Normal / monster02 / TT-014.mp4
-- TT-015 → Software / Wichtig / monster03 / TT-015.mp4
-- TT-016 → Hardware / Kritisch / monster04 / TT-016.mp4
+Teamtext bleibt.
 
-## Session
+SF Symbols sind für die produktive v1.3-Teamstation abgelöst.
 
-Grenzen:
+## Teamgeometrie unverändert
 
-```text
-minimumTicketCount = 1
-maximumTicketCount = 16
-defaultTicketCount = 6
-```
-
-Eine 16er-Sitzung erzeugt weiterhin 16 eindeutige Monster-Variantenzuordnungen.
-
-## Tests
-
-Aktuell:
-
-**372 Testdeklarationen**
-
-Vollständiger Apple-Toolchain-Lauf noch offen.
+- Panelbreite Referenz: 0.195 m
+- Panelhöhe: 0.117 m
+- Paneltiefe: 0.020 m
+- Drop overlap: 0.50
+- Z-Toleranz: 0.05 m
 
 ## v1.3-Modul-Landkarte
 
 | Modul | Status |
 |---|---|
-| 027 | implementiert; AK-31 Laufzeit OPEN |
-| 028 | als Nächstes |
-| 029 | offen |
-| 030 | offen |
+| 027 | committed |
+| 028 | committed `120ab6d`; Laufzeit OPEN |
+| 029 | implementiert; Laufzeit OPEN |
+| 030 | als Nächstes |
 | 031 | offen |
 | 032 | offen |
 | 033 | offen |
 
-## Für Modul 028 relevant
+## Modul 029 — Audio
 
-Bestehende Teamstationen:
+v1.3 verlangt:
 
-- Netzwerk
-- Konto
-- Software
-- Hardware
+### Monster-Feedback
 
-Modul 023 hatte SF Symbols ergänzt:
+- 4 lokale Correct-WAVs
+- 4 lokale Incorrect-WAVs
+- je gültiger Einzelentscheidung genau 1 Monster-Sound
+- passende Gruppe nach Bewertung
+- Auswahl zufällig
+- direkte Wiederholung erlaubt
+- deterministisch testbare Auswahl
 
-- Netzwerk → `network`
-- Konto → `person.crop.circle`
-- Software → `macwindow`
-- Hardware → `desktopcomputer`
+### Streak-Audio
 
-v1.3-F-28 konkretisiert den aktuellen Zielstand:
+- 2 lokale WAVs
+- Sound 01 → x2/x3
+- Sound 02 → x4+
+- 0/1 → kein Streak-Sound
+- niemals bei Prioritätsentscheidung
+- produktiver Trigger erst zusammen mit realem Streak-State/Teamabschluss in Modul 032
 
-**Die bereitgestellten JPEG-Teamlogos ersetzen diese Symbole.**
-
-Die deutschen Texte bleiben sichtbar.
-
-## Geometrie-Schutz
-
-Aus Modul 023:
-
-Bei Referenzgeometrie:
-
-- Panelbreite `0.195 m`
-- Panelhöhe `0.117 m`
-- Paneltiefe `0.020 m`
-- `minimumDropOverlapRatio = 0.50`
-- `dropDepthTolerance = 0.05 m`
-
-Diese Werte beziehungsweise die dynamisch daraus abgeleitete reale Geometrie dürfen durch Logos nicht verändert werden.
-
-## Ressourcenarchitektur v1.3
-
-Ziel für Modul 028:
+## Zielstruktur
 
 ```text
 Resources/
-└── TeamLogos/
-    ├── <Netzwerk-JPEG>
-    ├── <Konto-JPEG>
-    ├── <Software-JPEG>
-    └── <Hardware-JPEG>
+└── Audio/
+    ├── MonsterSounds/
+    │   ├── Correct/
+    │   └── Incorrect/
+    └── StreakSounds/
 ```
 
-Exakte Dateinamen nicht erfinden.
+Produktive Dateien sind eindeutig als `monster_correct_01...04.wav`,
+`monster_incorrect_01...04.wav` und `streak_01...02.wav` benannt.
 
-Im Repository zunächst die bereitgestellten JPEG-Dateien inventarisieren.
+`MonsterFeedbackSoundCatalog` kapselt die 4+4-Gruppen und die injizierbare Auswahl.
+`StreakSoundCatalog` mappt 2/3 auf Sound 01 und 4+ auf Sound 02. Der produktive
+Streak-Trigger bleibt bis Modul 032 offen.
 
-Zentrale Zuordnung statt Dateipfade in `TeamAssignmentView`.
+## Audioarchitektur
 
-Geeignet ist eine kleine Präsentations-/Assetstruktur, sinngemäß:
+`AudioService.playMonsterFeedback(evaluation:selector:)` ersetzt den historischen
+Einzel-Soundaufruf innerhalb der bestehenden Exactly-once-Tasks. Separate Monster-
+und Streak-Player bereiten eine spätere zeitversetzte Streak-Wiedergabe vor.
 
-```text
-SupportTeam
-→ TeamLogoCatalog
-→ logoResourceName
-```
+Die historischen `correct.wav` und `incorrect.wav` bleiben unreferenziert bestehen.
 
-oder eine Erweiterung der vorhandenen `TeamTargetMapping.Presentation`.
+## Noch nicht in Modul 029
 
-Fachliche Teamlogik und Dropgeometrie dürfen keine Ressourcenpfade kennen.
+Nicht implementieren:
 
-## Geschützt
-
-Nicht ändern:
-
-- Ticketdaten Modul 027
-- `videoAssetName`
-- Sessionauswahl 1...16
-- Monster-Variantenauswahl
-- Scoring
-- Audio
-- Streak noch nicht einführen
-- `TargetPanelLayout`
-- `DropTargetComponent`
-- `DropEvaluator`
-- 50-%-Overlap
-- Z-Toleranz
-- Replay-Root
-- Punktefeedback
-- Debug-UI-Isolation
+- `streak` in SessionModel
+- Streak-Mutation
+- Multiplikator-Scoring
+- x2/x3/x4+-Overlay
+- Team-Zusatzpunktelogik
+- Video-UI

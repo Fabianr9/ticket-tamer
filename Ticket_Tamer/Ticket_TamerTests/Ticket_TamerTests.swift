@@ -610,6 +610,13 @@ struct CompactTicketInfoTests {
         #expect(LayoutConstants.centralVolumeDepth > LayoutConstants.monsterPanelDepth)
     }
 
+    @Test("HUD und Hinweis verwenden sichtbare Scene-Anker innerhalb des Volumes")
+    func ornamentAnchorsStayInsideScene() {
+        #expect((0...1).contains(LayoutConstants.sessionHUDSceneAnchorY))
+        #expect((0...1).contains(LayoutConstants.interactionHintSceneAnchorY))
+        #expect(LayoutConstants.sessionHUDSceneAnchorY < LayoutConstants.interactionHintSceneAnchorY)
+    }
+
     @Test("Die Monster-Zielgroessen sind reduziert")
     func monsterTargetSizesAreReduced() {
         #expect(LayoutConstants.monsterTargetSize == 0.24)

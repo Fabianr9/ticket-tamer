@@ -54,11 +54,13 @@ enum LayoutConstants {
     /// Abstand innerhalb des Textblocks.
     static let textSpacing = 8.0
 
-    /// Rueckt das an der oberen Scene-Kante verankerte HUD zur Spielflaeche.
-    static let sessionHUDVerticalOffset = 52.0
+    /// Normalisierte Y-Position des HUD innerhalb der Scene (0 = oben, 1 = unten).
+    /// Ein echter Scene-Anker bleibt im Volume sichtbar; ein nachtraeglicher View-Offset
+    /// kann ein Ornament dagegen aus dessen Darstellungsbereich verschieben.
+    static let sessionHUDSceneAnchorY: CGFloat = 0.10
 
-    /// Rueckt den unteren Interaktionshinweis zum Monster beziehungsweise Zielraster.
-    static let interactionHintVerticalOffset = -52.0
+    /// Normalisierte Y-Position des unteren Hinweises innerhalb der Scene.
+    static let interactionHintSceneAnchorY: CGFloat = 0.88
 
     /// Maximale Textbreite der kurzen Spielbeschreibung auf der Startseite.
     static let startDescriptionMaximumWidth = 560.0

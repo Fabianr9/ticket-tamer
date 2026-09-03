@@ -286,7 +286,13 @@ struct PrioritizationView: View {
             }
         }
         .ornament(
-            attachmentAnchor: .scene(.top),
+            attachmentAnchor: .scene(
+                UnitPoint3D(
+                    x: 0.5,
+                    y: LayoutConstants.sessionHUDSceneAnchorY,
+                    z: 0.5
+                )
+            ),
             contentAlignment: .bottom
         ) {
             SessionHUDView(
@@ -294,14 +300,18 @@ struct PrioritizationView: View {
                 totalTicketCount: model.sessionTickets.count,
                 phase: model.currentPhase
             )
-            .offset(y: LayoutConstants.sessionHUDVerticalOffset)
         }
         .ornament(
-            attachmentAnchor: .scene(.bottom),
+            attachmentAnchor: .scene(
+                UnitPoint3D(
+                    x: 0.5,
+                    y: LayoutConstants.interactionHintSceneAnchorY,
+                    z: 0.5
+                )
+            ),
             contentAlignment: .top
         ) {
             InteractionHintView(text: InteractionHintContent.prioritization)
-                .offset(y: LayoutConstants.interactionHintVerticalOffset)
         }
         .task {
             await setupScene()

@@ -37,11 +37,16 @@ struct InvestigationView: View {
         if let ticket = model.currentTicket {
             mainContent(ticket: ticket)
                 .ornament(
-                    attachmentAnchor: .scene(.top),
+                    attachmentAnchor: .scene(
+                        UnitPoint3D(
+                            x: 0.5,
+                            y: LayoutConstants.sessionHUDSceneAnchorY,
+                            z: 0.5
+                        )
+                    ),
                     contentAlignment: .bottom
                 ) {
                     sessionHUD
-                        .offset(y: LayoutConstants.sessionHUDVerticalOffset)
                 }
                 .onAppear {
                     DebugManager.log(.lifecycle, "Untersuchungsansicht erscheint: \(ticket.ticketNumber)")

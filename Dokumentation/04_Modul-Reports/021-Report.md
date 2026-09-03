@@ -54,7 +54,7 @@ Eine reale Laufzeitmessung ist ohne visionOS-Simulator nicht moeglich und wird n
 
 Nach Simulator-Gegenpruefung wurde die Cold-Start-Vorgabe ergonomisch von 1,2 x 1,15 x 0,45 m auf 0,8 x 0,75 x 0,38 m reduziert. Damit ruecken das an der Oberkante verankerte HUD, die zentrale Spielflaeche und der untere Interaktionshinweis gemeinsam zusammen, ohne einzelne Ornaments mit phasenspezifischen Offsets zu verschieben. Ein bereits vom Nutzer/System veraendertes Volume wird beim Replay weiterhin nicht auf diese Defaultwerte zurueckgesetzt.
 
-In der anschliessenden Feinabstimmung wurde die zwischenzeitliche Änderung des Panelabstands zurückgenommen; die Boxen verwenden wieder 0,02 m Abstand. Das Untersuchungsmonster wurde auf 0,24 m und das Drag-/Drop-Monster auf 0,17 m vergroessert. In der Teamphase startet es nun bei y = -0,18 m vollständig und knapp unterhalb der unteren Panelreihe. HUD und Interaktionshinweis werden jeweils um 52 Punkte zur zentralen Spielflaeche verschoben. Sichtbare Panelboxen und Drop-Bounds stammen weiterhin aus derselben Geometrie.
+In der anschliessenden Feinabstimmung wurde die zwischenzeitliche Änderung des Panelabstands zurückgenommen; die Boxen verwenden wieder 0,02 m Abstand. Das Untersuchungsmonster wurde auf 0,24 m und das Drag-/Drop-Monster auf 0,17 m vergroessert. In der Teamphase startet es nun bei y = -0,18 m vollständig und knapp unterhalb der unteren Panelreihe. Ein erster Versuch, HUD und Hinweis per `offset` zu verschieben, liess beide Ornaments im Simulator verschwinden und wurde vollständig entfernt. Sie verwenden nun explizite normalisierte `UnitPoint3D`-Scene-Anker bei y = 0,10 beziehungsweise y = 0,88. Sichtbare Panelboxen und Drop-Bounds stammen weiterhin aus derselben Geometrie.
 
 Die unstrukturierten Geometry-Tasks in den Spielansichten wurden nicht als gemeinsame Ursache bewertet: Ihr lokaler State verschwindet beim Phasenwechsel, und sie koennen den bereits vorher sichtbaren Start-Slider nicht beeinflussen. In diesem Modul wurde deshalb keine neue Task-Kaskade und kein phasenspezifischer Cancellation-Hack eingefuehrt.
 
@@ -74,8 +74,8 @@ Keine phasenspezifischen Replay-Hacks wurden eingefuehrt. `SessionModel.reset()`
 | Stand | Deklarationen | Ergebnis | Plattform |
 |---|---:|---|---|
 | vorher | 298 | nicht ausgefuehrt | Linux ohne Xcode |
-| neu | 7 | statisch hinzugefuegt | — |
-| nachher | 305 | OPEN | Xcode/visionOS erforderlich |
+| neu | 8 | statisch hinzugefuegt | — |
+| nachher | 306 | OPEN | Xcode/visionOS erforderlich |
 
 Neu abgedeckt sind feste positive Slider-Designbreite, identische Priority-/Team-Panelmaße bei identischer Geometry, fünf Wiederholungen ohne kumulative Drift, adaptive Neuberechnung nach Resize sowie die Unabhängigkeit der Layoutberechnung vom fachlichen Reset einschließlich aller Resetwerte. Die bestehenden Rastertests wurden auf das kompakte, zentral angeordnete Zielraster aktualisiert. Bereits vorhandene Tests decken weitere Reset- und `TargetPanelLayout`-Eigenschaften ab.
 

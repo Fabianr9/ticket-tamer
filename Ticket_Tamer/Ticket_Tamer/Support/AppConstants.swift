@@ -54,6 +54,12 @@ enum LayoutConstants {
     /// Abstand innerhalb des Textblocks.
     static let textSpacing = 8.0
 
+    /// Rueckt das an der oberen Scene-Kante verankerte HUD zur Spielflaeche.
+    static let sessionHUDVerticalOffset = 52.0
+
+    /// Rueckt den unteren Interaktionshinweis zum Monster beziehungsweise Zielraster.
+    static let interactionHintVerticalOffset = -52.0
+
     /// Maximale Textbreite der kurzen Spielbeschreibung auf der Startseite.
     static let startDescriptionMaximumWidth = 560.0
 
@@ -189,7 +195,7 @@ enum LayoutConstants {
     /// Obergrenze der Kantenlaenge des eingepassten Monsters in Metern.
     ///
     /// Verhindert, dass das Monster in sehr grossen Volumes den Bildausschnitt dominiert.
-    static let monsterTargetSize: Float = 0.20
+    static let monsterTargetSize: Float = 0.24
 
     /// Gewuenschte Verschiebung des Monsters zur betrachtenden Person (+Z) in Metern.
     ///
@@ -209,7 +215,7 @@ enum LayoutConstants {
     ///
     /// Bewusst kleiner als `InteractionConstants.monsterCollisionRadius × 2`, damit die
     /// Greifsphaere das Modell sicher umschliesst.
-    static let monsterDragDropTargetSize: Float = 0.14
+    static let monsterDragDropTargetSize: Float = 0.17
 
     /// Sichtbarer Sicherheitsabstand zwischen Modellhuelle und Volume-Grenze (Meter).
     ///
@@ -296,7 +302,7 @@ enum LayoutConstants {
     ///
     /// Bestimmt zugleich die Panelbreite: die verfügbare Volume-Breite wird abzüglich der
     /// Zwischenräume gleichmäßig auf die Spalten verteilt.
-    static let targetPanelGap: Float = 0.01
+    static let targetPanelGap: Float = 0.02
 
     /// Maximale Gesamtbreite des Zielrasters in einem grossen Volume.
     ///
@@ -484,7 +490,7 @@ enum PrioritizationConstants {
     ///
     /// Y bewusst nahe 0 statt im unteren Drittel: tiefer wirkte das Modell im Passthrough,
     /// als versinke es in Tisch oder Boden. Bei einer Modellgröße von
-    /// `monsterDragDropTargetSize` (0.11 m) bleibt oben wie unten reichlich Luft.
+    /// `monsterDragDropTargetSize` (0.17 m) bleibt oben wie unten ausreichend Luft.
     ///
     /// Leicht nach vorne versetzt (+Z), damit das Modell klar vor der Zielebene steht.
     /// Abstand zu allen drei Zielen > `InteractionConstants.dropTargetRadius`, das Monster
@@ -582,7 +588,7 @@ enum TeamAssignmentConstants {
     /// Dadurch ueberdeckt das Monster beim Phasenstart keine Box. Die Position bleibt
     /// nahe genug am Raster fuer einen kurzen, ergonomischen Drag und liegt weiterhin
     /// ausserhalb jeder Drop-Zone.
-    static let monsterStartPosition = SIMD3<Float>(0, -0.12, 0)
+    static let monsterStartPosition = SIMD3<Float>(0, -0.18, 0)
 
     // MARK: - Ablage-Schwelle
 

@@ -273,12 +273,14 @@ struct TeamAssignmentView: View {
                 totalTicketCount: model.sessionTickets.count,
                 phase: model.currentPhase
             )
+            .offset(y: LayoutConstants.sessionHUDVerticalOffset)
         }
         .ornament(
             attachmentAnchor: .scene(.bottom),
             contentAlignment: .top
         ) {
             InteractionHintView(text: InteractionHintContent.teamAssignment)
+                .offset(y: LayoutConstants.interactionHintVerticalOffset)
         }
         .task {
             await setupScene()

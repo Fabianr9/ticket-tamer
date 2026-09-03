@@ -41,6 +41,7 @@ struct InvestigationView: View {
                     contentAlignment: .bottom
                 ) {
                     sessionHUD
+                        .offset(y: LayoutConstants.sessionHUDVerticalOffset)
                 }
                 .onAppear {
                     DebugManager.log(.lifecycle, "Untersuchungsansicht erscheint: \(ticket.ticketNumber)")

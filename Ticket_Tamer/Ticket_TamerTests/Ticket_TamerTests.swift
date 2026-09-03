@@ -612,8 +612,8 @@ struct CompactTicketInfoTests {
 
     @Test("Die Monster-Zielgroessen sind reduziert")
     func monsterTargetSizesAreReduced() {
-        #expect(LayoutConstants.monsterTargetSize == 0.20)
-        #expect(LayoutConstants.monsterDragDropTargetSize == 0.14)
+        #expect(LayoutConstants.monsterTargetSize == 0.24)
+        #expect(LayoutConstants.monsterDragDropTargetSize == 0.17)
     }
 }
 

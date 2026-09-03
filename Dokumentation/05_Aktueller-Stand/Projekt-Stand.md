@@ -1,160 +1,144 @@
 # Projekt-Stand — Ticket Tamer
 
-> Aktuelle technische Landkarte nach Modul 031 der Version 1.3.
+> Aktuelle technische Landkarte nach Modul 032 der Version 1.3.
 
 **Projektversion:** v1.3 in Arbeit  
-**Stand:** nach Modul 031  
+**Stand:** nach Modul 032  
 **Branch:** `v1.3`  
-**Modul-030-Commit:** `8041bf9`  
-**Modul-031-Commit:** offen  
-**Testdeklarationen:** **522**  
+**Modul-031-Commit:** `df4b6f5`  
+**Modul-032-Commit:** offen  
+**Testdeklarationen:** **576**  
 **Build/Test/Simulator:** offen
 
-## v1.3-Stand
+## v1.3 Featurestand
 
 ### 027 — Tickets
-- TT-001...TT-016
+- TT-001 bis TT-016
 - Auswahl 1...16
-- Video-Referenzen
+- Standard/Reset 6
 
 ### 028 — Teamlogos
 - vier lokale JPEGs
 - `TeamLogoCatalog`
+- Text bleibt sichtbar
+- Dropgeometrie unverändert
 
 ### 029 — Audio
-- 4 Correct
-- 4 Incorrect
-- Streak 01 / 02
-- `playStreak(for:)`
+- 4 Correct-Monster-Sounds
+- 4 Incorrect-Monster-Sounds
+- 2 Streak-Sounds
+- zentrale Kataloge
+- zufällige, deterministisch testbare Auswahl
 
 ### 030 — Videos
 - 16 lokale MP4s
 - `TicketVideoResourceProvider`
 - `TicketVideoView`
+- Auto-Play nach Tap
+- Pause/Fortsetzen
+- X
+- Auto-Close
+- Fehlerzustand
 
 ### 031 — Streak & Scoring
-
-Neu in `SessionModel`:
-
-```text
-streak
-currentPriorityWasCorrect
-lastTeamAwardedPoints
-lastCompletedTicketWasFullyCorrect
-lastCompletedTicketStreak
-```
-
-## Scoring
-
-Vollständig korrekt:
-
-```text
-ticketTotal = 200 × streak
-teamCredit = ticketTotal - 100
-```
-
-Beispiele:
-
-- x1 → Team +100
-- x2 → Team +300
-- x3 → Team +500
-- x4 → Team +700
-
-Teilweise richtig:
-
-nur Basispunkte, Streak 0.
-
-## Modul 032 — Source of Truth
-
-Die UI soll nach `evaluateTeam()` nur lesen:
-
+- `streak`
+- `currentPriorityWasCorrect`
 - `lastTeamAwardedPoints`
 - `lastCompletedTicketWasFullyCorrect`
 - `lastCompletedTicketStreak`
 
-Nicht:
+Vollständig korrekt:
 
-- Referenzpriorität erneut vergleichen
-- Referenzteam erneut vergleichen
-- Score-Deltas aus globalem Score ableiten
-- Streak lokal berechnen
+`Ticket total = 200 × streak`
 
-## Aktuelles visuelles Feedback
+### 032 — Streak-Feedback
 
-Historisch:
+- dynamische Team-Punkte
+- x2/x3 normal
+- x4+ größer + Scale-Pulse
+- kein x1
+- kein dauerhafter Streak im HUD
+- Streak-Sound 0.2 s nach positivem Monster-Sound
+- Gesamtfeedback weiter 1.5 s
 
-Priorität:
-- correct → Haken + `+100 Punkte`
-- incorrect → X + `0 Punkte`
-
-Team:
-- aktuell noch gleiche statische Darstellung
-- muss in Modul 032 dynamisch werden
-
-v1.3-Ziel:
-
-Priorität:
-- richtig immer `+100 Punkte`
-
-Team:
-- richtig zeigt exakt `lastTeamAwardedPoints`
-- falsch `0 Punkte`
-
-Beispiele:
-- x1 vollständig korrekt → `+100 Punkte`
-- x2 → `+300 Punkte`
-- x3 → `+500 Punkte`
-- x4 → `+700 Punkte`
-- Priority falsch / Team richtig → `+100 Punkte`
-
-## Streak-Overlay
-
-Nur Teamphase.
-
-Nur wenn:
+## Audiofolge
 
 ```text
-lastCompletedTicketWasFullyCorrect == true
-&& lastCompletedTicketStreak >= 2
+Team evaluate
+→ Monster-Sound
+→ 0.2 s
+→ optional Streak-Sound
+→ verbleibende 1.3 s
+→ Transition
 ```
 
-Darstellung:
-
-- x2 / x3 normal
-- x4+ sichtbar größer
-- x4+ zusätzliche kurze Puls-/Scale-Animation
-- nicht dauerhaft im HUD
-
-## Streak-Audio
-
-Vorhandenes Mapping aus 029:
-
-- 0/1 → kein Sound
-- 2/3 → `streak_01.wav`
-- 4+ → `streak_02.wav`
-
-Nur qualifizierter vollständig korrekter Teamabschluss.
-
-Monster-Correct-Sound bleibt ebenfalls genau einmal.
-
-Streak-Sound leicht zeitversetzt/nacheinander, nicht versehentlich gleichzeitig.
+Nur wenn vollständig korrekt und Streak >= 2.
 
 ## Tests
 
 Aktuell:
 
-**522 Testdeklarationen**
+**576 Testdeklarationen**
 
-Apple-Toolchainlauf offen.
+Vollständiger Apple-Toolchain-Lauf offen.
 
 ## v1.3-Modul-Landkarte
 
 | Modul | Status |
 |---|---|
-| 027 | committed |
-| 028 | committed |
-| 029 | committed |
-| 030 | committed |
-| 031 | implementiert; Toolchain OPEN |
-| 032 | als Nächstes |
-| 033 | offen |
+| 027 | implementiert |
+| 028 | implementiert |
+| 029 | implementiert |
+| 030 | implementiert |
+| 031 | implementiert |
+| 032 | implementiert |
+| 033 | als Nächstes: Integration & Abnahme |
+
+## Modul 033 — Fokus
+
+SPEC:
+
+`F-01 bis F-39, Schwerpunkt F-31 bis F-39`
+
+Verbindlich abzunehmen:
+
+- 16 neue Tickets
+- 16 Videos
+- 4 Teamlogos
+- 8 Monster-Sounds
+- 2 Streak-Sounds
+- zentrale Ressourcenstruktur
+- Streak-State
+- Multiplikator-Scoring
+- dynamische Zusatzpunkte
+- x2/x3/x4+-Feedback
+- Reset
+- Replay
+- Regression gegen v1.2
+
+## v1.3 Ressourcenstruktur
+
+```text
+Resources/
+├── Audio/
+│   ├── MonsterSounds/
+│   │   ├── Correct/
+│   │   └── Incorrect/
+│   └── StreakSounds/
+├── TeamLogos/
+└── Videos/
+```
+
+## Geschützte Kernregeln
+
+- genau ein zentrales Volume
+- keine neue Produktnavigation
+- `SessionModel` zentrale fachliche Source of Truth
+- 1...16 Tickets
+- 50-%-Drop
+- Z-Toleranz 0.05 m
+- Snapback
+- Retry gleiche Monstervariante
+- Exactly-once
+- Replay-Layoutstabilität
+- keine Lösungsausgabe

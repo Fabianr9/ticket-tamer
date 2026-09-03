@@ -1,21 +1,21 @@
 # Projektlogbuch — Ticket Tamer
 
-> Einziger aktueller Logbuch-Stand nach Einarbeitung von Modul 031 für Version 1.3.
+> Einziger aktueller Logbuch-Stand nach Einarbeitung von Modul 032 für Version 1.3.
 
 **Projektversion:** v1.3 in Arbeit  
 **v1.0:** abgeschlossen  
 **v1.1:** abgeschlossen  
 **v1.2:** abgeschlossen  
-**Stand:** nach Modul `031` — Streak-State und Scoring  
+**Stand:** nach Modul `032` — Streak-Feedback v1.3  
 **Eingearbeitet am:** 2026-09-04  
-**Branch laut 031-Report:** `v1.3`  
-**HEAD vor Modul 031:** `8041bf9d8cbe8f2a63c982a2418a32e56a3b3d36` (`feat: Modul 30`)  
-**Modul-030-Commit:** `8041bf9`  
-**Modul-031-Commit:** offen  
-**Testdeklarationen vor 031:** 474  
-**Neue Tests:** 48  
-**Testdeklarationen nach 031:** **522**  
-**Build/Test/Simulator:** offen
+**Branch laut 032-Report:** `v1.3`  
+**HEAD vor Modul 032:** `df4b6f5e41f134459399b6a4de5354b67c2adabe` (`feat: Modul 31`)  
+**Modul-031-Commit:** `df4b6f5`  
+**Modul-032-Commit:** offen  
+**Testdeklarationen vor 032:** 522  
+**Neue Tests:** 54  
+**Testdeklarationen nach 032:** **576**  
+**Build/Test/Simulator/Audio:** offen
 
 ## v1.3-Modulstatus
 
@@ -24,206 +24,244 @@
 | 027 | Neue Ticketdaten und 16er-Sitzung | committed |
 | 028 | Teamlogos v1.3 | committed; Laufzeitanteile OPEN |
 | 029 | Monster- und Streak-Audio | committed; Hör-/Bundlelauf OPEN |
-| 030 | Ticketvideo-System | committed `8041bf9`; Playback-/Bundlelauf OPEN |
-| 031 | Streak-State und Scoring | implementiert; Code/Test PASS; Toolchainlauf OPEN; Commit offen |
-| 032 | Streak-Feedback v1.3 | als Nächstes |
-| 033 | Integration und Abnahme v1.3 | offen |
+| 030 | Ticketvideo-System | committed; Playback-/Bundlelauf OPEN |
+| 031 | Streak-State und Scoring | committed `df4b6f5`; Toolchainlauf OPEN |
+| 032 | Streak-Feedback v1.3 | implementiert; Code/Test PASS; Simulator/Audio OPEN; Commit offen |
+| 033 | Integration und Abnahme v1.3 | als Nächstes |
 
-## Modul 031 — zentraler Streak-State
+## Modul 032 — dynamisches Entscheidungsfeedback
 
-`SessionModel` bleibt die einzige fachliche Zustandsquelle.
+Neue finale Schnittstelle:
 
-Neu:
+`DecisionFeedbackView(presentation:)`
 
-```swift
-private(set) var streak: Int = 0
-private(set) var currentPriorityWasCorrect: Bool? = nil
-```
+mit:
 
-Regeln:
+`DecisionFeedbackPresentation(result, awardedPoints)`
 
-- neues Modell → `streak = 0`
-- `startSession()` → `streak = 0`
-- `reset()` → `streak = 0`
-- falsche Priorität → Streak sofort 0
-- richtige Priorität → Streak noch nicht erhöhen
-- nur vollständig korrektes Ticket erhöht beim Teamabschluss die Streak
-- kein künstlicher Cap
-
-`currentPriorityWasCorrect` wird beim nächsten Ticket, beim Sitzungsstart und beim Reset wieder `nil`.
-
-## Scoring
+Die UI zeigt keine selbst berechneten Punkte.
 
 ### Priorität
 
-Richtig:
+- korrekt → grüner Haken + `+100 Punkte`
+- falsch → rotes Kreuz + `0 Punkte`
 
-- +100 Punkte
-- `currentPriorityWasCorrect = true`
+### Team
 
-Falsch:
+Die Teamphase liest ausschließlich:
 
-- +0 Punkte
-- `currentPriorityWasCorrect = false`
-- `streak = 0`
+`SessionModel.lastTeamAwardedPoints`
 
-### Teamabschluss
+Beispiele:
 
-Vollständig korrekt:
+- Streak 1 → `+100 Punkte`
+- Streak 2 → `+300 Punkte`
+- Streak 3 → `+500 Punkte`
+- Streak 4 → `+700 Punkte`
+- Streak 5 → `+900 Punkte`
+- Team korrekt nach falscher Priorität → `+100 Punkte`
+- Team falsch → `0 Punkte`
+
+Keine UI-Scoremutation.
+
+## Streak-Presentation
+
+Neu:
+
+`StreakFeedbackView`
+
+und eine reine Team-/Streak-Präsentationsableitung.
+
+Sichtbarkeit nur wenn:
 
 ```text
-streak += 1
-ticketTotal = 200 × streak
-teamCredit = ticketTotal - 100
+lastCompletedTicketWasFullyCorrect == true
+&& lastCompletedTicketStreak >= 2
 ```
 
-Teilweise richtig:
+Darstellung:
 
-- kein Multiplikator
-- normale Einzelpunkte
-- Streak 0
+| Streak | Anzeige | Stil |
+|---:|---|---|
+| 0 | keine | – |
+| 1 | keine | – |
+| 2 | x2 | normal |
+| 3 | x3 | normal |
+| 4+ | xN | größer + einmaliger Scale-Pulse |
 
-## Rechenmatrix
+Kein künstlicher Cap.
 
-| vorherige Streak | Priority | Team | neue Streak | Priority Credit | Team Credit | Ticket total |
-|---:|---|---|---:|---:|---:|---:|
-| 0 | ✓ | ✓ | 1 | 100 | 100 | 200 |
-| 1 | ✓ | ✓ | 2 | 100 | 300 | 400 |
-| 2 | ✓ | ✓ | 3 | 100 | 500 | 600 |
-| 3 | ✓ | ✓ | 4 | 100 | 700 | 800 |
-| 3 | ✓ | ✗ | 0 | 100 | 0 | 100 |
-| 3 | ✗ | ✓ | 0 | 0 | 100 | 100 |
-| 3 | ✗ | ✗ | 0 | 0 | 0 | 0 |
+x5, x6 ... x16 verwenden dieselbe stärkere Logik wie x4.
 
-Keine Doppelzählung.
+## HUD
 
-Bereits vergebene Punkte werden bei Streak-Unterbrechung niemals zurückgezogen.
+Unverändert.
 
-## Übergabedaten an Modul 032
+Das Session-HUD zeigt weiterhin nur:
 
-Nach der einzigen gültigen Team-Auswertung stellt `SessionModel` bereit:
+- Ticket X von Y
+- Phasentitel
+- Fortschritt
 
+Nicht dauerhaft:
+
+- Score
+- Streak
+- Multiplikator
+
+## Teamabschluss-Snapshot
+
+Direkt nach genau einer `evaluateTeam()`-Auswertung snapshottet die View lokal:
+
+- Evaluation Bool
 - `lastTeamAwardedPoints`
 - `lastCompletedTicketWasFullyCorrect`
 - `lastCompletedTicketStreak`
 
-Semantik:
+Dieser Snapshot ist nur Darstellung und schreibt nichts ins `SessionModel`.
 
-### `lastTeamAwardedPoints`
+## Audioorchestrierung
 
-Tatsächlich **mit der Teamentscheidung** zusätzlich gutgeschriebene Punkte.
+Qualifizierter vollständig korrekter Teamabschluss:
 
-Beispiele:
+1. positiver Monster-Sound
+2. `0.2 s` Delay
+3. Streak-Sound
+4. verbleibende `1.3 s`
+5. Phasenwechsel
 
-- vollständig korrekt, Streak 1 → 100
-- vollständig korrekt, Streak 2 → 300
-- vollständig korrekt, Streak 3 → 500
-- vollständig korrekt, Streak 4 → 700
-- Priorität falsch, Team richtig → 100
-- Team falsch → 0
+Gesamtfeedbackdauer:
 
-### `lastCompletedTicketWasFullyCorrect`
+`1.5 s`
 
-Nur true, wenn:
+Unverändert.
 
-- Priorität korrekt
-- Team korrekt
+Mapping:
 
-### `lastCompletedTicketStreak`
+- Streak 0/1 → kein Streak-Sound
+- x2/x3 → `streak_01.wav`
+- x4+ → `streak_02.wav`
 
-Resultierende Streak nach Teamabschluss.
+Priorität:
 
-Diese Metadaten werden:
+niemals Streak-Sound.
 
-- beim nächsten Ticket
-- bei neuer Sitzung
-- bei Reset
+Pro qualifiziertem Teamabschluss:
 
-neutralisiert.
+höchstens ein Streak-Sound.
 
-Eine zweite Team-Auswertung verändert sie nicht.
+## Exactly-once
 
-## Kompatibilität
+Der bestehende einzige Feedbacktask bleibt erhalten.
 
-Unverändert:
+Weiterhin geschützt durch:
 
-```swift
-evaluatePriority() -> Bool?
-evaluateTeam() -> Bool?
-completeTicketAfterTeamFeedback() -> Void
-```
+- `feedbackTaskStarted`
+- Input-Lock
+- zentrale Exactly-once-Auswertung
 
-Die Bool-Rückgaben bleiben kompatibel mit:
+Keine zweite:
 
-- Monster-Sound
-- `DecisionFeedback`
+- Bewertung
+- Scoremutation
+- Streakerhöhung
+- Overlayauslösung
+- Monster-Soundauslösung
+- Streak-Soundauslösung
+- Transition
 
-Kein zweiter Bewertungsweg wurde eingeführt.
-
-## Dateien Modul 031
-
-Geändert:
-
-- `Models/SessionModel.swift`
-- `Ticket_TamerTests/Ticket_TamerTests.swift`
+## Dateien Modul 032
 
 Neu:
 
-- `Ticket_TamerTests/StreakScoringTests.swift`
+- `Views/Components/StreakFeedbackView.swift`
+- `Ticket_TamerTests/StreakFeedbackTests.swift`
 
-Nicht verändert:
+Geändert:
 
-- Audio 029
-- Video 030
+- `Views/Components/DecisionFeedbackView.swift`
+- `Views/PrioritizationView.swift`
+- `Views/TeamAssignmentView.swift`
+- `Support/AppConstants.swift`
+- `Resources/Localizable.xcstrings`
+
+Unverändert:
+
+- `SessionModel`
+- Audio-Katalog/Random-Selector
+- Session-HUD
+- Video
 - Teamlogos
 - Dropgeometrie
+- Ticketdaten
 - ResultView
-- Replay-Root
-- Monster-Retry
-- Monster-Farbvarianten
 
 ## Test-/Prüfstand
 
 | Prüfung | Status |
 |---|---|
-| Tests vor 031 | 474 |
-| neue Tests | 48 |
-| Tests nach 031 | **522** |
-| Scoring-Matrix | PASS auf Code/Testebene |
-| Streak 5/16/>16-Formel | PASS auf Testebene |
-| Exactly-once Score/Streak/Metadaten | PASS auf Testebene |
-| Sequenz 200+400+600 = 1200 | PASS auf Testebene |
-| Sequenz 200+100+200 = 500 | PASS auf Testebene |
-| Sequenz 100+200 = 300 | PASS auf Testebene |
-| `git diff --check` Modul-Diff | PASS |
-| Build | OPEN |
+| Tests vor 032 | 522 |
+| neue Tests | 54 |
+| Tests nach 032 | **576** |
+| String Catalog JSON | PASS |
+| Modul-Scope `git diff --check` | PASS |
+| Punktetext-/Streak-Gates | PASS auf Testebene |
+| Sound-Mapping | PASS auf Testebene |
+| Gesamtzeit 1.5 s | PASS auf Testebene |
+| HUD unverändert | PASS auf Testebene |
+| 1200-Punkte-Regression | PASS auf Testebene |
 | vollständiger Testlauf | OPEN |
+| Build | OPEN |
 | Simulator | OPEN |
+| hörbare Audiofolge | OPEN |
 
-## Akzeptanzstatus
+## Akzeptanzstatus Modul 032
 
-- AK-11: Code/Test PASS; Toolchainlauf OPEN
-- AK-16: Code/Test PASS; Toolchainlauf OPEN
-- AK-36: Code/Test PASS; Toolchainlauf OPEN
-- AK-37: Code/Test PASS; Toolchainlauf OPEN
+### AK-18
+Code: PASS  
+Simulator: OPEN
 
-## Erwartete Zwischenstufe nach Modul 031
+### AK-21
+Code: PASS  
+Runtime: OPEN
 
-Die fachlichen Punkte sind bereits korrekt.
+### AK-35
+Code: PASS  
+Audio-/Runtime: OPEN
 
-Die Teamfeedback-UI aus v1.2 kommuniziert die höheren Teamgutschriften aber noch nicht vollständig.
+### AK-38
+Code: PASS  
+Simulator: OPEN
 
-Das ist **kein verdeckter Bug**, sondern die geplante Modulgrenze:
+## Offene v1.3-Abnahme vor Modul 033
 
-Modul 032 übernimmt:
+Die Featureimplementierung aus 027–032 ist abgeschlossen.
 
-- dynamischen Team-Punktetext aus `lastTeamAwardedPoints`
-- `x2`/`x3`/`x4+`-Overlay
-- stärkere x4+-Darstellung
-- zusätzlichen Streak-Sound bei qualifiziertem Teamabschluss
+Noch real abzunehmen:
+
+- AK-31 neue Ticketinhalte im Simulator
+- AK-32 Videozuordnung/Start
+- AK-33 Videowiedergabe/Schließen/Fehler
+- AK-34 4+4 Monster-Sounds hörbar/zufällig
+- AK-35 Streak-Sounds im echten Teamabschluss
+- AK-36 Streak-State/Reset
+- AK-37 Multiplikator-Scoring
+- AK-38 x2/x3/x4+-Darstellung
+- AK-39 vollständige Bundle-/Ressourcenauffindbarkeit
+
+Zusätzlich:
+
+- vollständiger Xcode-Build
+- vollständiger 576-Testlauf
+- v1.2-Regression
+- 1/6/16-Ticket-Sitzungen
+- mindestens fünf Replay-Zyklen
+- Layout-/Video-/Audio-/Drop-/Retry-Stabilität
 
 ## Nächster Schritt
 
-`032-Eingangsprompt.md` ausführen.
+`033-Eingangsprompt.md` ausführen.
 
-Modul 032 darf Score und Streak **nicht neu berechnen**. Es liest ausschließlich die von Modul 031 bereitgestellten Abschlussdaten und orchestriert daraus die Darstellung und den bereits vorhandenen Streak-Audio-Service.
+Modul 033 ist ausschließlich Integration, Abnahme und kleine notwendige Integrationsfixes.
+
+Keine neuen Features.

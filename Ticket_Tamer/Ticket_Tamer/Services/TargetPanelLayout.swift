@@ -113,8 +113,14 @@ struct TargetPanelLayout {
         let volumeWidth = volume.extents.x
         let volumeHeight = volume.extents.y
 
+        // Das Volume bleibt vollstaendig vermessen und nutzbar. Nur das Zielraster
+        // erhaelt in grossen Volumes eine ergonomische Obergrenze, damit weder Panels
+        // noch Drag-Strecken mit der Fenstergroesse ins Unpraktische wachsen.
+        let gridWidth = Swift.min(volumeWidth, LayoutConstants.targetGridMaximumWidth)
+        let gridMinX = volume.center.x - gridWidth / 2
+
         // Breite: verfügbare Breite abzüglich Rand und Zwischenräumen, gleichmäßig verteilt.
-        let usableWidth = volumeWidth - 2 * outerMargin - gap * Float(Swift.max(columns - 1, 0))
+        let usableWidth = gridWidth - 2 * outerMargin - gap * Float(Swift.max(columns - 1, 0))
         let panelWidth = Swift.max(usableWidth / Float(Swift.max(columns, 1)), 0.01)
 
         let monsterWidth = Swift.max(monsterBounds.extents.x, 0.0001)
@@ -192,13 +198,21 @@ struct TargetPanelLayout {
         // kleiner, nie größer, die Tiefenprüfung also nie strenger.
         let panelZ = Swift.max(wishedPanelZ, volume.min.z + panelDepth / 2)
 
-        // Reihen an Ober- und Unterkante verankern.
-        let topY = volume.max.y - outerMargin - panelHeight / 2
-        let bottomY = volume.min.y + outerMargin + panelHeight / 2
+        // Das Raster bleibt in grossen Volumes nahe beim Monster statt an die weit
+        // entfernten Volume-Kanten zu wandern. In kleinen Volumes gewinnen weiterhin
+        // die real gemessenen Grenzen.
+        let edgeTopY = volume.max.y - outerMargin - panelHeight / 2
+        let topY = Swift.min(
+            edgeTopY,
+            volume.center.y + LayoutConstants.targetGridTopOffsetFromCenter
+        )
+        let edgeBottomY = volume.min.y + outerMargin + panelHeight / 2
+        let compactBottomY = topY - Float(Swift.max(rows - 1, 0)) * (panelHeight + gap)
+        let bottomY = Swift.max(edgeBottomY, compactBottomY)
 
         var centers: [String: SIMD3<Float>] = [:]
         for slot in slots {
-            let x = volume.min.x
+            let x = gridMinX
                 + outerMargin
                 + panelWidth / 2
                 + Float(slot.column) * (panelWidth + gap)

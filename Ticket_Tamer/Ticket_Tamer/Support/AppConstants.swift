@@ -46,15 +46,6 @@ enum LayoutConstants {
     /// Aussenabstand der minimalen Root-View.
     static let rootPadding = 32.0
 
-    /// Maximale aktive Layoutflaeche innerhalb des volumetrischen Fensters.
-    ///
-    /// Das Volume selbst darf groesser sein und behaelt auch nach Replay oder Resize
-    /// seine aktuelle Systemgroesse. Die Spieloberflaeche wird darin jedoch kompakt
-    /// zentriert, damit Zielabstaende und Drag-Wege ergonomisch bleiben.
-    static let rootContentMaximumWidth: CGFloat = 480
-    static let rootContentMaximumHeight: CGFloat = 460
-    static let rootContentMaximumDepth: CGFloat = 0.30
-
     /// Abstand zwischen 3D-Inhalt und Textblock.
     static let rootSpacing = 24.0
 
@@ -69,7 +60,7 @@ enum LayoutConstants {
     /// Anders als eine reine Maximalbreite ist dieser Wert kein Angebot, das SwiftUI
     /// beim Phasenwechsel beliebig komprimieren darf. Die volumenfuellende Root-Huelle
     /// stellt den dafuer benoetigten Layoutraum phasenuebergreifend bereit.
-    static let startSliderDesignWidth = 280.0
+    static let startSliderDesignWidth = 320.0
 
     /// Abstand zwischen Minus, Slider und Plus.
     static let startTicketControlSpacing = 16.0
@@ -305,6 +296,15 @@ enum LayoutConstants {
     /// Zwischenräume gleichmäßig auf die Spalten verteilt.
     static let targetPanelGap: Float = 0.02
 
+    /// Maximale Gesamtbreite des Zielrasters in einem grossen Volume.
+    ///
+    /// Kleine Volumes bleiben voll adaptiv. In grossen Volumes verhindert die Kappe,
+    /// dass Panels und Ziehwege ueber die ergonomische zentrale Spielflaeche driften.
+    static let targetGridMaximumWidth: Float = 0.45
+
+    /// Hoechster Abstand der oberen Panelreihe von der Volume-Mitte.
+    static let targetGridTopOffsetFromCenter: Float = 0.16
+
     /// Panelhöhe als Vielfaches der **gemessenen** Monsterhöhe.
     ///
     /// Muss deutlich über `minimumDropOverlapRatio` liegen, sonst ist die Schwelle nur
@@ -365,24 +365,6 @@ enum LayoutConstants {
 
     /// Dauer der Übergangsanimation beim Hervorheben in Sekunden.
     static let targetHighlightDuration: Double = 0.12
-}
-
-/// Zustandslose Groessenpolitik fuer die aktive Spielflaeche im Volume.
-///
-/// Kleine gewaehrte Flaechen werden voll genutzt; grosse Volumes vergroessern die
-/// Interaktionswege nicht ueber die kompakte Designflaeche hinaus. Da ausschließlich
-/// die aktuelle Geometry eingeht, koennen Replays keinen Skalierungszustand aufbauen.
-enum RootContentLayout {
-    static func size(for available: CGSize) -> CGSize {
-        CGSize(
-            width: min(max(available.width, 0), LayoutConstants.rootContentMaximumWidth),
-            height: min(max(available.height, 0), LayoutConstants.rootContentMaximumHeight)
-        )
-    }
-
-    static func depth(for available: CGFloat) -> CGFloat {
-        min(max(available, 0), LayoutConstants.rootContentMaximumDepth)
-    }
 }
 
 /// Spielweite Grundwerte aus der SPEC, ohne Sitzungslogik vorwegzunehmen.

@@ -218,35 +218,8 @@ struct ReplayLayoutStabilityTests {
 
     @Test("Start-Slider besitzt eine feste positive Designbreite")
     func startSliderHasStableDesignWidth() {
-        #expect(LayoutConstants.startSliderDesignWidth == 280)
+        #expect(LayoutConstants.startSliderDesignWidth == 320)
         #expect(LayoutConstants.startSliderDesignWidth > 0)
-    }
-
-    @Test("Grosses Volume vergroessert die aktive Spielflaeche nicht ueber das kompakte Design")
-    func largeVolumeIsCappedToCompactPlayArea() {
-        let resolved = RootContentLayout.size(for: CGSize(width: 1_400, height: 1_100))
-
-        #expect(resolved.width == LayoutConstants.rootContentMaximumWidth)
-        #expect(resolved.height == LayoutConstants.rootContentMaximumHeight)
-        #expect(RootContentLayout.depth(for: 0.45) == LayoutConstants.rootContentMaximumDepth)
-    }
-
-    @Test("Kleines Volume wird weiterhin adaptiv voll genutzt")
-    func smallVolumeRemainsAdaptive() {
-        let available = CGSize(width: 520, height: 480)
-
-        #expect(RootContentLayout.size(for: available) == available)
-        #expect(RootContentLayout.depth(for: 0.25) == 0.25)
-    }
-
-    @Test("Fuenf Root-Berechnungen bleiben identisch und kompakt")
-    func repeatedRootLayoutDoesNotDrift() {
-        let available = CGSize(width: 1_400, height: 1_100)
-        let reference = RootContentLayout.size(for: available)
-
-        for _ in 1...5 {
-            #expect(RootContentLayout.size(for: available) == reference)
-        }
     }
 
     @Test("Gleiche Volume-Geometrie ergibt gleiche Prioritaetspanels")
@@ -3236,8 +3209,8 @@ struct TargetPanelAndOverlapTests {
         )
     }
 
-    @Test("Die drei Prioritaetspanels liegen nebeneinander und bleiben am Rand")
-    func priorityPanelsStayInARowAtTheEdge() {
+    @Test("Die drei Prioritaetspanels liegen kompakt nebeneinander")
+    func priorityPanelsStayInACompactRow() {
         let resolved = resolvedPriority()
 
         guard
@@ -3257,14 +3230,14 @@ struct TargetPanelAndOverlapTests {
         #expect(abs(normal.y - wichtig.y) < 0.0001)
         #expect(abs(wichtig.y - kritisch.y) < 0.0001)
 
-        // Aussenkanten buendig am Volume-Rand, nicht Richtung Mitte verschoben.
-        // Der Randabstand ist `dragSafetyPadding` — damit faellt die Panelkante mit der
-        // Aussenkante der Monsterhuelle am Anschlag der Zieh-Begrenzung zusammen.
+        // Das Raster bleibt symmetrisch und in grossen Volumes auf die ergonomische
+        // Maximalbreite begrenzt.
         let half = resolved.panelSize / 2
         let margin = InteractionConstants.dragSafetyPadding
-        #expect(abs((normal.x - half.x) - (volume.min.x + margin)) < 0.0001)
-        #expect(abs((kritisch.x + half.x) - (volume.max.x - margin)) < 0.0001)
-        #expect(abs((normal.y + half.y) - (volume.max.y - margin)) < 0.0001)
+        let gridHalfWidth = LayoutConstants.targetGridMaximumWidth / 2
+        #expect(abs((normal.x - half.x) - (-gridHalfWidth + margin)) < 0.0001)
+        #expect(abs((kritisch.x + half.x) - (gridHalfWidth - margin)) < 0.0001)
+        #expect(abs(normal.y - LayoutConstants.targetGridTopOffsetFromCenter) < 0.0001)
 
         // Mittleres Panel bleibt mittig.
         #expect(abs(wichtig.x) < 0.0001)
@@ -3297,11 +3270,9 @@ struct TargetPanelAndOverlapTests {
         #expect(abs(netzwerk.x - software.x) < 0.0001)
         #expect(abs(konto.x - hardware.x) < 0.0001)
 
-        // Reihen an Ober- und Unterkante verankert.
-        let half = resolved.panelSize / 2
-        let margin = InteractionConstants.dragSafetyPadding
-        #expect(abs((netzwerk.y + half.y) - (volume.max.y - margin)) < 0.0001)
-        #expect(abs((software.y - half.y) - (volume.min.y + margin)) < 0.0001)
+        // Beide Reihen bilden nahe der Mitte einen kompakten Block.
+        #expect(abs(netzwerk.y - LayoutConstants.targetGridTopOffsetFromCenter) < 0.0001)
+        #expect(abs((netzwerk.y - software.y) - (resolved.panelSize.y + LayoutConstants.targetPanelGap)) < 0.0001)
     }
 
     @Test("Panels bleiben flach: Tiefe deutlich kleiner als Breite und Hoehe")

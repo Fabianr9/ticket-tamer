@@ -209,7 +209,7 @@ enum LayoutConstants {
     ///
     /// Bewusst kleiner als `InteractionConstants.monsterCollisionRadius × 2`, damit die
     /// Greifsphaere das Modell sicher umschliesst.
-    static let monsterDragDropTargetSize: Float = 0.11
+    static let monsterDragDropTargetSize: Float = 0.14
 
     /// Sichtbarer Sicherheitsabstand zwischen Modellhuelle und Volume-Grenze (Meter).
     ///
@@ -296,7 +296,7 @@ enum LayoutConstants {
     ///
     /// Bestimmt zugleich die Panelbreite: die verfügbare Volume-Breite wird abzüglich der
     /// Zwischenräume gleichmäßig auf die Spalten verteilt.
-    static let targetPanelGap: Float = 0.02
+    static let targetPanelGap: Float = 0.01
 
     /// Maximale Gesamtbreite des Zielrasters in einem grossen Volume.
     ///
@@ -577,11 +577,12 @@ enum TeamAssignmentConstants {
 
     // MARK: - Monster-Startposition
 
-    /// Startposition des Monsters — Mittelpunkt zwischen allen vier Teamstationen.
+    /// Startposition des Monsters unterhalb des kompakten 2x2-Zielrasters.
     ///
-    /// Abstand zu jeder Station ≈ 0.29 m > `InteractionConstants.dropTargetRadius` (0.15 m),
-    /// damit das Monster nicht von Beginn an in einem Zielbereich liegt.
-    static let monsterStartPosition = SIMD3<Float>(0, 0, 0)
+    /// Dadurch ueberdeckt das Monster beim Phasenstart keine Box. Die Position bleibt
+    /// nahe genug am Raster fuer einen kurzen, ergonomischen Drag und liegt weiterhin
+    /// ausserhalb jeder Drop-Zone.
+    static let monsterStartPosition = SIMD3<Float>(0, -0.12, 0)
 
     // MARK: - Ablage-Schwelle
 

@@ -613,7 +613,7 @@ struct CompactTicketInfoTests {
     @Test("Die Monster-Zielgroessen sind reduziert")
     func monsterTargetSizesAreReduced() {
         #expect(LayoutConstants.monsterTargetSize == 0.20)
-        #expect(LayoutConstants.monsterDragDropTargetSize == 0.11)
+        #expect(LayoutConstants.monsterDragDropTargetSize == 0.14)
     }
 }
 
@@ -3274,6 +3274,19 @@ struct TargetPanelAndOverlapTests {
         // Beide Reihen bilden nahe der Mitte einen kompakten Block.
         #expect(abs(netzwerk.y - LayoutConstants.targetGridTopOffsetFromCenter) < 0.0001)
         #expect(abs((netzwerk.y - software.y) - (resolved.panelSize.y + LayoutConstants.targetPanelGap)) < 0.0001)
+    }
+
+    @Test("Das Team-Monster startet vollstaendig unterhalb der unteren Panelreihe")
+    func teamMonsterStartsBelowPanels() {
+        let resolved = resolvedTeam()
+        guard let software = resolved.bounds(for: TeamTargetMapping.ID.software) else {
+            Issue.record("Unteres Teampanel fehlt")
+            return
+        }
+
+        let monsterTop = TeamAssignmentConstants.monsterStartPosition.y
+            + LayoutConstants.monsterDragDropTargetSize / 2
+        #expect(monsterTop < software.min.y)
     }
 
     @Test("Panels bleiben flach: Tiefe deutlich kleiner als Breite und Hoehe")

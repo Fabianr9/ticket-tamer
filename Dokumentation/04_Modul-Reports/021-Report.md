@@ -54,6 +54,8 @@ Eine reale Laufzeitmessung ist ohne visionOS-Simulator nicht moeglich und wird n
 
 Nach Simulator-Gegenpruefung wurde die Cold-Start-Vorgabe ergonomisch von 1,2 x 1,15 x 0,45 m auf 0,8 x 0,75 x 0,38 m reduziert. Damit ruecken das an der Oberkante verankerte HUD, die zentrale Spielflaeche und der untere Interaktionshinweis gemeinsam zusammen, ohne einzelne Ornaments mit phasenspezifischen Offsets zu verschieben. Ein bereits vom Nutzer/System veraendertes Volume wird beim Replay weiterhin nicht auf diese Defaultwerte zurueckgesetzt.
 
+In der anschliessenden Feinabstimmung wurde der Panelabstand von 0,02 m auf 0,01 m reduziert und das Drag-/Drop-Monster von 0,11 m auf 0,14 m vergroessert. In der Teamphase startet es nun bei y = -0,12 m vollständig unterhalb der unteren Panelreihe statt zwischen den vier Boxen. Sichtbare Panelboxen und Drop-Bounds stammen weiterhin aus derselben Geometrie.
+
 Die unstrukturierten Geometry-Tasks in den Spielansichten wurden nicht als gemeinsame Ursache bewertet: Ihr lokaler State verschwindet beim Phasenwechsel, und sie koennen den bereits vorher sichtbaren Start-Slider nicht beeinflussen. In diesem Modul wurde deshalb keine neue Task-Kaskade und kein phasenspezifischer Cancellation-Hack eingefuehrt.
 
 ## 5. Änderungen je Datei
@@ -72,8 +74,8 @@ Keine phasenspezifischen Replay-Hacks wurden eingefuehrt. `SessionModel.reset()`
 | Stand | Deklarationen | Ergebnis | Plattform |
 |---|---:|---|---|
 | vorher | 298 | nicht ausgefuehrt | Linux ohne Xcode |
-| neu | 6 | statisch hinzugefuegt | — |
-| nachher | 304 | OPEN | Xcode/visionOS erforderlich |
+| neu | 7 | statisch hinzugefuegt | — |
+| nachher | 305 | OPEN | Xcode/visionOS erforderlich |
 
 Neu abgedeckt sind feste positive Slider-Designbreite, identische Priority-/Team-Panelmaße bei identischer Geometry, fünf Wiederholungen ohne kumulative Drift, adaptive Neuberechnung nach Resize sowie die Unabhängigkeit der Layoutberechnung vom fachlichen Reset einschließlich aller Resetwerte. Die bestehenden Rastertests wurden auf das kompakte, zentral angeordnete Zielraster aktualisiert. Bereits vorhandene Tests decken weitere Reset- und `TargetPanelLayout`-Eigenschaften ab.
 

@@ -319,10 +319,10 @@ struct DecisionFeedbackTests {
         #expect(DecisionFeedbackResult(evaluation: false) == .incorrect)
     }
 
-    @Test("Nur richtiges Feedback enthaelt den exakten Punktetext")
-    func onlyCorrectFeedbackContainsPointsText() {
+    @Test("Feedback enthaelt den exakten Punktetext")
+    func feedbackContainsExactPointsText() {
         #expect(DecisionFeedbackResult.correct.pointsText == "+100 Punkte")
-        #expect(DecisionFeedbackResult.incorrect.pointsText == nil)
+        #expect(DecisionFeedbackResult.incorrect.pointsText == "0 Punkte")
     }
 
     @Test("Richtiges Feedback verwendet einen Haken")
@@ -353,7 +353,7 @@ struct DecisionFeedbackTests {
     @Test("Feedbackresultat besteht nur aus den beiden Darstellungsfaellen")
     func feedbackContainsNoDomainOrScoreState() {
         #expect([DecisionFeedbackResult.correct, .incorrect].count == 2)
-        #expect(DecisionFeedbackResult.incorrect.pointsText == nil)
+        #expect(DecisionFeedbackResult.incorrect.pointsText == "0 Punkte")
     }
 
     @Test("Correct benoetigt keine Referenzprioritaet")
@@ -410,6 +410,54 @@ struct DecisionFeedbackTests {
         var feedback = DecisionFeedbackResult(evaluation: true)
         feedback = nil
         #expect(feedback == nil)
+    }
+}
+
+// MARK: - Modul 022 — Punktekommunikation v1.2
+
+@MainActor
+@Suite("Modul 022 — Punktekommunikation v1.2")
+struct PointsCommunicationTests {
+
+    @Test("Ergebnis formatiert 0 Punkte")
+    func resultFormatsZeroPoints() {
+        #expect(ResultPresentation.scoreText(for: 0) == "0 Punkte")
+    }
+
+    @Test("Ergebnis formatiert 100 Punkte")
+    func resultFormatsOneHundredPoints() {
+        #expect(ResultPresentation.scoreText(for: 100) == "100 Punkte")
+    }
+
+    @Test("Ergebnis formatiert 600 Punkte")
+    func resultFormatsSixHundredPoints() {
+        #expect(ResultPresentation.scoreText(for: 600) == "600 Punkte")
+    }
+
+    @Test("Ergebnis formatiert 1200 Punkte")
+    func resultFormatsTwelveHundredPoints() {
+        #expect(ResultPresentation.scoreText(for: 1200) == "1200 Punkte")
+    }
+
+    @Test("Ergebnis enthaelt keine Maximalpunktzahl")
+    func resultContainsNoMaximumScore() {
+        #expect(!ResultPresentation.scoreText(for: 600).contains("/"))
+        #expect(!ResultPresentation.scoreText(for: 600).contains("von"))
+    }
+
+    @Test("Ergebnis enthaelt keinen Prozentwert")
+    func resultContainsNoPercentage() {
+        #expect(!ResultPresentation.scoreText(for: 600).contains("%"))
+    }
+
+    @Test("Falsches Feedback kommuniziert weder Punktabzug noch Loesung")
+    func incorrectFeedbackContainsNoDeductionOrSolution() {
+        let text = DecisionFeedbackResult.incorrect.pointsText
+        #expect(text == "0 Punkte")
+        #expect(!text.contains("-"))
+        #expect(!text.lowercased().contains("richtig"))
+        #expect(!text.lowercased().contains("team"))
+        #expect(!text.lowercased().contains("priorit"))
     }
 }
 

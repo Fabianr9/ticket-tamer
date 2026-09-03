@@ -3,114 +3,105 @@
 **Projektversion:** v1.2 in Arbeit  
 **v1.0:** abgeschlossen  
 **v1.1:** abgeschlossen  
-**Stand:** Start v1.2 vor Modul `021` — Replay-Layoutstabilisierung  
-**Eingearbeitet am:** 2026-09-03
+**Stand:** nach Modul `022` — Punktekommunikation v1.2  
+**Eingearbeitet am:** 2026-09-03  
+**Branch laut Report:** `A`  
+**HEAD vor 021:** `3536b46 feat: Modul: 20`  
+**Modul-021-Commits:** `68268cb` bis `c11b464`  
+**Tests:** 306 vorher + 7 neu = **313 Testdeklarationen**  
+**Build/Test/Simulator:** offen
 
-## Versionsentscheidung
+## Hinweis zur Testzahl
 
-Version 1.1 gilt als abgeschlossen und bildet die stabile Ausgangsbasis für v1.2.
+Der Report nennt in der Testtabelle korrekt 306 Testdeklarationen. Die spätere Empfehlung eines „304-Test-Laufs“ widerspricht dieser Rechnung und wird als Zahlendreher behandelt. Maßgeblich sind **306**.
 
-F-01 bis F-24 und AK-01 bis AK-24 werden nicht neu implementiert. Sie bleiben Regression-Basis.
+## v1.2-Modulstatus
 
-Version 1.2 beginnt mit:
+| Modul | Titel | Status |
+|---|---|---|
+| 021 | Replay-Layoutstabilisierung | Architekturfix implementiert; AK-25 Laufzeit OPEN; Commit offen |
+| 022 | Punktekommunikation v1.2 | implementiert; AK-26/AK-27 Laufzeit OPEN |
+| 023 | Teamstation-Symbole | als Nächstes |
+| 024 | Debug-UI-Isolation | offen |
+| 025 | Monster-Farbvarianten | offen |
+| 026 | Integration und Abnahme v1.2 | offen |
 
-- F-25 / AK-25 — Replay-Layoutstabilität
-- F-26 / AK-26 — Ergebnis als „X Punkte“
-- F-27 / AK-27 — `0 Punkte` bei falscher Entscheidung
-- F-28 / AK-28 — Symbole an Teamstationen
-- F-29 / AK-29 — DEV-Schaltfläche aus normalem Flow entfernen
-- F-30 / AK-30 — 16 Monster-Farbvarianten
+## Modul 021 — Ursache
 
-## v1.2-Modul-Landkarte
+Vor dem Fix tauschte `RootVolumeView` phasenabhängig Root-Views mit stark unterschiedlichen intrinsischen Größen aus. `ResultView` war der kleinste Ast, StartView inhaltsgetrieben und die Entscheidungsphasen volumenfüllend. Dadurch konnte Replay ein kleineres Layout-Proposal an den nächsten Start weitergeben.
 
-| Modul | Titel | Anforderungen | Status |
-|---|---|---|---|
-| 021 | Replay-Layoutstabilisierung | F-25 / AK-25 | als Nächstes |
-| 022 | Punktekommunikation v1.2 | F-26, F-27 / AK-26, AK-27 | offen |
-| 023 | Teamstation-Symbole | F-28 / AK-28 | offen |
-| 024 | Debug-UI-Isolation | F-29 / AK-29 | offen |
-| 025 | Monster-Farbvarianten | F-30 / AK-30 | offen |
-| 026 | Integration und Abnahme v1.2 | AK-25 bis AK-30 | offen |
+Der Slider war zusätzlich nur über `maxWidth` begrenzt und dadurch besonders komprimierbar.
 
-## v1.2-Grundsätze
+## Zentraler Fix
 
-Unverändert bleiben:
+- dauerhafte `GeometryReader3D`-Root-Hülle außerhalb des Phasenrouters
+- Start-Slider mit fester Designbreite
+- `.defaultSize` bleibt Cold-Start-Vorgabe
+- kein Window-/Volume-State im `SessionModel`
+- kein Replay-Counter
+- keine kumulative Gegenskalierung
+- keine phasenspezifischen Replay-Hacks
 
-- Scoringregeln
-- 50-%-Drop-Regel
-- Z-Toleranz
-- Snapback
-- Exactly-once
-- lineare Phasenfolge
-- Ticketreferenzwerte
-- Audiofeedback
-- ca. 1,5-s-Transition
-- genau ein zentrales Volume
-- kein Immersive Space
-- kein zweites Volume
+## Feinabstimmung laut Report
 
-`SessionModel` bleibt die einzige fachliche Source of Truth.
+Cold-Start-Defaultgröße:
 
-## Replay-Stabilität
+`0.8 × 0.75 × 0.38 m`
 
-Nach Ergebnis → `Erneut spielen` dürfen Startansicht, Slider, Texte, Prioritätsziele und Teamziele nicht replaybedingt schrumpfen, wachsen oder kumulativ driften.
+Weitere gemeldete Layoutwerte:
 
-Die aktuell tatsächlich verwendete Volume-Größe bleibt erhalten.
+- Prioritätsraster max. `0.70 m`
+- Teamraster max. `0.45 m`
+- Panelabstand `0.02 m`
+- Untersuchung-Monster `0.24 m`
+- Drag-Monster `0.17 m`
+- Team-Monsterstart y = `-0.16 m`
+- Untersuchung-HUD eigener Scene-Anker y = `0.06`
 
-`SessionModel.reset()` setzt die fachliche Sitzung zurück, nicht die Volume-/Root-Geometrie.
+Die genaue finale `UnitPoint3D`-Konfiguration ist im Code maßgeblich.
 
-Die Replay-Korrektur gehört primär in:
+## Dateien
 
-- `Ticket_TamerApp`
-- `RootVolumeView`
-- gegebenenfalls eine gemeinsame Root-Layoutkomponente
+Explizit im Report genannt:
 
-Nicht in mehrere voneinander unabhängige phasenspezifische Replay-Hacks.
+- `Views/RootVolumeView.swift`
+- `Views/StartView.swift`
+- `Support/AppConstants.swift`
+- `Ticket_TamerTests/Ticket_TamerTests.swift`
 
-## Neue v1.2-Erweiterungen nach Modul 021
+Da die Feinabstimmung zusätzlich Zielraster-, Monster- und HUD-Werte betrifft, muss der nächste Preflight den realen Git-Diff prüfen und alle tatsächlich geänderten Dateien dokumentieren.
 
-### Modul 022
+## AK-25
 
-- Ergebnis `X Punkte`
-- falsch: rotes Kreuz + `0 Punkte`
-- richtig bleibt grüner Haken + `+100 Punkte`
+Code-/Architektur:
 
-### Modul 023
+- zentrale Rootbasis: erfüllt
+- `.defaultSize` nicht als Replay-Reset: erfüllt
+- fachlicher Reset unverändert: erfüllt
+- keine kumulative Skalierung: erfüllt
 
-Teamstationen erhalten zusätzlich zum Text semantische Symbole.
+Noch offen:
 
-### Modul 024
+- Build
+- vollständige 313 Tests
+- Cold-Start-Messung
+- Replay 1–5
+- Start-/Slidervergleich
+- Priority-/Teamvergleich
+- Nutzer-/System-Resize
+- v1.0/v1.1-Regression
 
-`🔧 Team [DEV]` verschwindet vollständig aus dem normalen App-Flow.
-
-### Modul 025
-
-Vier Monstertypen × vier Varianten = 16 lokale Assets.
-
-Pro Sitzungsticket:
-
-- genau eine konkrete Variante
-- in allen Phasen stabil
-- Retry lädt dieselbe Variante
-- neue Sitzung darf neu wählen
-- Reset verwirft Mapping
-
-## Offene Ausgangsdaten vor 021
-
-Ein finaler `020-Report.md` wurde in diesem Logbuch nicht eingearbeitet. v1.1 wurde vom Projektteam als abgeschlossen bestätigt.
-
-Modul 021 muss daher real aus dem Repository ermitteln:
-
-- finalen v1.1-Branch
-- finalen v1.1-Commit
-- aktuelle Testzahl
-- aktuellen Buildstatus
-- Simulator-/Gerätestatus
-
-Keine Werte aus älteren Reports erfinden.
+**AK-25 = OPEN bis Laufzeitabnahme.**
 
 ## Nächster Schritt
 
-`021-Eingangsprompt.md` ausführen.
+`023-Eingangsprompt.md`
 
-Modul 021 reproduziert den Replay-Skalierungsfehler zuerst messbar, behebt ihn zentral und nimmt mindestens fünf aufeinanderfolgende Replay-Zyklen ab.
+Modul 022 wurde ausschließlich in diesem Umfang umgesetzt:
+
+- F-26 / AK-26: Ergebnis als `X Punkte`
+- F-27 / AK-27: falsche Entscheidung als rotes Kreuz + `0 Punkte`
+
+Scoring, Audio, Exactly-once, Input-Lock und 1,5-s-Transition bleiben unverändert.
+
+Build, vollständiger Testlauf und Simulatorabnahme sind mangels Apple-Toolchain OPEN. Als Nächstes folgt Modul 023 — Teamstation-Symbole.

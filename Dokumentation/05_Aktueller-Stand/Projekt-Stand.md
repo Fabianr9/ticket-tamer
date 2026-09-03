@@ -1,128 +1,122 @@
 # Projekt-Stand — Ticket Tamer
 
 **Projektversion:** v1.2 in Arbeit  
-**v1.0:** abgeschlossen  
-**v1.1:** abgeschlossen  
-**Nächstes Modul:** 021 — Replay-Layoutstabilisierung
+**Stand:** nach Modul 022  
+**Branch laut Report:** `A`  
+**HEAD vor 021:** `3536b46`  
+**Modul-021-Commits:** `68268cb` bis `c11b464`  
+**Testdeklarationen:** **313**  
+**Build/Test/Simulator:** offen
 
-## Bestehender Kern
+## Replay-Fix
 
-Vorhanden aus v1.0/v1.1:
+`RootVolumeView` besitzt nun eine dauerhafte `GeometryReader3D`-Rootbasis außerhalb des Phasenrouters.
 
-- Startansicht mit Ticketsteuerung
-- Startseitenbeschreibung
-- lokaler Ticketkatalog
-- SessionModel
-- Untersuchung
-- Priorisierung
-- Teamzuordnung
-- Session-HUD
-- Interaktionshinweise
-- kompakte Ticketinfo
-- Drag-Sperre bei Ticketinfo
-- 50-%-Drop-Regel
-- Snapback
-- Exactly-once
-- Scoring
-- Audio
-- visuelles Feedback
-- Ladefehler-Recovery
-- Ergebnis
-- Reset
-- vier Monstertypen
+Ziel:
 
-## v1.2-Zielstand
+- gleiche volumenfüllende Layoutbasis in allen Phasen
+- kein Replay-Schrumpfen durch kleine `ResultView`
+- keine kumulative Skalierung
 
-### 021 — Replay-Layoutstabilisierung
-Replaybedingtes Schrumpfen/Wachsen/Driften beseitigen und aktuelle Volume-Größe erhalten.
+## StartView
 
-### 022 — Punktekommunikation v1.2
-- Ergebnis `X Punkte`
-- falsches Feedback `0 Punkte`
+Der Slider verwendet jetzt eine feste Designbreite:
 
-### 023 — Teamstation-Symbole
-Text + semantisches Symbol.
+`LayoutConstants.startSliderDesignWidth`
 
-### 024 — Debug-UI-Isolation
-DEV-Schaltfläche aus normalem Flow entfernen.
+statt nur einer komprimierbaren Maximalbreite.
 
-### 025 — Monster-Farbvarianten
-16 Varianten mit sitzungsstabiler Auswahl.
+## Defaultgröße
 
-### 026 — Integration v1.2
-AK-25 bis AK-30 gemeinsam abnehmen.
+Cold-Start-Vorgabe laut Modul 021:
 
-## Replay-Layoutregeln
+`0.8 × 0.75 × 0.38 m`
 
-Beim Replay:
+Replay darf eine bereits veränderte Volume-Größe nicht auf diese Werte zurücksetzen.
 
-- aktuelle Volume-Größe erhalten
-- keine Rückkehr auf Cold-Start-Defaultgröße
-- keine kumulative Größenänderung
-- StartView stabil
-- Slider stabil
-- Prioritätsziele stabil
-- Teamziele stabil
-- mindestens fünf Replay-Zyklen stabil
+## Feinabstimmung
 
-Fachlicher Reset bleibt:
+Gemeldeter Stand:
 
-- Ticketanzahl 6
-- Score 0
-- Index 0
-- keine Entscheidungen
-- keine alten Sitzungstickets
+- Priority-Raster max. `0.70 m`
+- Team-Raster max. `0.45 m`
+- Panelgap `0.02 m`
+- Investigation-Monster `0.24 m`
+- Drag-Monster `0.17 m`
+- Team-Monsterstart y = `-0.16 m`
 
-## Relevante Architektur für Modul 021
+## AK-25
 
-Primäre Kandidaten:
+Architekturfix implementiert.
 
-- `Ticket_TamerApp.swift`
-- `RootVolumeView.swift`
-- gemeinsame Root-/Volume-Layoutlogik
-- `StartView.swift`
-- `PrioritizationView.swift`
-- `TeamAssignmentView.swift`
-- `VolumeMetrics`
-- `TargetPanelLayout`
-- `ScaledToFitView`
+Laufzeitabnahme OPEN:
 
-Verbindlich:
+- Build
+- 313 Tests
+- Cold Start
+- Replay 1–5
+- Resize-Erhalt
+- v1.0/v1.1-Regression
 
-- keine unabhängigen Replay-Hacks in mehreren Phasen
-- tatsächliche gewährte Geometrie verwenden
-- `.defaultSize` nicht als Replay-Reset verwenden
-- Nutzer-/System-Resize erhalten
-- keine kumulativen Scale-Faktoren
-
-## Neue v1.2-Zustände erst ab Modul 025
-
-Monster-Variantenmapping ist noch nicht Teil von Modul 021.
-
-Später fachlich:
-
-```text
-selectedMonsterVariantByTicketID
-```
-
-aber noch nicht jetzt implementieren.
-
-## Modul-Landkarte
+## v1.2-Modul-Landkarte
 
 | Modul | Status |
 |---|---|
-| 021 | als Nächstes |
-| 022 | offen |
-| 023 | offen |
+| 021 | implementiert; AK-25 OPEN |
+| 022 | implementiert; AK-26/AK-27 OPEN bis Laufzeitabnahme |
+| 023 | als Nächstes |
 | 024 | offen |
 | 025 | offen |
 | 026 | offen |
 
-## Im 021-Preflight real zu ermitteln
+## Modul 022 — umgesetzt
 
-- finaler v1.1-Branch
-- finaler v1.1-Commit
-- tatsächliche aktuelle Testzahl
-- Buildstatus
-- aktuelle Volume-/Window-Konfiguration
-- reproduzierbares Replay-Verhalten
+### ResultView
+
+Umgesetzt:
+
+`<score> Punkte`
+
+Beispiele:
+
+- `0 Punkte`
+- `100 Punkte`
+- `600 Punkte`
+
+Weiterhin keine:
+
+- Maximalpunktzahl
+- Prozentzahl
+- Statistik
+- Rang
+- Badge
+
+`Erneut spielen` bleibt.
+
+### DecisionFeedbackView
+
+Umgesetzt:
+
+Correct:
+- grüner Haken
+- `+100 Punkte`
+
+Incorrect:
+- rotes Kreuz
+- `0 Punkte`
+
+Scoring bleibt intern +0.
+
+## Geschützte Logik
+
+Nicht ändern:
+
+- `evaluatePriority()`
+- `evaluateTeam()`
+- Scoreberechnung
+- Audio
+- `isInputLocked`
+- Exactly-once
+- 1,5-s-Transition
+- Phasenwechsel
+- Replay-Rootarchitektur aus 021

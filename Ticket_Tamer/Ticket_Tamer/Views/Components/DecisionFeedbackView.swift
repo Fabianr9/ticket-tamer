@@ -1,3 +1,4 @@
+import Foundation
 import SwiftUI
 
 /// Rein visuelles Ergebnis einer bereits erfolgten Entscheidungsauswertung.
@@ -39,9 +40,42 @@ enum DecisionFeedbackResult: Equatable {
     }
 }
 
+/// Reine Darstellung einer bereits ausgewerteten Entscheidung.
+struct DecisionFeedbackPresentation: Equatable {
+    let result: DecisionFeedbackResult
+    let awardedPoints: Int
+
+    init?(evaluation: Bool?, awardedPoints: Int) {
+        guard let result = DecisionFeedbackResult(evaluation: evaluation) else { return nil }
+        self.result = result
+        self.awardedPoints = result == .correct ? max(0, awardedPoints) : 0
+    }
+
+    var pointsText: String {
+        guard result == .correct else { return "0 Punkte" }
+        return String.localizedStringWithFormat(
+            String(localized: "decisionFeedback.correct.points"),
+            awardedPoints
+        )
+    }
+
+    var accessibilityText: String {
+        switch result {
+        case .correct:
+            String.localizedStringWithFormat(
+                String(localized: "decisionFeedback.correct.points.accessibility"),
+                awardedPoints
+            )
+        case .incorrect: "Entscheidung falsch, 0 Punkte"
+        }
+    }
+}
+
 /// Zentrales, nicht interaktives Feedback während des bestehenden 1,5-s-Fensters.
 struct DecisionFeedbackView: View {
-    let result: DecisionFeedbackResult
+    let presentation: DecisionFeedbackPresentation
+
+    private var result: DecisionFeedbackResult { presentation.result }
 
     var body: some View {
         VStack(spacing: 16) {
@@ -55,7 +89,7 @@ struct DecisionFeedbackView: View {
                 }
                 .accessibilityHidden(true)
 
-            Text(LocalizedStringKey(result.pointsText))
+            Text(verbatim: presentation.pointsText)
                 .font(.title.bold())
                 .foregroundStyle(.primary)
         }
@@ -63,7 +97,7 @@ struct DecisionFeedbackView: View {
         .background(.thickMaterial, in: RoundedRectangle(cornerRadius: 28))
         .shadow(radius: 20)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(LocalizedStringKey(result.accessibilityLabelKey)))
+        .accessibilityLabel(Text(verbatim: presentation.accessibilityText))
         .allowsHitTesting(false)
     }
 

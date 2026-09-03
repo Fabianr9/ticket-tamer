@@ -636,6 +636,16 @@ enum FeedbackConstants {
     /// Zentrale Konstante — keine Magic Numbers in Views oder Services.
     static let feedbackTransitionDelay: Double = 1.5
 
+    /// Abstand zwischen Monster- und Streak-Sound; wird vom Gesamtfenster abgezogen.
+    static let streakSoundDelay: Double = 0.2
+
+    /// Dauer einer Halbwelle des einmaligen x4+-Pulses.
+    static let streakPulseDuration: Double = 0.16
+
+    static var remainingDelayAfterStreakSound: Double {
+        max(0, feedbackTransitionDelay - streakSoundDelay)
+    }
+
     // MARK: - Punkte
 
     /// Punkte für eine richtige Teilentscheidung (F-11).

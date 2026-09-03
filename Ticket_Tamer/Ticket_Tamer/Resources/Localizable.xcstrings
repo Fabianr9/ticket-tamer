@@ -69,6 +69,30 @@
         }
       }
     },
+    "decisionFeedback.correct.points" : {
+      "comment" : "Dynamischer positiver Punktetext des Entscheidungsfeedbacks (Modul 032).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+%lld Punkte"
+          }
+        }
+      }
+    },
+    "decisionFeedback.correct.points.accessibility" : {
+      "comment" : "Barrierefreies Feedback mit dynamischer Punktzahl (Modul 032).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entscheidung richtig, %lld Punkte"
+          }
+        }
+      }
+    },
     "decisionFeedback.incorrect.accessibility" : {
       "comment" : "Barrierefreiheitslabel fuer das visuelle Feedback einer falschen Entscheidung (Modul 022).",
       "extractionState" : "manual",
@@ -412,7 +436,18 @@
           }
         }
       }
-    }
+    },
+    "streakFeedback.accessibility" : {
+      "comment" : "Barrierefreies Label des temporaeren Streak-Multiplikators (Modul 032).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Streak-Multiplikator %lld"
+          }
+        }
+      }
     },
     "Untersuche Support-Tickets und ordne die Monster einer Priorität und einem Team zu." : {
       "comment" : "Kurze Beschreibung des Spielziels direkt unter dem Titel (Modul 017, AK-24).",
@@ -425,6 +460,7 @@
           }
         }
       }
-    },
+    }
+  },
   "version" : "1.1"
 }

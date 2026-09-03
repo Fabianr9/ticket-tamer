@@ -5,55 +5,147 @@
 **Projektversion:** v1.3 in Arbeit  
 **Stand:** nach Modul 031  
 **Branch:** `v1.3`  
-**Modul-029-Commit:** `baf8a55`  
 **Modul-030-Commit:** `8041bf9`  
 **Modul-031-Commit:** offen  
 **Testdeklarationen:** **522**  
 **Build/Test/Simulator:** offen
 
-## v1.3-Funktionsstand
+## v1.3-Stand
 
 ### 027 — Tickets
-- TT-001 bis TT-016
+- TT-001...TT-016
 - Auswahl 1...16
-- `videoAssetName = TT-xxx.mp4`
+- Video-Referenzen
 
 ### 028 — Teamlogos
 - vier lokale JPEGs
-- zentrale `TeamLogoCatalog`
+- `TeamLogoCatalog`
 
 ### 029 — Audio
-- 4 Correct-Monster-Sounds
-- 4 Incorrect-Monster-Sounds
-- 2 Streak-Sounds
-- zentraler Audio-Katalog
-- x2/x3 → Sound 01
-- x4+ → Sound 02
+- 4 Correct
+- 4 Incorrect
+- Streak 01 / 02
+- `playStreak(for:)`
 
-### 030 — Ticketvideo-System
+### 030 — Videos
 - 16 lokale MP4s
-- zentraler `TicketVideoResourceProvider`
+- `TicketVideoResourceProvider`
 - `TicketVideoView`
-- `Video ansehen`
-- Auto-Play nach Tap
-- Pause/Fortsetzen
-- X
-- Auto-Close
-- Fehlerzustand
 
-## Video-Pfade
+### 031 — Streak & Scoring
 
-`Resources/Videos/TT-001.mp4` bis `TT-016.mp4`
+Neu in `SessionModel`:
 
-`TT-002A.mp4` bleibt unreferenzierte historische Zusatzdatei außerhalb des produktiven Mappings.
+```text
+streak
+currentPriorityWasCorrect
+lastTeamAwardedPoints
+lastCompletedTicketWasFullyCorrect
+lastCompletedTicketStreak
+```
+
+## Scoring
+
+Vollständig korrekt:
+
+```text
+ticketTotal = 200 × streak
+teamCredit = ticketTotal - 100
+```
+
+Beispiele:
+
+- x1 → Team +100
+- x2 → Team +300
+- x3 → Team +500
+- x4 → Team +700
+
+Teilweise richtig:
+
+nur Basispunkte, Streak 0.
+
+## Modul 032 — Source of Truth
+
+Die UI soll nach `evaluateTeam()` nur lesen:
+
+- `lastTeamAwardedPoints`
+- `lastCompletedTicketWasFullyCorrect`
+- `lastCompletedTicketStreak`
+
+Nicht:
+
+- Referenzpriorität erneut vergleichen
+- Referenzteam erneut vergleichen
+- Score-Deltas aus globalem Score ableiten
+- Streak lokal berechnen
+
+## Aktuelles visuelles Feedback
+
+Historisch:
+
+Priorität:
+- correct → Haken + `+100 Punkte`
+- incorrect → X + `0 Punkte`
+
+Team:
+- aktuell noch gleiche statische Darstellung
+- muss in Modul 032 dynamisch werden
+
+v1.3-Ziel:
+
+Priorität:
+- richtig immer `+100 Punkte`
+
+Team:
+- richtig zeigt exakt `lastTeamAwardedPoints`
+- falsch `0 Punkte`
+
+Beispiele:
+- x1 vollständig korrekt → `+100 Punkte`
+- x2 → `+300 Punkte`
+- x3 → `+500 Punkte`
+- x4 → `+700 Punkte`
+- Priority falsch / Team richtig → `+100 Punkte`
+
+## Streak-Overlay
+
+Nur Teamphase.
+
+Nur wenn:
+
+```text
+lastCompletedTicketWasFullyCorrect == true
+&& lastCompletedTicketStreak >= 2
+```
+
+Darstellung:
+
+- x2 / x3 normal
+- x4+ sichtbar größer
+- x4+ zusätzliche kurze Puls-/Scale-Animation
+- nicht dauerhaft im HUD
+
+## Streak-Audio
+
+Vorhandenes Mapping aus 029:
+
+- 0/1 → kein Sound
+- 2/3 → `streak_01.wav`
+- 4+ → `streak_02.wav`
+
+Nur qualifizierter vollständig korrekter Teamabschluss.
+
+Monster-Correct-Sound bleibt ebenfalls genau einmal.
+
+Streak-Sound leicht zeitversetzt/nacheinander, nicht versehentlich gleichzeitig.
 
 ## Tests
 
-- vor Modul 031: 474
-- Modul 031: +48
-- aktuell **522**
+Aktuell:
 
-Apple-Toolchain-Lauf offen.
+**522 Testdeklarationen**
+
+Apple-Toolchainlauf offen.
 
 ## v1.3-Modul-Landkarte
 
@@ -61,89 +153,8 @@ Apple-Toolchain-Lauf offen.
 |---|---|
 | 027 | committed |
 | 028 | committed |
-| 029 | committed; Laufzeit OPEN |
-| 030 | implementiert; Laufzeit OPEN |
-| 031 | implementiert; Toolchainlauf OPEN |
-| 032 | offen |
+| 029 | committed |
+| 030 | committed |
+| 031 | implementiert; Toolchain OPEN |
+| 032 | als Nächstes |
 | 033 | offen |
-
-## Modul 031 — zentraler Scoringzustand
-
-### SessionModel
-
-Implementiert:
-
-```text
-SessionState
-- selectedTicketCount
-- sessionTickets
-- currentTicketIndex
-- currentPhase
-- score
-- streak
-- selectedPriority
-- selectedTeam
-- currentPriorityWasCorrect
-- isInputLocked
-- selectedMonsterVariantByTicket
-```
-
-### Scoring
-
-Richtige Priorität:
-
-`+100` sofort.
-
-Falsche Priorität:
-
-`+0`; Ticket kann keine laufende Streak fortsetzen.
-
-Teamabschluss entscheidet über Streak.
-
-Vollständig korrekt:
-
-```text
-streak += 1
-ticketTotal = 200 × streak
-teamCredit = ticketTotal - bereits für dieses Ticket gutgeschriebene Punkte
-```
-
-Beispiele:
-
-- Streak 1 → Priority +100, Team +100 = 200
-- Streak 2 → Priority +100, Team +300 = 400
-- Streak 3 → Priority +100, Team +500 = 600
-
-Teilweise richtig:
-
-- Priority richtig / Team falsch → 100, streak 0
-- Priority falsch / Team richtig → 100, streak 0
-- beide falsch → 0, streak 0
-
-Kein künstlicher Cap.
-
-### Reset
-
-Neue Sitzung und `reset()`:
-
-`streak = 0`
-
-`currentPriorityWasCorrect = nil`
-
-### Übergabe an Modul 032
-
-UI darf Punkte nicht selbst berechnen.
-
-Modul 031 stellt eine eindeutige fachliche Quelle bereit, aus der Modul 032 nach Team-Evaluation lesen kann:
-
-- tatsächlich beim Teamabschluss gutgeschriebene Punkte
-- resultierende Streak
-- ob das Ticket vollständig korrekt war
-
-Reale Übergabeschnittstelle:
-
-- `lastTeamAwardedPoints`
-- `lastCompletedTicketWasFullyCorrect`
-- `lastCompletedTicketStreak`
-
-`evaluatePriority() -> Bool?` und `evaluateTeam() -> Bool?` bleiben kompatibel. Die Streak-Sound- und Feedback-Orchestrierung folgt in Modul 032.

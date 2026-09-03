@@ -106,7 +106,7 @@ struct PrioritizationView: View {
     /// Verhindert mehrfachen Task-Start bei View-Refresh nach gespeicherter Priorität.
     @State private var feedbackTaskStarted: Bool = false
     /// Rein lokaler Sichtzustand fuer das bestehende Feedbackfenster (Modul 018).
-    @State private var decisionFeedback: DecisionFeedbackResult? = nil
+    @State private var decisionFeedback: DecisionFeedbackPresentation? = nil
     /// Lokale Audio-Kapselung — kein globaler Service-Locator.
     @State private var audioService = AudioService()
 
@@ -262,7 +262,7 @@ struct PrioritizationView: View {
             }
 
             if let decisionFeedback {
-                DecisionFeedbackView(result: decisionFeedback)
+                DecisionFeedbackView(presentation: decisionFeedback)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .transition(.opacity.combined(with: .scale(scale: 0.92)))
                     .zIndex(3)
@@ -327,7 +327,10 @@ struct PrioritizationView: View {
                     return
                 }
                 // 2. Das Bool-Ergebnis ist die einzige Quelle fuer das Sichtfeedback.
-                decisionFeedback = DecisionFeedbackResult(evaluation: isCorrect)
+                decisionFeedback = DecisionFeedbackPresentation(
+                    evaluation: isCorrect,
+                    awardedPoints: isCorrect ? FeedbackConstants.correctDecisionScore : 0
+                )
                 // 3. Genau einen Sound parallel zum Sichtfeedback abspielen.
                 audioService.playMonsterFeedback(evaluation: isCorrect)
                 // 4. Eingabe bleibt gesperrt; bestehendes Feedbackfenster abwarten.

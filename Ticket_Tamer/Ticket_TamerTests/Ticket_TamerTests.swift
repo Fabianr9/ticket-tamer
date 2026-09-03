@@ -2878,6 +2878,7 @@ struct ScoringAndFeedbackTests {
         let ticket = model.currentTicket!
         let prio = priority ?? ticket.referencePriority
         model.savePriority(prio)
+        model.evaluatePriority()
         model.beginTeamAssignmentPhase()
         return model
     }
@@ -2979,7 +2980,7 @@ struct ScoringAndFeedbackTests {
         // Kein saveTeam
         let result = model.evaluateTeam()
         #expect(result == nil)
-        #expect(model.score == 0)
+        #expect(model.score == 100)
     }
 
     @Test("Teambewertung in falscher Phase ist No-Op")

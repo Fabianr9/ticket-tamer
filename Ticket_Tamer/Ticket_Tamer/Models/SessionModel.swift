@@ -48,6 +48,19 @@ final class SessionModel {
     /// Vorhanden, weil der vollständige Reset auf 0 einen klaren Startwert benötigt.
     private(set) var score: Int = 0
 
+    /// Anzahl der unmittelbar aufeinanderfolgenden vollstaendig korrekten Tickets.
+    private(set) var streak: Int = 0
+
+    /// Fachlich gespeichertes Ergebnis der Prioritaetsbewertung des aktuellen Tickets.
+    private(set) var currentPriorityWasCorrect: Bool? = nil
+
+    /// Bei der letzten Team-Auswertung tatsaechlich gutgeschriebene Punkte.
+    ///
+    /// Diese ticketlokalen Abschlussdaten sind die Uebergabeschnittstelle fuer Modul 032.
+    private(set) var lastTeamAwardedPoints: Int = 0
+    private(set) var lastCompletedTicketWasFullyCorrect: Bool = false
+    private(set) var lastCompletedTicketStreak: Int = 0
+
     /// Vom Spieler gewählte Priorität für das aktuelle Ticket.
     ///
     /// `nil`, solange keine Prioritätswahl getroffen wurde oder nach einem Reset.
@@ -129,6 +142,9 @@ final class SessionModel {
         currentTicketIndex = 0
         currentPhase = .untersuchen
         score = 0
+        streak = 0
+        currentPriorityWasCorrect = nil
+        resetTeamEvaluationMetadata()
         selectedPriority = nil
         selectedTeam = nil
         isInputLocked = false
@@ -374,11 +390,15 @@ final class SessionModel {
         }
 
         let isCorrect = (priority == ticket.referencePriority)
+        currentPriorityWasCorrect = isCorrect
         if isCorrect {
             score += FeedbackConstants.correctDecisionScore
             DebugManager.log(.state, "Prioritaet korrekt → +\(FeedbackConstants.correctDecisionScore), Score: \(score)")
         } else {
+            let previousStreak = streak
+            streak = 0
             DebugManager.log(.state, "Prioritaet falsch → +0, Score: \(score)")
+            DebugManager.log(.state, "Streak unterbrochen: \(previousStreak) → 0")
         }
         priorityEvaluated = true
         return isCorrect
@@ -390,11 +410,13 @@ final class SessionModel {
     /// - `currentPhase == .teamZuordnen`
     /// - `selectedTeam != nil`
     /// - `currentTicket != nil`
+    /// - die Prioritaet des Tickets wurde bereits bewertet
     /// - Team wurde für dieses Ticket noch nicht bewertet.
     ///
     /// Effekte bei Erfolg:
-    /// - Richtig: `score += 100`, `teamEvaluated = true`.
-    /// - Falsch: keine Scoreänderung, `teamEvaluated = true`.
+    /// - Beide Entscheidungen richtig: Streak erhoehen und Differenz bis `200 * streak` gutschreiben.
+    /// - Nur Team richtig: normale 100 Punkte, Streak 0.
+    /// - Team falsch: keine Teampunkte, Streak 0.
     ///
     /// - Returns: `true` wenn richtig, `false` wenn falsch, `nil` wenn No-Op.
     @discardableResult
@@ -411,20 +433,45 @@ final class SessionModel {
             DebugManager.log(.state, "evaluateTeam ignoriert: kein aktives Ticket")
             return nil
         }
+        guard let priorityWasCorrect = currentPriorityWasCorrect else {
+            DebugManager.log(.state, "evaluateTeam ignoriert: Prioritaet wurde noch nicht bewertet")
+            return nil
+        }
         guard !teamEvaluated else {
             DebugManager.log(.state, "evaluateTeam ignoriert: bereits bewertet (genau-einmal-Semantik)")
             return nil
         }
 
-        let isCorrect = (team == ticket.referenceTeam)
-        if isCorrect {
-            score += FeedbackConstants.correctDecisionScore
-            DebugManager.log(.state, "Team korrekt → +\(FeedbackConstants.correctDecisionScore), Score: \(score)")
+        let isCorrect = team == ticket.referenceTeam
+        let fullyCorrect = priorityWasCorrect && isCorrect
+        let awardedPoints: Int
+
+        if fullyCorrect {
+            let previousStreak = streak
+            streak += 1
+            awardedPoints = Self.teamCredit(forCompletedTicketAtStreak: streak)
+            DebugManager.log(.state, "Streak fortgesetzt: \(previousStreak) → \(streak)")
+        } else if isCorrect {
+            streak = 0
+            awardedPoints = FeedbackConstants.correctDecisionScore
         } else {
-            DebugManager.log(.state, "Team falsch → +0, Score: \(score)")
+            streak = 0
+            awardedPoints = 0
         }
+
+        score += awardedPoints
+        lastTeamAwardedPoints = awardedPoints
+        lastCompletedTicketWasFullyCorrect = fullyCorrect
+        lastCompletedTicketStreak = streak
+        DebugManager.log(.state, "Team \(isCorrect ? "korrekt" : "falsch") → +\(awardedPoints), Streak: \(streak), Score: \(score)")
         teamEvaluated = true
         return isCorrect
+    }
+
+    /// Differenzgutschrift nach den bereits bei der Prioritaet vergebenen 100 Punkten.
+    /// Die Funktion besitzt bewusst keinen Streak-Cap.
+    static func teamCredit(forCompletedTicketAtStreak streak: Int) -> Int {
+        (2 * FeedbackConstants.correctDecisionScore * streak) - FeedbackConstants.correctDecisionScore
     }
 
     // MARK: - Ticket-Abschluss (Modul 010 — F-13)
@@ -459,6 +506,8 @@ final class SessionModel {
             currentTicketIndex += 1
             selectedPriority = nil
             selectedTeam = nil
+            currentPriorityWasCorrect = nil
+            resetTeamEvaluationMetadata()
             priorityEvaluated = false
             teamEvaluated = false
             isInputLocked = false
@@ -490,11 +539,20 @@ final class SessionModel {
         currentTicketIndex = 0
         currentPhase = .start
         score = 0
+        streak = 0
+        currentPriorityWasCorrect = nil
+        resetTeamEvaluationMetadata()
         selectedPriority = nil
         selectedTeam = nil
         isInputLocked = false
         priorityEvaluated = false
         teamEvaluated = false
         DebugManager.log(.state, "Sitzungsmodell zurueckgesetzt auf Startwerte")
+    }
+
+    private func resetTeamEvaluationMetadata() {
+        lastTeamAwardedPoints = 0
+        lastCompletedTicketWasFullyCorrect = false
+        lastCompletedTicketStreak = 0
     }
 }

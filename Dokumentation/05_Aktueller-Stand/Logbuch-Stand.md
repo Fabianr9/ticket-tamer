@@ -1,314 +1,265 @@
 # Projektlogbuch — Ticket Tamer
 
-> Einziger aktueller Logbuch-Stand nach Einarbeitung von Modul 030 für Version 1.3.
+> Einziger aktueller Logbuch-Stand nach Einarbeitung von Modul 031 für Version 1.3.
 
 **Projektversion:** v1.3 in Arbeit  
 **v1.0:** abgeschlossen  
 **v1.1:** abgeschlossen  
 **v1.2:** abgeschlossen  
-**Stand:** nach Modul `030` — Ticketvideo-System
-**Eingearbeitet am:** 2026-09-04
-**Branch:** `v1.3`
-**HEAD vor Modul 030:** `baf8a55495e9605bbc011dbf01de061638f6a11c`
-**Modul-028-Commit:** `120ab6d` (`feat: Modul 28`)  
-**Modul-029-Commit:** `baf8a55` (`feat: Modul 29`)
-**Modul-030-Commit:** offen
-**Reale Testdeklarationen vor 030:** 436
-**Neue Tests:** 38
-**Reale Testdeklarationen nach 030:** **474**
-**Build/Test/Simulator/Hörprüfung:** offen
-
-## Wichtige Teststand-Korrektur
-
-Der Eingangsprompt für Modul 029 ging von 369 Tests aus.
-
-Der reale committed Modul-028-Stand `120ab6d` enthielt jedoch bereits:
-
-**401 `@Test`-Deklarationen**
-
-Damit gilt für den aktuellen Stand:
-
-- vor Modul 029: 401
-- neu: 35
-- nach Modul 029: **436**
-
-Die frühere 369-Angabe wird nicht weitergeführt.
+**Stand:** nach Modul `031` — Streak-State und Scoring  
+**Eingearbeitet am:** 2026-09-04  
+**Branch laut 030-Report:** `v1.3`  
+**HEAD vor Modul 030:** `baf8a55495e9605bbc011dbf01de061638f6a11c`  
+**Modul-029-Commit:** `baf8a55` (`feat: Modul 29`)  
+**Modul-030-Commit:** `8041bf9` (`feat: Modul 30`)  
+**Modul-031-Commit:** offen  
+**Testdeklarationen vor 031:** 474  
+**Neue Tests:** 48  
+**Testdeklarationen nach 031:** **522**  
+**Build/Test/Simulator/Playback:** offen
 
 ## v1.3-Modulstatus
 
-| Modul | Titel | Anforderungen | Status |
-|---|---|---|---|
-| 027 | Neue Ticketdaten und 16er-Sitzung | F-01, F-02, F-03, F-04, F-22, F-31 | committed |
-| 028 | Teamlogos v1.3 | F-28, F-39 | committed `120ab6d`; Laufzeitanteile OPEN |
-| 029 | Monster- und Streak-Audio | F-12, F-34, F-35, F-39 | committed `baf8a55`; Hör-/Bundlelauf OPEN |
-| 030 | Ticketvideo-System | F-03, F-32, F-33, F-39 | implementiert; Ressourcen/Code statisch PASS; Playback-/Simulatorlauf OPEN; Commit offen |
-| 031 | Streak-State und Scoring | F-11, F-16, F-36, F-37 | offen |
-| 032 | Streak-Feedback v1.3 | F-18, F-21, F-35, F-38 | offen |
-| 033 | Integration und Abnahme v1.3 | F-01 bis F-39 | offen |
+| Modul | Titel | Status |
+|---|---|---|
+| 027 | Neue Ticketdaten und 16er-Sitzung | committed |
+| 028 | Teamlogos v1.3 | committed; Laufzeitanteile OPEN |
+| 029 | Monster- und Streak-Audio | committed `baf8a55`; Hör-/Bundlelauf OPEN |
+| 030 | Ticketvideo-System | committed `8041bf9`; Playback-/Bundlelauf OPEN |
+| 031 | Streak-State und Scoring | implementiert; Code-/Testebene PASS; Toolchainlauf/Commit OPEN |
+| 032 | Streak-Feedback v1.3 | offen |
+| 033 | Integration und Abnahme v1.3 | offen |
 
-## Modul 029 — Audioinventar
+## Modul 030 — Videoressourcen
 
-### Correct
+Produktiver Zielordner:
 
-- `monster_correct_01.wav`
-- `monster_correct_02.wav`
-- `monster_correct_03.wav`
-- `monster_correct_04.wav`
+`Resources/Videos/`
 
-Produktiver Pfad:
+Genau folgende 16 produktiv referenzierten Dateien:
 
-`Resources/Audio/MonsterSounds/Correct/`
+- `TT-001.mp4`
+- `TT-002.mp4`
+- `TT-003.mp4`
+- `TT-004.mp4`
+- `TT-005.mp4`
+- `TT-006.mp4`
+- `TT-007.mp4`
+- `TT-008.mp4`
+- `TT-009.mp4`
+- `TT-010.mp4`
+- `TT-011.mp4`
+- `TT-012.mp4`
+- `TT-013.mp4`
+- `TT-014.mp4`
+- `TT-015.mp4`
+- `TT-016.mp4`
 
-### Incorrect
+Alle Quellen/Ziele wurden statisch als ISO-MP4 erkannt; Quell- und Zielkopien besitzen laut Report jeweils identische SHA-256-Hashes.
 
-- `monster_incorrect_01.wav`
-- `monster_incorrect_02.wav`
-- `monster_incorrect_03.wav`
-- `monster_incorrect_04.wav`
+Die historische Zusatzdatei:
 
-Produktiver Pfad:
+`Tickets/TT-002A.mp4`
 
-`Resources/Audio/MonsterSounds/Incorrect/`
+ist **keine** produktive Ticketreferenz und wurde nicht übernommen.
 
-### Streak
+## Videoarchitektur
 
-- `streak_01.wav` → x2/x3
-- `streak_02.wav` → x4+
+### `Ticket.videoAssetName`
 
-Produktiver Pfad:
+Bleibt die einzige fachliche Videoreferenz.
 
-`Resources/Audio/StreakSounds/`
+Keine zweite Video-ID.
 
-Alle zehn Dateien wurden statisch als RIFF/WAVE, PCM 16 Bit, Stereo, 48 kHz validiert.
+### `TicketVideoResourceProvider`
 
-Quell- und Zielkopien besitzen laut Report identische SHA-256-Hashes.
+Neu unter:
 
-## Audioarchitektur
+`Services/TicketVideoResourceProvider.swift`
+
+Verantwortung:
+
+- validiert reinen MP4-Dateinamen
+- lokaler Bundle-Lookup zuerst unter `Videos`
+- defensiver Fallback auf flach kopiertes Bundle
+- lehnt Netzwerk-URLs, absolute Pfade, Traversal und fremde Endungen ab
+
+### `TicketVideoPresentationState`
+
+Kapselt ausschließlich lokalen Präsentationszustand.
+
+Kein Videozustand im `SessionModel`.
+
+### `TicketVideoView`
+
+Neu unter:
+
+`Views/Components/TicketVideoView.swift`
+
+Verhalten:
+
+- pro Öffnung genau ein `AVPlayer`
+- startet erst nach explizitem Nutzer-Tap
+- Auto-Play beim Erscheinen der Videoansicht
+- Pause/Fortsetzen über `VideoPlayer`
+- sichtbares X
+- Auto-Close bei regulärem Ende
+- Fehlerbeobachtung
+- Observer werden beim Schließen/Disappear entfernt
+- Fehlertext: `Video konnte nicht geladen werden.`
+
+## Nutzerflow
+
+```text
+Investigation
+→ Tap „Video ansehen“
+→ lokale Bundle-URL
+→ Overlay + Auto-Play
+→ Pause/Fortsetzen
+→ X oder reguläres Ende
+→ gleiche Investigation / gleiches Ticket
+```
+
+Ohne Tap:
+
+- kein Player
+- kein Videooverlay
+- kein Autostart
+
+## Fachzustandsschutz
+
+Video verändert nicht:
+
+- `currentTicket`
+- `currentTicketIndex`
+- `currentPhase`
+- `score`
+- `selectedPriority`
+- `selectedTeam`
+- `isInputLocked`
+- Monster-Variantenmapping
+
+Streak war in Modul 030 noch nicht eingeführt.
+
+## Fehlerfall
+
+Fehlende/ungültige/nicht lesbare Videoressource:
+
+- kein Force-Unwrap
+- kein Crash
+- lokalisierter Fehlertext
+- X bleibt nutzbar
+- Ticket bleibt normal spielbar
+- keine Netzwerksuche
+- keine fachliche Mutation
+
+## Dateien Modul 030
 
 Neu:
 
-`Support/AudioResourceCatalog.swift`
-
-### `LocalAudioResource`
-
-Kapselt:
-
-- Ressourcenname
-- WAV-Endung
-- Unterordner
-- fehlertoleranten Bundle-Lookup
-
-### `MonsterFeedbackSoundCatalog`
-
-Besitzt getrennte Gruppen:
-
-- Correct: exakt 4
-- Incorrect: exakt 4
-
-Auswahl:
-
-```text
-select(for evaluation: Bool?, using selector:)
-```
-
-Produktiv:
-
-`randomElement()`
-
-Tests:
-
-injizierbar/deterministisch.
-
-Keine Anti-Repeat-Logik.
-
-Direkte Wiederholung derselben Soundvariante ist ausdrücklich zulässig.
-
-### `AudioService`
-
-Neue Verantwortung:
-
-- `playMonsterFeedback(evaluation:selector:)`
-- separater Monster-Player
-- separater Streak-Player
-- `playStreak(for:)`
-
-Fehlende/defekte Audioressourcen:
-
-- werden über `.audio` geloggt
-- verändern keinen fachlichen Flow
-
-## Entscheidungsflow
-
-```text
-gültige Entscheidung
-→ Exactly-once-Bewertung
-→ Correct/Incorrect-Gruppe
-→ genau 1 von 4 auswählen
-→ genau 1 Monster-Sound
-→ bestehendes visuelles Feedback
-→ bestehender Transitionflow
-```
-
-Ungültiger Drop oder `nil`-Bewertung:
-
-kein Bewertungssound.
-
-## Streak-Mapping
-
-| Streak | Sound |
-|---:|---|
-| <= 1 | keiner |
-| 2 | 01 |
-| 3 | 01 |
-| >= 4 | 02 |
-
-Wichtig:
-
-Der produktive Teamabschluss-Trigger ist **noch nicht** aktiv.
-
-Modul 029 führt nicht ein:
-
-- `SessionModel.streak`
-- Multiplikator-Scoring
-- Streak-Overlay
-- fachliche Streak-Mutation
-
-Diese folgen erst in Modul 031/032.
-
-## Historische Sounds
-
-Weiter vorhanden, aber produktiv unreferenziert:
-
-- `Resources/correct.wav`
-- `Resources/incorrect.wav`
-
-Kein produktiver Code spielt diese Dateien noch ab.
-
-Sie können später als reine Ressourcenbereinigung entfernt werden.
-
-## Dateien Modul 029
-
-Neu:
-
-- `Support/AudioResourceCatalog.swift`
-- `Resources/Audio/MonsterSounds/Correct/*.wav`
-- `Resources/Audio/MonsterSounds/Incorrect/*.wav`
-- `Resources/Audio/StreakSounds/*.wav`
-- `AudioResourceCatalogTests.swift`
+- `Services/TicketVideoResourceProvider.swift`
+- `Views/Components/TicketVideoView.swift`
+- `Resources/Videos/TT-001.mp4` bis `TT-016.mp4`
+- `TicketVideoSystemTests.swift`
 
 Geändert:
 
-- `Services/AudioService.swift`
-- `Views/PrioritizationView.swift`
-- `Views/TeamAssignmentView.swift`
-- `Support/AppConstants.swift`
-- `Ticket_TamerTests.swift`
+- `Views/Components/TicketCardView.swift`
+- `Views/InvestigationView.swift`
+- `Resources/Localizable.xcstrings`
 
 Nicht verändert:
 
 - `SessionModel`
-- Ticketdaten
+- Audioarchitektur
 - Teamlogos
-- Dropgeometrie
-- Monster-Farbvarianten
-- Replay-Root
+- Monsterlogik
+- Drag/Drop
+- Scoring
 
 ## Test-/Prüfstand
 
 | Prüfung | Status |
 |---|---|
-| Tests vor 029 | 401 |
-| neue Tests | 35 |
-| Tests nach 029 | **436** |
-| neue Tests Modul 030 | 38 |
+| Tests vor 030 | 436 |
+| neue Tests | 38 |
 | Tests nach 030 | **474** |
-| WAV-Struktur 4+4+2 | PASS |
-| WAV-Dateiformat | PASS |
-| Quell-/Zielhash | PASS |
-| produktive Alt-Soundreferenzen | keine |
-| Soundpfade in Views/SessionModel | keine |
-| Modul-029 `git diff --check` | PASS |
-| vollständiger Testlauf | OPEN |
+| String Catalog JSON | PASS |
+| MP4-Anzahl/Dateityp/Hash | PASS |
+| genau TT-001...TT-016 produktiv | PASS |
+| keine Netzwerk-/absoluten Video-Pfade | PASS statisch |
+| kein Force-Unwrap im Video-Code | PASS statisch |
+| Modul-030 `git diff --check` | PASS |
+| automatischer Testlauf | OPEN |
 | Build | OPEN |
-| Simulator/Hörprüfung | OPEN |
+| Simulator/Playback | OPEN |
+| TT-007 Runtime | OPEN |
 
 ## Akzeptanzstatus
 
-### AK-12
+### AK-03
 
-Code-/statische Testebene:
+Video-Referenzen und Ressourcen statisch PASS.
 
-PASS.
+### AK-32
 
-Reale Wiedergabe:
+Code-/Testebene PASS:
 
-OPEN.
+- explizite Aktion
+- 1:1-Ticketmapping
+- kein View-Autostart
 
-### AK-34
+Simulator OPEN.
 
-Katalog, Zufallsauswahl, deterministische Auswahl und direkte Wiederholung:
+### AK-33
 
-PASS.
+Codeebene PASS:
 
-Hörprüfung:
+- Auto-Play nach Tap
+- Pause/Fortsetzen
+- X
+- Auto-Close
+- Fehlerzustand
 
-OPEN.
+Reale Wiedergabe OPEN.
 
-### AK-35
+### AK-39 Video-Anteil
 
-Ressourcen/Mapping/API:
+Ressourcen-/Providerstruktur PASS.
 
-PASS.
+Bundle-Lauf OPEN.
 
-Produktiver Teamabschluss-Streaktrigger:
-
-OPEN bis Modul 031/032.
-
-### AK-39 Audio-Anteil
-
-Code-/Ressourcenebene:
-
-PASS.
-
-Bundle-/Simulatorlauf:
-
-OPEN.
-
-## Modul 030 — Ticketvideo-System
-
-- `TT-001.mp4` bis `TT-016.mp4` liegen gemeinsam unter `Resources/Videos/`.
-- `TicketVideoResourceProvider` löst ausschließlich lokale MP4-Dateinamen aus dem Bundle auf.
-- `TicketVideoPresentationState` hält den lokalen, nicht fachlichen Präsentationszustand.
-- `TicketVideoView` bietet Auto-Play nach Tap, Standardcontrols, sichtbares X, Auto-Close und Fehleranzeige.
-- Hintergrundinteraktionen sind während des Overlays gesperrt.
-- Ticket-, Phasenwechsel und Verschwinden der Investigation räumen die Videopräsentation auf.
-- `SessionModel`, Score, Entscheidungen, Input-Lock und Monster-Mapping bleiben unverändert.
-
-Statisch geprüft: 16 ISO-MP4-Dateien, Größen > 0, identische Quell-/Zielhashes und valider String Catalog. Xcode-Build, Testlauf und Simulator-Playback bleiben OPEN.
-
-## Geschützter Bestand für Modul 031
+## Geschützter Bestand nach Modul 031
 
 Nicht verändern:
 
-- Audio-Katalog
-- 4+4 Monster-Sounds
-- Streak-Soundmapping
-- AudioService-Schnittstellen
+- Video-Provider
+- Video-UI
+- 16 MP4-Dateien
+- Audio-Katalog und AudioService
 - TeamLogoCatalog
-- Teamlogos
-- Tickettexte
-- Ticketanzahl 1...16
+- Ticketdaten
+- 1...16-Auswahl
 - Monster-Farbvarianten
-- Dropgeometrie
-- Replay
-- Punktefeedback
+- Drop/Drag
+- Replay-Root
 - Debug-Isolation
-- Ticketvideo-Provider und Videoressourcen
-- lokaler Video-Presentation-State
-- Video darf kein fachlicher `SessionModel`-State werden
+
+## Modul 031 — Ergebnis
+
+Implementiert:
+
+- zentralen `streak`-Zustand im `SessionModel`
+- `currentPriorityWasCorrect`
+- Reset-/Startregeln für Streak
+- zentrale Multiplikator-/Differenzberechnung
+- vollständig korrektes Ticket: `200 × streak`
+- Teilpunkte ohne Multiplikator
+- Exactly-once-sichere Scoremutation
+- testbare Übergabedaten für Modul 032
+
+Noch **keine** Streak-Visualisierung und noch **kein produktiver Streak-Soundtrigger**.
 
 ## Nächster Schritt
 
-Modul 031 — Streak-State und Scoring vorbereiten beziehungsweise den zugehörigen Eingangsprompt erzeugen.
-
-Modul 031 bearbeitet ausschließlich den vorgesehenen Streak- und Multiplikator-Fachzustand. Es darf das abgeschlossene Video-System nicht mit Audiofeedback oder Scoring koppeln.
+Modul 032 — Streak-Feedback v1.3: zentrale Abschlussdaten anzeigen und den bereits vorhandenen Streak-Sound zeitversetzt orchestrieren.

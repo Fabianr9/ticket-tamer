@@ -1,107 +1,217 @@
 # Projektlogbuch — Ticket Tamer
 
+> Einziger aktueller Logbuch-Stand nach Einarbeitung von Modul 022 für Version 1.2.
+
 **Projektversion:** v1.2 in Arbeit  
 **v1.0:** abgeschlossen  
 **v1.1:** abgeschlossen  
 **Stand:** nach Modul `022` — Punktekommunikation v1.2  
 **Eingearbeitet am:** 2026-09-03  
-**Branch laut Report:** `A`  
-**HEAD vor 021:** `3536b46 feat: Modul: 20`  
+**Branch laut 022-Report:** `A`  
+**HEAD vor Modul 022:** `c11b464 fix: Modul 21`  
 **Modul-021-Commits:** `68268cb` bis `c11b464`  
-**Tests:** 306 vorher + 7 neu = **313 Testdeklarationen**  
-**Build/Test/Simulator:** offen
-
-## Hinweis zur Testzahl
-
-Der Report nennt in der Testtabelle korrekt 306 Testdeklarationen. Die spätere Empfehlung eines „304-Test-Laufs“ widerspricht dieser Rechnung und wird als Zahlendreher behandelt. Maßgeblich sind **306**.
+**Modul-022-Commit:** offen  
+**Testdeklarationen vor 022:** 306  
+**Neue Tests:** 7  
+**Testdeklarationen nach 022:** **313**  
+**Build/Test/Simulator nach 022:** offen
 
 ## v1.2-Modulstatus
 
-| Modul | Titel | Status |
-|---|---|---|
-| 021 | Replay-Layoutstabilisierung | Architekturfix implementiert; AK-25 Laufzeit OPEN; Commit offen |
-| 022 | Punktekommunikation v1.2 | implementiert; AK-26/AK-27 Laufzeit OPEN |
-| 023 | Teamstation-Symbole | als Nächstes |
-| 024 | Debug-UI-Isolation | offen |
-| 025 | Monster-Farbvarianten | offen |
-| 026 | Integration und Abnahme v1.2 | offen |
+| Modul | Titel | Anforderungen | Status |
+|---|---|---|---|
+| 021 | Replay-Layoutstabilisierung | F-25 / AK-25 | implementiert; Laufzeitabnahme OPEN |
+| 022 | Punktekommunikation v1.2 | F-26, F-27 / AK-26, AK-27 | implementiert; statisch geprüft; Laufzeitabnahme OPEN; Commit offen |
+| 023 | Teamstation-Symbole | F-28 / AK-28 | als Nächstes |
+| 024 | Debug-UI-Isolation | F-29 / AK-29 | offen |
+| 025 | Monster-Farbvarianten | F-30 / AK-30 | offen |
+| 026 | Integration und Abnahme v1.2 | AK-25 bis AK-30 | offen |
 
-## Modul 021 — Ursache
+## Eingearbeiteter Stand Modul 022
 
-Vor dem Fix tauschte `RootVolumeView` phasenabhängig Root-Views mit stark unterschiedlichen intrinsischen Größen aus. `ResultView` war der kleinste Ast, StartView inhaltsgetrieben und die Entscheidungsphasen volumenfüllend. Dadurch konnte Replay ein kleineres Layout-Proposal an den nächsten Start weitergeben.
+### Ergebnisansicht
 
-Der Slider war zusätzlich nur über `maxWidth` begrenzt und dadurch besonders komprimierbar.
+`ResultView` zeigt den unveränderten `SessionModel.score` nun als lokalisierten vollständigen String:
 
-## Zentraler Fix
+`<score> Punkte`
 
-- dauerhafte `GeometryReader3D`-Root-Hülle außerhalb des Phasenrouters
-- Start-Slider mit fester Designbreite
-- `.defaultSize` bleibt Cold-Start-Vorgabe
-- kein Window-/Volume-State im `SessionModel`
-- kein Replay-Counter
-- keine kumulative Gegenskalierung
-- keine phasenspezifischen Replay-Hacks
+Beispiele:
 
-## Feinabstimmung laut Report
+- `0 Punkte`
+- `100 Punkte`
+- `600 Punkte`
+- `1200 Punkte`
 
-Cold-Start-Defaultgröße:
+Keine neuen Ergebnisstatistiken.
 
-`0.8 × 0.75 × 0.38 m`
+Weiterhin vorhanden:
 
-Weitere gemeldete Layoutwerte:
+- `Erneut spielen`
 
-- Prioritätsraster max. `0.70 m`
-- Teamraster max. `0.45 m`
-- Panelabstand `0.02 m`
-- Untersuchung-Monster `0.24 m`
-- Drag-Monster `0.17 m`
-- Team-Monsterstart y = `-0.16 m`
-- Untersuchung-HUD eigener Scene-Anker y = `0.06`
+Weiterhin nicht vorhanden:
 
-Die genaue finale `UnitPoint3D`-Konfiguration ist im Code maßgeblich.
+- Maximalpunktzahl
+- Prozentzahl
+- Rang
+- Statistik
+- Badge
+- weitere Ergebniskennzahlen
 
-## Dateien
+### Zentrale Ergebnisformatierung
 
-Explizit im Report genannt:
+Laut Report:
 
-- `Views/RootVolumeView.swift`
-- `Views/StartView.swift`
-- `Support/AppConstants.swift`
+`ResultPresentation.scoreText(for:)`
+
+verwendet ausschließlich `model.score` und den String-Catalog-Formatstring:
+
+`%lld Punkte`
+
+Keine neue fachliche Ergebnislogik.
+
+### Visuelles Entscheidungsfeedback
+
+`DecisionFeedbackResult` bleibt unverändert:
+
+- `.correct`
+- `.incorrect`
+
+Darstellung:
+
+#### Correct
+
+- grüner Haken
+- `+100 Punkte`
+
+#### Incorrect
+
+- rotes Kreuz
+- `0 Punkte`
+
+Das falsche Feedback kommuniziert nur den bereits bestehenden Scoreeffekt +0.
+
+### Accessibility
+
+Richtig:
+
+`Entscheidung richtig, 100 Punkte`
+
+Falsch:
+
+`Entscheidung falsch, 0 Punkte`
+
+Keine Lösung, Referenzpriorität oder Referenzteam.
+
+## Geschützte Logik
+
+Laut 022-Report unverändert:
+
+- `SessionModel.score`
+- `evaluatePriority()`
+- `evaluateTeam()`
+- AudioService
+- `feedbackTaskStarted`
+- `isInputLocked`
+- Exactly-once
+- ca. 1,5-s-Sleep
+- Phasenwechsel
+- Priorisierungs-/Teamlogik
+- Replay-Rootarchitektur aus Modul 021
+
+`0 Punkte` ist ausschließlich Darstellungslogik.
+
+## Dateien Modul 022
+
+Geändert:
+
+- `Views/ResultView.swift`
+- `Views/Components/DecisionFeedbackView.swift`
+- `Resources/Localizable.xcstrings`
 - `Ticket_TamerTests/Ticket_TamerTests.swift`
 
-Da die Feinabstimmung zusätzlich Zielraster-, Monster- und HUD-Werte betrifft, muss der nächste Preflight den realen Git-Diff prüfen und alle tatsächlich geänderten Dateien dokumentieren.
+## Teststand
 
-## AK-25
+| Kennzahl | Stand |
+|---|---:|
+| Tests vor 022 | 306 |
+| neue Tests | 7 |
+| Tests nach 022 | **313** |
+| String Catalog JSON | PASS |
+| `git diff --check` Moduldateien | PASS |
+| vollständiger Xcode-Lauf | OPEN |
 
-Code-/Architektur:
+Die sieben neuen Tests ergänzen vorhandene Scoring-/Feedback-/Reset-/Exactly-once-Tests und decken insbesondere ab:
 
-- zentrale Rootbasis: erfüllt
-- `.defaultSize` nicht als Replay-Reset: erfüllt
-- fachlicher Reset unverändert: erfüllt
-- keine kumulative Skalierung: erfüllt
+- Scoreformat `0 Punkte`
+- `100 Punkte`
+- `600 Punkte`
+- `1200 Punkte`
+- keine Prozent-/Maximalwertdarstellung
+- `0 Punkte` bei incorrect
+- unverändertes `+100 Punkte` bei correct
+- Accessibility
+
+## AK-26
+
+Code- und statisch testseitig umgesetzt.
 
 Noch offen:
 
-- Build
+- Xcode-Build
 - vollständige 313 Tests
-- Cold-Start-Messung
+- Simulatorprüfung für verschiedene Scores
+- sichtbare/barrierefreie Darstellung
+
+**AK-26 = OPEN bis Laufzeitabnahme.**
+
+## AK-27
+
+Code- und statisch testseitig umgesetzt.
+
+Noch offen:
+
+- falsche Priorität im Simulator
+- falsches Team im Simulator
+- Sound parallel
+- Exactly-once unter Mehrfacheingabe
+- 1,5-s-Dauer
+- visuelle/Accessibility-Abnahme
+
+**AK-27 = OPEN bis Laufzeitabnahme.**
+
+## AK-25 bleibt ebenfalls OPEN
+
+Modul 022 verändert die Replay-Rootarchitektur nicht.
+
+Weiterhin offen:
+
+- Build
+- vollständige Tests
+- Cold Start
 - Replay 1–5
-- Start-/Slidervergleich
-- Priority-/Teamvergleich
-- Nutzer-/System-Resize
+- Resize-Erhalt
 - v1.0/v1.1-Regression
 
-**AK-25 = OPEN bis Laufzeitabnahme.**
+## Offene Punkte vor Modul 023
+
+- [ ] Modul 022 bauen
+- [ ] vollständige 313 Tests
+- [ ] ResultView 0/100/600 Punkte
+- [ ] correct +100 Punkte
+- [ ] incorrect 0 Punkte
+- [ ] Sound/Timing/Exactly-once Regression
+- [ ] Replay-Regression 021
+- [ ] Modul 022 separat committen
 
 ## Nächster Schritt
 
-`023-Eingangsprompt.md`
+`023-Eingangsprompt.md` ausführen.
 
-Modul 022 wurde ausschließlich in diesem Umfang umgesetzt:
+Modul 023 bearbeitet ausschließlich F-28 / AK-28:
 
-- F-26 / AK-26: Ergebnis als `X Punkte`
-- F-27 / AK-27: falsche Entscheidung als rotes Kreuz + `0 Punkte`
-
-Scoring, Audio, Exactly-once, Input-Lock und 1,5-s-Transition bleiben unverändert.
-
-Build, vollständiger Testlauf und Simulatorabnahme sind mangels Apple-Toolchain OPEN. Als Nächstes folgt Modul 023 — Teamstation-Symbole.
+- jede Teamstation erhält zusätzlich zum bestehenden Text ein semantisch passendes Symbol
+- Text bleibt vollständig sichtbar
+- Farbe bleibt nur ergänzend
+- sichtbare Zielgröße bleibt unverändert
+- Drop-Bounds bleiben unverändert
+- Drop-Auswertung bleibt unverändert

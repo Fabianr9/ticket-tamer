@@ -13,6 +13,16 @@ import simd
 /// sichtbar sind ausschließlich die deutschen `SupportTeam.displayName`-Werte.
 enum TeamTargetMapping {
 
+    /// Reine Darstellungskonfiguration einer Teamstation.
+    ///
+    /// Sie enthaelt absichtlich keine Position oder Treffergeometrie. Symbole koennen
+    /// dadurch die sichtbare Beschriftung ergaenzen, ohne Panel- oder Drop-Masse zu
+    /// beeinflussen (Modul 023 — F-28 / AK-28).
+    struct Presentation {
+        let title: String
+        let systemImageName: String
+    }
+
     // MARK: - Technische Ziel-IDs
 
     /// Die vier Ziel-IDs als Konstanten — identisch verwendet in `DropTargetComponent`,
@@ -81,6 +91,18 @@ enum TeamTargetMapping {
     /// Gibt die technische Ziel-ID für ein `SupportTeam` zurück.
     static func targetID(for team: SupportTeam) -> String? {
         allTargets.first { $0.team == team }?.id
+    }
+
+    /// Deutsche Beschriftung und semantisch passendes SF Symbol eines Teams.
+    static func presentation(for team: SupportTeam) -> Presentation {
+        let systemImageName: String
+        switch team {
+        case .netzwerk: systemImageName = "network"
+        case .konto: systemImageName = "person.crop.circle"
+        case .software: systemImageName = "macwindow"
+        case .hardware: systemImageName = "desktopcomputer"
+        }
+        return Presentation(title: team.displayName, systemImageName: systemImageName)
     }
 }
 
@@ -169,16 +191,16 @@ struct TeamAssignmentView: View {
                 // Beschriftung der Panels als RealityView-Attachment — siehe
                 // `PrioritizationView` zur Begründung.
                 Attachment(id: TeamTargetMapping.ID.netzwerk) {
-                    panelLabel(SupportTeam.netzwerk.displayName)
+                    panelLabel(TeamTargetMapping.presentation(for: .netzwerk))
                 }
                 Attachment(id: TeamTargetMapping.ID.konto) {
-                    panelLabel(SupportTeam.konto.displayName)
+                    panelLabel(TeamTargetMapping.presentation(for: .konto))
                 }
                 Attachment(id: TeamTargetMapping.ID.software) {
-                    panelLabel(SupportTeam.software.displayName)
+                    panelLabel(TeamTargetMapping.presentation(for: .software))
                 }
                 Attachment(id: TeamTargetMapping.ID.hardware) {
-                    panelLabel(SupportTeam.hardware.displayName)
+                    panelLabel(TeamTargetMapping.presentation(for: .hardware))
                 }
             }
             .gesture(
@@ -345,19 +367,28 @@ struct TeamAssignmentView: View {
 
     // MARK: - Panel-Beschriftung
 
-    /// Beschriftung eines Zielpanels — identisch zur Priorisierungsphase.
+    /// Teamname und semantisches Symbol als reine Attachment-Darstellung.
+    /// Das Attachment liegt vor dem Panel und ist von dessen Mesh- und Drop-Massen
+    /// vollstaendig entkoppelt.
     @ViewBuilder
-    private func panelLabel(_ text: String) -> some View {
-        Text(text)
-            .font(.title2)
-            .fontWeight(.semibold)
-            .foregroundStyle(.white)
-            .lineLimit(1)
-            .minimumScaleFactor(LayoutConstants.targetLabelMinimumScaleFactor)
-            .allowsTightening(true)
-            .shadow(radius: 3)
-            .padding(.horizontal, LayoutConstants.targetLabelHorizontalPadding)
-            .allowsHitTesting(false)
+    private func panelLabel(_ presentation: TeamTargetMapping.Presentation) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: presentation.systemImageName)
+                .imageScale(.medium)
+                .accessibilityHidden(true)
+            Text(presentation.title)
+                .lineLimit(1)
+                .minimumScaleFactor(LayoutConstants.targetLabelMinimumScaleFactor)
+                .allowsTightening(true)
+        }
+        .font(.title3)
+        .fontWeight(.semibold)
+        .foregroundStyle(.white)
+        .shadow(radius: 3)
+        .padding(.horizontal, LayoutConstants.targetLabelHorizontalPadding)
+        .allowsHitTesting(false)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(presentation.title))
     }
 
     /// Farbe eines Zielpanels — neutral, keine Ampelfarben.

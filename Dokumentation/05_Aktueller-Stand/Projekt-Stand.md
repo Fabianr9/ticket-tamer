@@ -1,122 +1,103 @@
 # Projekt-Stand — Ticket Tamer
 
+> Aktuelle Code-/Planungsbasis nach Modul 022 der Version 1.2.
+
 **Projektversion:** v1.2 in Arbeit  
 **Stand:** nach Modul 022  
 **Branch laut Report:** `A`  
-**HEAD vor 021:** `3536b46`  
+**HEAD vor 022:** `c11b464`  
 **Modul-021-Commits:** `68268cb` bis `c11b464`  
+**Modul-022-Commit:** offen  
 **Testdeklarationen:** **313**  
 **Build/Test/Simulator:** offen
 
-## Replay-Fix
+## v1.2-Funktionsstand
 
-`RootVolumeView` besitzt nun eine dauerhafte `GeometryReader3D`-Rootbasis außerhalb des Phasenrouters.
+### Modul 021
 
-Ziel:
+Replay-Layoutfix:
 
-- gleiche volumenfüllende Layoutbasis in allen Phasen
-- kein Replay-Schrumpfen durch kleine `ResultView`
+- stabile `GeometryReader3D`-Rootbasis
+- feste Slider-Designbreite
 - keine kumulative Skalierung
+- `.defaultSize` nur Cold Start
+- Nutzer-/System-Resize soll erhalten bleiben
 
-## StartView
+AK-25 Laufzeit: OPEN.
 
-Der Slider verwendet jetzt eine feste Designbreite:
+### Modul 022
 
-`LayoutConstants.startSliderDesignWidth`
+Ergebnis:
 
-statt nur einer komprimierbaren Maximalbreite.
+`<score> Punkte`
 
-## Defaultgröße
+Feedback:
 
-Cold-Start-Vorgabe laut Modul 021:
+- correct → grüner Haken + `+100 Punkte`
+- incorrect → rotes Kreuz + `0 Punkte`
 
-`0.8 × 0.75 × 0.38 m`
+AK-26/27 Laufzeit: OPEN.
 
-Replay darf eine bereits veränderte Volume-Größe nicht auf diese Werte zurücksetzen.
+## Tests
 
-## Feinabstimmung
-
-Gemeldeter Stand:
-
-- Priority-Raster max. `0.70 m`
-- Team-Raster max. `0.45 m`
-- Panelgap `0.02 m`
-- Investigation-Monster `0.24 m`
-- Drag-Monster `0.17 m`
-- Team-Monsterstart y = `-0.16 m`
-
-## AK-25
-
-Architekturfix implementiert.
-
-Laufzeitabnahme OPEN:
-
-- Build
-- 313 Tests
-- Cold Start
-- Replay 1–5
-- Resize-Erhalt
-- v1.0/v1.1-Regression
+- vor 022: 306
+- +7
+- aktuell: 313 Testdeklarationen
+- vollständiger Xcode-Lauf offen
 
 ## v1.2-Modul-Landkarte
 
 | Modul | Status |
 |---|---|
 | 021 | implementiert; AK-25 OPEN |
-| 022 | implementiert; AK-26/AK-27 OPEN bis Laufzeitabnahme |
+| 022 | implementiert; AK-26/27 OPEN |
 | 023 | als Nächstes |
 | 024 | offen |
 | 025 | offen |
 | 026 | offen |
 
-## Modul 022 — umgesetzt
+## Für Modul 023 relevant
 
-### ResultView
+Bestehende Teamstationen:
 
-Umgesetzt:
+- Netzwerk
+- Konto
+- Software
+- Hardware
 
-`<score> Punkte`
+v1.2 ergänzt je Station zusätzlich ein semantisch passendes Symbol.
 
-Beispiele:
+Verbindlich:
 
-- `0 Punkte`
-- `100 Punkte`
-- `600 Punkte`
+- Text bleibt sichtbar
+- Symbol ergänzt nur
+- Farbe ist nicht alleinige Bedeutung
+- sichtbare Zielbox unverändert
+- Drop-Bounds unverändert
+- 50-%-Overlap unverändert
+- Z-Toleranz unverändert
+- DropEvaluator unverändert
 
-Weiterhin keine:
+## Erwartete semantische Zuordnung
 
-- Maximalpunktzahl
-- Prozentzahl
-- Statistik
-- Rang
-- Badge
+- Netzwerk → Netzwerk-/Verbindungssymbol
+- Konto → Personen-/Schlüsselsymbol
+- Software → App-/Fenstersymbol
+- Hardware → Computer-/Werkzeugsymbol
 
-`Erneut spielen` bleibt.
+SF Symbols sind bevorzugt, sofern sie im realen visionOS-Aufbau sinnvoll funktionieren.
 
-### DecisionFeedbackView
+## Relevante Kandidaten für Modul 023
 
-Umgesetzt:
+Zu prüfen:
 
-Correct:
-- grüner Haken
-- `+100 Punkte`
+- `Views/TeamAssignmentView.swift`
+- `Services/TargetPanelFactory.swift`
+- `Services/TargetPanelLayout.swift`
+- `Components/DropTargetComponent.swift`
+- bestehende Team-Label-/Attachment-Struktur
+- `Resources/Localizable.xcstrings`
+- `Support/AppConstants.swift`
+- Tests
 
-Incorrect:
-- rotes Kreuz
-- `0 Punkte`
-
-Scoring bleibt intern +0.
-
-## Geschützte Logik
-
-Nicht ändern:
-
-- `evaluatePriority()`
-- `evaluateTeam()`
-- Scoreberechnung
-- Audio
-- `isInputLocked`
-- Exactly-once
-- 1,5-s-Transition
-- Phasenwechsel
-- Replay-Rootarchitektur aus 021
+Die Symbolergänzung soll in der Darstellungs-/Labelschicht erfolgen, nicht in der Drop-Geometrie.

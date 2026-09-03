@@ -461,6 +461,112 @@ struct PointsCommunicationTests {
     }
 }
 
+@Suite("Modul 023 — Teamstation-Symbole")
+struct TeamStationSymbolTests {
+    private let teams = SupportTeam.allCases
+
+    private var resolved: TargetPanelLayout.Resolved {
+        TeamTargetMapping.panelLayout.resolve(
+            volume: BoundingBox(
+                min: SIMD3<Float>(-0.4, -0.375, -0.19),
+                max: SIMD3<Float>(0.4, 0.375, 0.19)
+            ),
+            monsterBounds: BoundingBox(
+                min: SIMD3<Float>(-0.065, -0.065, -0.065),
+                max: SIMD3<Float>(0.065, 0.065, 0.065)
+            ),
+            monsterPlaneZ: 0
+        )
+    }
+
+    @Test("Netzwerk besitzt eine Symbolkonfiguration")
+    func networkHasSymbol() { #expect(TeamTargetMapping.presentation(for: .netzwerk).systemImageName == "network") }
+
+    @Test("Konto besitzt eine Symbolkonfiguration")
+    func accountHasSymbol() { #expect(TeamTargetMapping.presentation(for: .konto).systemImageName == "person.crop.circle") }
+
+    @Test("Software besitzt eine Symbolkonfiguration")
+    func softwareHasSymbol() { #expect(TeamTargetMapping.presentation(for: .software).systemImageName == "macwindow") }
+
+    @Test("Hardware besitzt eine Symbolkonfiguration")
+    func hardwareHasSymbol() { #expect(TeamTargetMapping.presentation(for: .hardware).systemImageName == "desktopcomputer") }
+
+    @Test("Alle vier Symbolwerte sind nicht leer")
+    func symbolsAreNotEmpty() {
+        #expect(teams.allSatisfy { !TeamTargetMapping.presentation(for: $0).systemImageName.isEmpty })
+    }
+
+    @Test("Alle vier Symbolwerte sind eindeutig")
+    func symbolsAreUnique() {
+        let symbols = teams.map { TeamTargetMapping.presentation(for: $0).systemImageName }
+        #expect(Set(symbols).count == 4)
+    }
+
+    @Test("Netzwerk-Text bleibt deutsch und vollstaendig")
+    func networkTitleStaysVisible() { #expect(TeamTargetMapping.presentation(for: .netzwerk).title == "Netzwerk") }
+
+    @Test("Konto-Text bleibt deutsch und vollstaendig")
+    func accountTitleStaysVisible() { #expect(TeamTargetMapping.presentation(for: .konto).title == "Konto") }
+
+    @Test("Software-Text bleibt deutsch und vollstaendig")
+    func softwareTitleStaysVisible() { #expect(TeamTargetMapping.presentation(for: .software).title == "Software") }
+
+    @Test("Hardware-Text bleibt deutsch und vollstaendig")
+    func hardwareTitleStaysVisible() { #expect(TeamTargetMapping.presentation(for: .hardware).title == "Hardware") }
+
+    @Test("Netzwerk-Target-ID bleibt unveraendert")
+    func networkIDStaysStable() { #expect(TeamTargetMapping.targetID(for: .netzwerk) == "team_netzwerk") }
+
+    @Test("Konto-Target-ID bleibt unveraendert")
+    func accountIDStaysStable() { #expect(TeamTargetMapping.targetID(for: .konto) == "team_konto") }
+
+    @Test("Software-Target-ID bleibt unveraendert")
+    func softwareIDStaysStable() { #expect(TeamTargetMapping.targetID(for: .software) == "team_software") }
+
+    @Test("Hardware-Target-ID bleibt unveraendert")
+    func hardwareIDStaysStable() { #expect(TeamTargetMapping.targetID(for: .hardware) == "team_hardware") }
+
+    @Test("Symbolzugriff veraendert die Panelbreite nicht")
+    func symbolAccessPreservesPanelWidth() {
+        let before = resolved.panelSize.x
+        _ = teams.map { TeamTargetMapping.presentation(for: $0) }
+        #expect(resolved.panelSize.x == before)
+    }
+
+    @Test("Symbolzugriff veraendert die Panelhoehe nicht")
+    func symbolAccessPreservesPanelHeight() {
+        let before = resolved.panelSize.y
+        _ = teams.map { TeamTargetMapping.presentation(for: $0) }
+        #expect(resolved.panelSize.y == before)
+    }
+
+    @Test("Symbolzugriff veraendert die Paneltiefe nicht")
+    func symbolAccessPreservesPanelDepth() {
+        let before = resolved.panelSize.z
+        _ = teams.map { TeamTargetMapping.presentation(for: $0) }
+        #expect(resolved.panelSize.z == before)
+    }
+
+    @Test("Symbolzugriff veraendert die Drop-Bounds nicht")
+    func symbolAccessPreservesDropBounds() {
+        let before = TeamTargetMapping.allTargets.compactMap { resolved.bounds(for: $0.id) }
+        _ = teams.map { TeamTargetMapping.presentation(for: $0) }
+        let after = TeamTargetMapping.allTargets.compactMap { resolved.bounds(for: $0.id) }
+        #expect(zip(before, after).allSatisfy { pair in
+            pair.0.min == pair.1.min && pair.0.max == pair.1.max
+        })
+    }
+
+    @Test("50-Prozent-Overlap bleibt unveraendert")
+    func overlapThresholdStaysStable() { #expect(InteractionConstants.minimumDropOverlapRatio == 0.50) }
+
+    @Test("Praesentation enthaelt nur Text und Symbol")
+    func presentationContainsNoReferenceSolutionOrGeometry() {
+        let labels = Set(Mirror(reflecting: TeamTargetMapping.presentation(for: .netzwerk)).children.compactMap(\.label))
+        #expect(labels == ["title", "systemImageName"])
+    }
+}
+
 /// Smoke-Tests für die technische Grundlage aus Modul 001.
 struct TicketTamerTests {
 

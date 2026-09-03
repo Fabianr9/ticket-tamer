@@ -1,112 +1,55 @@
 # Projekt-Stand — Ticket Tamer
 
-> Aktuelle Code-/Planungsbasis nach Modul 024 der Version 1.2.
+> Aktuelle Code-/Planungsbasis nach Modul 026 und Abschluss von Version 1.2.
 
-**Projektversion:** v1.2 in Arbeit  
-**Stand:** nach Modul 024  
-**Branch laut Report:** `A`  
-**HEAD vor 024:** `4ced478`  
-**Modul-023-Commit:** `4ced478`  
-**Modul-024-Commit:** offen  
-**Testdeklarationen:** **333**  
-**Build/Test/Simulator:** offen
+**Projektversion:** v1.2 abgeschlossen
+**Stand:** nach Modul 026 — Integration und Abnahme
+**Branch:** `A`
+**HEAD vor 026:** `b2f345a feat: Modul 25`
+**Modul-025-Commit:** `b2f345a`
+**Testdeklarationen:** **365**
+**Build/Test/Simulator:** PASS, vom Auftraggeber bestätigt
+**Akzeptanzkriterien:** AK-01 bis AK-30 PASS
+
+## Versionsstand
+
+| Version | Umfang | Status |
+|---|---|---|
+| v1.0 | Kernspiel AK-01 bis AK-17 | abgeschlossen |
+| v1.1 | HUD, Ticketinfo, Hinweise, Feedback, Steuerung und Retry AK-18 bis AK-24 | abgeschlossen |
+| v1.2 | Replay, Punktekommunikation, Teamsymbole, Debug-Isolation und Farbvarianten AK-25 bis AK-30 | abgeschlossen |
 
 ## v1.2-Funktionsstand
 
-### 021 — Replay
-Zentrale Root-/Volume-Stabilisierung implementiert. AK-25 Laufzeit OPEN.
+- Replay erhält Root- und Volume-Geometrie ohne kumulative Layoutdrift.
+- Ergebnis zeigt ausschließlich `<score> Punkte` und „Erneut spielen“.
+- Feedback zeigt bei richtig `+100 Punkte`, bei falsch `0 Punkte`.
+- Teamstationen verwenden `network`, `person.crop.circle`, `macwindow` und
+  `desktopcomputer` zusätzlich zu den deutschen Labels.
+- Der produktive Flow enthält keinen `🔧 Team [DEV]`-Shortcut; der Debug-Harness bleibt
+  separat und DEBUG-only.
+- Vier Monstertypen besitzen je vier, insgesamt 16 produktiv gebündelte Farbvarianten.
+- Eine Variante wird einmal pro Sitzungsticket gewählt und bleibt über Untersuchung,
+  Priorisierung, Team und Retry stabil; Reset verwirft das Mapping.
 
-### 022 — Punkte
-- Ergebnis `<score> Punkte`
-- correct `+100 Punkte`
-- incorrect `0 Punkte`
+## Zentrale Schnittstellen
 
-AK-26/27 Laufzeit OPEN.
+- `SessionModel` — fachliche Source of Truth für Sitzung, Entscheidungen, Score und Reset.
+- `RootVolumeView` — einzige produktive Phasenwurzel im zentralen Volume.
+- `MonsterAssetVariant` / `MonsterVariantCatalog` — expliziter 4×4-Assetkatalog.
+- `SessionModel.startSession(using:variantSelector:)` — testbar injizierbare Variantenwahl.
+- `selectedMonsterVariantByTicketID` / `selectedMonsterVariant(for:)` — sitzungsstabile Zuordnung.
+- `MonsterAssetProvider` / `MonsterLoadRecovery` — gemeinsames Laden und identischer Retry.
+- `DropEvaluator`, `DragBounds`, `PlanarDrag` — gemeinsame Drag-/Drop-Pipeline.
 
-### 023 — Teamsymbole
-- Netzwerk → `network`
-- Konto → `person.crop.circle`
-- Software → `macwindow`
-- Hardware → `desktopcomputer`
+## Abnahmenachweis
 
-AK-28 Laufzeit OPEN.
+- 365 Testdeklarationen; vollständige Suite erfolgreich bestätigt.
+- Build und visionOS-Laufzeitprüfung erfolgreich bestätigt.
+- AK-25 bis AK-30 im Zusammenspiel erfolgreich geprüft.
+- AK-01 bis AK-24 ohne kritische Regression.
+- Sitzungen mit 1, 2, 6 und 12 Tickets sowie fünf Replay-Zyklen stabil.
+- Alle 16 USDC-Assets geladen, sichtbar und interaktiv geprüft.
+- Kein physischer Gerätetest separat ausgewiesen; dokumentiertes Restrisiko.
 
-### 024 — Debug-Isolation
-Produktiver `🔧 Team [DEV]`-Shortcut aus `PrioritizationView` entfernt.
-
-Debug-Harness bleibt separat und DEBUG-only.
-
-AK-29 Laufzeit OPEN.
-
-## Tests
-
-Aktuell:
-
-**333 Testdeklarationen**
-
-Vollständiger Apple-Toolchain-Lauf offen.
-
-## v1.2-Modul-Landkarte
-
-| Modul | Status |
-|---|---|
-| 021 | implementiert; AK-25 OPEN |
-| 022 | implementiert; AK-26/27 OPEN |
-| 023 | implementiert; AK-28 OPEN |
-| 024 | implementiert; AK-29 OPEN |
-| 025 | als Nächstes |
-| 026 | offen |
-
-## Für Modul 025 verbindlich
-
-Vier Monstertypen.
-
-Je Typ vier vorhandene Farbvarianten.
-
-Gesamt:
-
-**16 lokale Monsterassets**
-
-SPEC-Hinweis:
-
-- Monstertyp 3 besitzt laut Bestandsanalyse Varianten `blue`, `green`, `pink`, `yellow`
-- die übrigen Typen besitzen `blue`, `green`, `pink`, `red`
-
-Konkrete Dateinamen müssen im Repository/RealityKitContent real ermittelt und explizit gemappt werden.
-
-Keine Dateinamen algorithmisch aus angenommenen Farbnamen erzeugen.
-
-## Sitzungsspezifische Auswahl
-
-Pro ausgewähltem Ticket:
-
-```text
-Ticket-ID → konkrete MonsterAssetVariant
-```
-
-Auswahl genau einmal beim Sitzungsaufbau.
-
-Danach dieselbe Variante in:
-
-- Untersuchung
-- Priorisierung
-- Teamzuordnung
-- Retry
-
-Neue Sitzung darf neu auswählen.
-
-`reset()` verwirft das Variantenmapping.
-
-## Architektur
-
-`SessionModel` bleibt fachliche Source of Truth.
-
-Sitzungsbezogenes Variantenmapping darf dort oder in einer eindeutig sitzungsbezogenen Struktur geführt werden.
-
-Die Auswahlfunktion muss injizierbar/deterministisch testbar sein.
-
-Keine Persistenz.
-
-Keine Cloud.
-
-Keine neue Monsterlogik außerhalb der Assetwahl.
+Der vollständige Nachweis steht in `Dokumentation/04_Modul-Reports/026-Report.md`.

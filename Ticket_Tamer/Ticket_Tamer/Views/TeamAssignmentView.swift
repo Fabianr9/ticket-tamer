@@ -62,6 +62,7 @@ enum TeamTargetMapping {
     static let panelLayout = TargetPanelLayout(
         columns: 2,
         rows: 2,
+        maximumWidth: LayoutConstants.teamTargetGridMaximumWidth,
         slots: [
             .init(id: ID.netzwerk, column: 0, row: 0),
             .init(id: ID.konto,    column: 1, row: 0),
@@ -265,7 +266,13 @@ struct TeamAssignmentView: View {
             }
         }
         .ornament(
-            attachmentAnchor: .scene(.top),
+            attachmentAnchor: .scene(
+                UnitPoint3D(
+                    x: 0.5,
+                    y: LayoutConstants.sessionHUDSceneAnchorY,
+                    z: 0.5
+                )
+            ),
             contentAlignment: .bottom
         ) {
             SessionHUDView(
@@ -275,7 +282,13 @@ struct TeamAssignmentView: View {
             )
         }
         .ornament(
-            attachmentAnchor: .scene(.bottom),
+            attachmentAnchor: .scene(
+                UnitPoint3D(
+                    x: 0.5,
+                    y: LayoutConstants.interactionHintSceneAnchorY,
+                    z: 0.5
+                )
+            ),
             contentAlignment: .top
         ) {
             InteractionHintView(text: InteractionHintContent.teamAssignment)

@@ -1,45 +1,128 @@
 # Projekt-Stand — Ticket Tamer
 
-> Aktuelle Code-Landkarte nach der finalen Abnahme von Version 1.1.
+**Projektversion:** v1.2 in Arbeit  
+**v1.0:** abgeschlossen  
+**v1.1:** abgeschlossen  
+**Nächstes Modul:** 021 — Replay-Layoutstabilisierung
 
-**Projektversion:** v1.1 abgeschlossen
-**v1.0:** abgeschlossen, Regression AK-01 bis AK-16 PASS
-**Stand:** nach Modul `020` — Integration und Abnahme v1.1
-**Eingearbeitet am:** 2026-09-02
-**Branch:** `A`
-**HEAD vor Modul 020:** `84e3ca7`
-**Modul-019-Commits:** `0b0d4c1`, `84e3ca7`
-**Teststand:** 298 Tests, vollständig PASS
-**Build:** PASS
+## Bestehender Kern
 
-## Abnahmestand v1.1
+Vorhanden aus v1.0/v1.1:
 
-| Modul | Anforderungen | Status |
-|---|---|---|
-| 015 | AK-18, AK-20 | PASS |
-| 016 | AK-19 | PASS |
-| 017 | AK-22, AK-24 | PASS |
-| 018 | AK-21 | PASS |
-| 019 | AK-23 | PASS |
-| 020 | Integration und Regression | PASS |
-
-## Implementierter Umfang
-
-- Session-HUD mit Ticketfortschritt und Phasentitel
-- kompakte, lösungsfreie Ticketinfo mit Drag-Sperre
-- dauerhafte Interaktionshinweise
-- visuelles Richtig-/Falsch-Feedback im bestehenden Übergangsfenster
-- synchrone Minus-/Slider-/Plus-Steuerung von 1 bis 12 Tickets
-- manuelle Ladefehler-Recovery in allen Monsterphasen
+- Startansicht mit Ticketsteuerung
 - Startseitenbeschreibung
-- vollständiger v1.0-Spielzyklus mit genau einem zentralen Volume
+- lokaler Ticketkatalog
+- SessionModel
+- Untersuchung
+- Priorisierung
+- Teamzuordnung
+- Session-HUD
+- Interaktionshinweise
+- kompakte Ticketinfo
+- Drag-Sperre bei Ticketinfo
+- 50-%-Drop-Regel
+- Snapback
+- Exactly-once
+- Scoring
+- Audio
+- visuelles Feedback
+- Ladefehler-Recovery
+- Ergebnis
+- Reset
+- vier Monstertypen
 
-## Qualitätsstand
+## v1.2-Zielstand
 
-- AK-18 bis AK-24: 7 PASS, 0 OPEN, 0 FAIL
-- AK-01 bis AK-16: 16 PASS, 0 OPEN, 0 FAIL
-- Sitzungen mit 1, 2, 6 und 12 Tickets stabil
-- Scoring, Audio, Exactly-once, Transition, Ergebnis und Reset regressionsfrei
-- keine Integrationsfixes in Modul 020 erforderlich
+### 021 — Replay-Layoutstabilisierung
+Replaybedingtes Schrumpfen/Wachsen/Driften beseitigen und aktuelle Volume-Größe erhalten.
 
-Der vollständige Nachweis steht in `Dokumentation/04_Modul-Reports/020-Report.md`.
+### 022 — Punktekommunikation v1.2
+- Ergebnis `X Punkte`
+- falsches Feedback `0 Punkte`
+
+### 023 — Teamstation-Symbole
+Text + semantisches Symbol.
+
+### 024 — Debug-UI-Isolation
+DEV-Schaltfläche aus normalem Flow entfernen.
+
+### 025 — Monster-Farbvarianten
+16 Varianten mit sitzungsstabiler Auswahl.
+
+### 026 — Integration v1.2
+AK-25 bis AK-30 gemeinsam abnehmen.
+
+## Replay-Layoutregeln
+
+Beim Replay:
+
+- aktuelle Volume-Größe erhalten
+- keine Rückkehr auf Cold-Start-Defaultgröße
+- keine kumulative Größenänderung
+- StartView stabil
+- Slider stabil
+- Prioritätsziele stabil
+- Teamziele stabil
+- mindestens fünf Replay-Zyklen stabil
+
+Fachlicher Reset bleibt:
+
+- Ticketanzahl 6
+- Score 0
+- Index 0
+- keine Entscheidungen
+- keine alten Sitzungstickets
+
+## Relevante Architektur für Modul 021
+
+Primäre Kandidaten:
+
+- `Ticket_TamerApp.swift`
+- `RootVolumeView.swift`
+- gemeinsame Root-/Volume-Layoutlogik
+- `StartView.swift`
+- `PrioritizationView.swift`
+- `TeamAssignmentView.swift`
+- `VolumeMetrics`
+- `TargetPanelLayout`
+- `ScaledToFitView`
+
+Verbindlich:
+
+- keine unabhängigen Replay-Hacks in mehreren Phasen
+- tatsächliche gewährte Geometrie verwenden
+- `.defaultSize` nicht als Replay-Reset verwenden
+- Nutzer-/System-Resize erhalten
+- keine kumulativen Scale-Faktoren
+
+## Neue v1.2-Zustände erst ab Modul 025
+
+Monster-Variantenmapping ist noch nicht Teil von Modul 021.
+
+Später fachlich:
+
+```text
+selectedMonsterVariantByTicketID
+```
+
+aber noch nicht jetzt implementieren.
+
+## Modul-Landkarte
+
+| Modul | Status |
+|---|---|
+| 021 | als Nächstes |
+| 022 | offen |
+| 023 | offen |
+| 024 | offen |
+| 025 | offen |
+| 026 | offen |
+
+## Im 021-Preflight real zu ermitteln
+
+- finaler v1.1-Branch
+- finaler v1.1-Commit
+- tatsächliche aktuelle Testzahl
+- Buildstatus
+- aktuelle Volume-/Window-Konfiguration
+- reproduzierbares Replay-Verhalten

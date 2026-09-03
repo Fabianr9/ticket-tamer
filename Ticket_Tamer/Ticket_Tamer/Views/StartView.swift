@@ -73,7 +73,11 @@ struct StartView: View {
                         in: Double(GameplayConstants.minimumTicketCount)...Double(GameplayConstants.maximumTicketCount),
                         step: 1
                     )
-                    .frame(maxWidth: LayoutConstants.startSliderMaximumWidth)
+                    // Eine reine maxWidth-Angabe liess den flexiblen Slider bei einem
+                    // kleinen Layout-Proposal bevorzugt komprimieren. Die Designbreite
+                    // ist jetzt explizit; die zentrale Root-Huelle garantiert ueber
+                    // Cold Start und Replay dasselbe Proposal.
+                    .frame(width: LayoutConstants.startSliderDesignWidth)
                     .accessibilityLabel(Text("start.ticketCount.accessibility"))
                     .accessibilityValue(Text(String(model.selectedTicketCount)))
 

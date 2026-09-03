@@ -57,6 +57,7 @@ enum PriorityTargetMapping {
     static let panelLayout = TargetPanelLayout(
         columns: 3,
         rows: 1,
+        maximumWidth: LayoutConstants.priorityTargetGridMaximumWidth,
         slots: [
             .init(id: ID.normal,   column: 0),
             .init(id: ID.wichtig,  column: 1),
@@ -286,7 +287,13 @@ struct PrioritizationView: View {
             }
         }
         .ornament(
-            attachmentAnchor: .scene(.top),
+            attachmentAnchor: .scene(
+                UnitPoint3D(
+                    x: 0.5,
+                    y: LayoutConstants.sessionHUDSceneAnchorY,
+                    z: 0.5
+                )
+            ),
             contentAlignment: .bottom
         ) {
             SessionHUDView(
@@ -296,7 +303,13 @@ struct PrioritizationView: View {
             )
         }
         .ornament(
-            attachmentAnchor: .scene(.bottom),
+            attachmentAnchor: .scene(
+                UnitPoint3D(
+                    x: 0.5,
+                    y: LayoutConstants.interactionHintSceneAnchorY,
+                    z: 0.5
+                )
+            ),
             contentAlignment: .top
         ) {
             InteractionHintView(text: InteractionHintContent.prioritization)

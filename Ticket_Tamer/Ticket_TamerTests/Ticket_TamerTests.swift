@@ -198,6 +198,111 @@ struct MonsterLoadRecoveryTests {
     }
 }
 
+// MARK: - Modul 021 — Replay-Layoutstabilisierung
+
+@MainActor
+@Suite("Modul 021 — Replay-Layoutstabilisierung")
+struct ReplayLayoutStabilityTests {
+    private let coldStartVolume = BoundingBox(
+        min: SIMD3<Float>(-0.60, -0.575, -0.225),
+        max: SIMD3<Float>(0.60, 0.575, 0.225)
+    )
+    private let resizedVolume = BoundingBox(
+        min: SIMD3<Float>(-0.48, -0.50, -0.20),
+        max: SIMD3<Float>(0.48, 0.50, 0.20)
+    )
+    private let monsterBounds = BoundingBox(
+        min: SIMD3<Float>(-0.05, -0.055, -0.04),
+        max: SIMD3<Float>(0.05, 0.055, 0.04)
+    )
+
+    @Test("Start-Slider besitzt eine feste positive Designbreite")
+    func startSliderHasStableDesignWidth() {
+        #expect(LayoutConstants.startSliderDesignWidth == 320)
+        #expect(LayoutConstants.startSliderDesignWidth > 0)
+    }
+
+    @Test("Gleiche Volume-Geometrie ergibt gleiche Prioritaetspanels")
+    func identicalVolumeProducesIdenticalPriorityPanels() {
+        let first = priorityLayout(in: coldStartVolume)
+        let replay = priorityLayout(in: coldStartVolume)
+
+        #expect(first.panelSize == replay.panelSize)
+        #expect(first.centers == replay.centers)
+    }
+
+    @Test("Gleiche Volume-Geometrie ergibt gleiche Teampanels")
+    func identicalVolumeProducesIdenticalTeamPanels() {
+        let first = teamLayout(in: coldStartVolume)
+        let replay = teamLayout(in: coldStartVolume)
+
+        #expect(first.panelSize == replay.panelSize)
+        #expect(first.centers == replay.centers)
+    }
+
+    @Test("Fuenf Replay-Berechnungen mit gleicher Geometry driften nicht")
+    func fiveRepeatedCalculationsDoNotDrift() {
+        let priorityReference = priorityLayout(in: coldStartVolume)
+        let teamReference = teamLayout(in: coldStartVolume)
+
+        for _ in 1...5 {
+            let priorityReplay = priorityLayout(in: coldStartVolume)
+            let teamReplay = teamLayout(in: coldStartVolume)
+            #expect(priorityReplay.panelSize == priorityReference.panelSize)
+            #expect(priorityReplay.centers == priorityReference.centers)
+            #expect(teamReplay.panelSize == teamReference.panelSize)
+            #expect(teamReplay.centers == teamReference.centers)
+        }
+    }
+
+    @Test("Eine gueltig veraenderte Geometry wird statt der Defaultgroesse verwendet")
+    func resizedGeometryProducesNewLayout() {
+        let initial = priorityLayout(in: coldStartVolume)
+        let resized = priorityLayout(in: resizedVolume)
+
+        #expect(resized.panelSize != initial.panelSize)
+        #expect(resized.centers != initial.centers)
+    }
+
+    @Test("Fachlicher Reset ist kein Input der Panelgeometrie")
+    func sessionResetDoesNotChangeLayoutCalculation() {
+        let model = SessionModel()
+        let before = priorityLayout(in: resizedVolume)
+
+        model.setTicketCount(12)
+        model.startSession(using: { $0 })
+        model.reset()
+
+        let after = priorityLayout(in: resizedVolume)
+        #expect(before.panelSize == after.panelSize)
+        #expect(before.centers == after.centers)
+        #expect(model.selectedTicketCount == GameplayConstants.defaultTicketCount)
+        #expect(model.sessionTickets.isEmpty)
+        #expect(model.currentTicketIndex == 0)
+        #expect(model.currentPhase == .start)
+        #expect(model.score == 0)
+        #expect(model.selectedPriority == nil)
+        #expect(model.selectedTeam == nil)
+        #expect(model.isInputLocked == false)
+    }
+
+    private func priorityLayout(in volume: BoundingBox) -> TargetPanelLayout.Resolved {
+        PriorityTargetMapping.panelLayout.resolve(
+            volume: volume,
+            monsterBounds: monsterBounds,
+            monsterPlaneZ: PrioritizationConstants.monsterStartPosition.z
+        )
+    }
+
+    private func teamLayout(in volume: BoundingBox) -> TargetPanelLayout.Resolved {
+        TeamTargetMapping.panelLayout.resolve(
+            volume: volume,
+            monsterBounds: monsterBounds,
+            monsterPlaneZ: TeamAssignmentConstants.monsterStartPosition.z
+        )
+    }
+}
+
 // MARK: - Modul 018 — Visuelles Entscheidungsfeedback
 
 @MainActor
@@ -497,17 +602,27 @@ struct CompactTicketInfoTests {
         #expect(LayoutConstants.compactTicketInfoOuterPadding > 0)
     }
 
-    @Test("Das zentrale Volume ist fuer die vollstaendige Ticketinfo vergroessert")
-    func centralVolumeIsEnlarged() {
-        #expect(LayoutConstants.centralVolumeWidth == 1.2)
-        #expect(LayoutConstants.centralVolumeHeight == 1.15)
-        #expect(LayoutConstants.centralVolumeDepth == 0.45)
+    @Test("Das zentrale Volume bleibt kompakt und bietet genug Tiefe")
+    func centralVolumeIsCompact() {
+        #expect(LayoutConstants.centralVolumeWidth == 0.8)
+        #expect(LayoutConstants.centralVolumeHeight == 0.75)
+        #expect(LayoutConstants.centralVolumeDepth == 0.38)
+        #expect(LayoutConstants.centralVolumeDepth > LayoutConstants.monsterPanelDepth)
+    }
+
+    @Test("HUD und Hinweis verwenden sichtbare Scene-Anker innerhalb des Volumes")
+    func ornamentAnchorsStayInsideScene() {
+        #expect((0...1).contains(LayoutConstants.investigationHUDSceneAnchorY))
+        #expect((0...1).contains(LayoutConstants.sessionHUDSceneAnchorY))
+        #expect((0...1).contains(LayoutConstants.interactionHintSceneAnchorY))
+        #expect(LayoutConstants.investigationHUDSceneAnchorY < LayoutConstants.sessionHUDSceneAnchorY)
+        #expect(LayoutConstants.sessionHUDSceneAnchorY < LayoutConstants.interactionHintSceneAnchorY)
     }
 
     @Test("Die Monster-Zielgroessen sind reduziert")
     func monsterTargetSizesAreReduced() {
-        #expect(LayoutConstants.monsterTargetSize == 0.20)
-        #expect(LayoutConstants.monsterDragDropTargetSize == 0.11)
+        #expect(LayoutConstants.monsterTargetSize == 0.24)
+        #expect(LayoutConstants.monsterDragDropTargetSize == 0.17)
     }
 }
 
@@ -3104,8 +3219,8 @@ struct TargetPanelAndOverlapTests {
         )
     }
 
-    @Test("Die drei Prioritaetspanels liegen nebeneinander und bleiben am Rand")
-    func priorityPanelsStayInARowAtTheEdge() {
+    @Test("Die drei Prioritaetspanels liegen kompakt nebeneinander")
+    func priorityPanelsStayInACompactRow() {
         let resolved = resolvedPriority()
 
         guard
@@ -3125,14 +3240,14 @@ struct TargetPanelAndOverlapTests {
         #expect(abs(normal.y - wichtig.y) < 0.0001)
         #expect(abs(wichtig.y - kritisch.y) < 0.0001)
 
-        // Aussenkanten buendig am Volume-Rand, nicht Richtung Mitte verschoben.
-        // Der Randabstand ist `dragSafetyPadding` — damit faellt die Panelkante mit der
-        // Aussenkante der Monsterhuelle am Anschlag der Zieh-Begrenzung zusammen.
+        // Das Raster bleibt symmetrisch und in grossen Volumes auf die ergonomische
+        // Maximalbreite begrenzt.
         let half = resolved.panelSize / 2
         let margin = InteractionConstants.dragSafetyPadding
-        #expect(abs((normal.x - half.x) - (volume.min.x + margin)) < 0.0001)
-        #expect(abs((kritisch.x + half.x) - (volume.max.x - margin)) < 0.0001)
-        #expect(abs((normal.y + half.y) - (volume.max.y - margin)) < 0.0001)
+        let gridHalfWidth = LayoutConstants.priorityTargetGridMaximumWidth / 2
+        #expect(abs((normal.x - half.x) - (-gridHalfWidth + margin)) < 0.0001)
+        #expect(abs((kritisch.x + half.x) - (gridHalfWidth - margin)) < 0.0001)
+        #expect(abs(normal.y - LayoutConstants.targetGridTopOffsetFromCenter) < 0.0001)
 
         // Mittleres Panel bleibt mittig.
         #expect(abs(wichtig.x) < 0.0001)
@@ -3165,11 +3280,20 @@ struct TargetPanelAndOverlapTests {
         #expect(abs(netzwerk.x - software.x) < 0.0001)
         #expect(abs(konto.x - hardware.x) < 0.0001)
 
-        // Reihen an Ober- und Unterkante verankert.
-        let half = resolved.panelSize / 2
-        let margin = InteractionConstants.dragSafetyPadding
-        #expect(abs((netzwerk.y + half.y) - (volume.max.y - margin)) < 0.0001)
-        #expect(abs((software.y - half.y) - (volume.min.y + margin)) < 0.0001)
+        // Beide Reihen bilden nahe der Mitte einen kompakten Block.
+        #expect(abs(netzwerk.y - LayoutConstants.targetGridTopOffsetFromCenter) < 0.0001)
+        #expect(abs((netzwerk.y - software.y) - (resolved.panelSize.y + LayoutConstants.targetPanelGap)) < 0.0001)
+    }
+
+    @Test("Das Team-Monster startet mit seinem Mittelpunkt unterhalb der unteren Panelreihe")
+    func teamMonsterStartsBelowPanels() {
+        let resolved = resolvedTeam()
+        guard let software = resolved.bounds(for: TeamTargetMapping.ID.software) else {
+            Issue.record("Unteres Teampanel fehlt")
+            return
+        }
+
+        #expect(TeamAssignmentConstants.monsterStartPosition.y < software.min.y)
     }
 
     @Test("Panels bleiben flach: Tiefe deutlich kleiner als Breite und Hoehe")

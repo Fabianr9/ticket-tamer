@@ -12,7 +12,7 @@ import SwiftUI
 /// Zeigt beim App-Start (Phase `.start`):
 /// - Projekttitel „Ticket Tamer"
 /// - Kurzbeschreibung des Spielziels
-/// - Beschriftung, Minus-/Plus-Schaltflächen und ganzzahligen Regler 1–12 (Standardwert 6)
+/// - Beschriftung, Minus-/Plus-Schaltflächen und ganzzahligen Regler 1–16 (Standardwert 6)
 /// - sichtbaren aktuellen Zahlenwert
 /// - Schaltfläche „Spiel starten"
 ///
@@ -49,7 +49,7 @@ struct StartView: View {
 
                 // Ganzzahliger Regler: `step: 1` erzwingt Ganzzahligkeit auf UI-Ebene.
                 // Das Binding konvertiert Double ↔ Int und leitet jeden Wert durch
-                // `setTicketCount(_:)`, das ungültige Werte auf 1–12 klemmt.
+                // `setTicketCount(_:)`, das ungültige Werte auf 1–16 klemmt.
                 // Kein lokaler `@State`-Spiegel — SessionModel ist die einzige Wahrheitsquelle.
                 HStack(spacing: LayoutConstants.startTicketControlSpacing) {
                     Button {

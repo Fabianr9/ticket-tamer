@@ -72,11 +72,11 @@ final class SessionModel {
 
     /// Setzt die gewünschte Ticketanzahl für die nächste Sitzung.
     ///
-    /// Technisch ungültige Werte (< 1 oder > 12) werden defensiv auf den erlaubten Bereich begrenzt,
+    /// Technisch ungültige Werte (< 1 oder > 16) werden defensiv auf den erlaubten Bereich begrenzt,
     /// damit keine Sitzung mit zu wenigen oder zu vielen Tickets entstehen kann (SPEC F-04).
     /// Die sichtbare Reglerbindung gehört erst zu Modul 004.
     ///
-    /// - Parameter count: Gewünschte Anzahl. Werte außerhalb von 1–12 werden begrenzt.
+    /// - Parameter count: Gewünschte Anzahl. Werte außerhalb von 1–16 werden begrenzt.
     func setTicketCount(_ count: Int) {
         // Explizites Klemmen statt Magic Numbers: Grenzen kommen aus GameplayConstants.
         let clamped = max(

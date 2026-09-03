@@ -391,7 +391,7 @@ enum GameplayConstants {
     static let minimumTicketCount = 1
 
     /// Groesste laut SPEC waehlbare Ticketanzahl.
-    static let maximumTicketCount = 12
+    static let maximumTicketCount = 16
 
     /// Standardwert fuer spaetere Startansicht und Reset.
     static let defaultTicketCount = 6

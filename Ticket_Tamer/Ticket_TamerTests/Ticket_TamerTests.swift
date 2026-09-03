@@ -577,15 +577,15 @@ struct TicketTamerTests {
         #expect(LayoutConstants.centralVolumeDepth > 0)
     }
 
-    @Test("Der lokale Ticketkatalog enthält genau zwölf Tickets")
-    func localCatalogContainsExactlyTwelveTickets() {
-        #expect(LocalTicketCatalog.allTickets.count == 12)
+    @Test("Der lokale Ticketkatalog enthält genau sechzehn Tickets")
+    func localCatalogContainsExactlySixteenTickets() {
+        #expect(LocalTicketCatalog.allTickets.count == 16)
         #expect(LocalTicketCatalog.allTickets.count == GameplayConstants.maximumTicketCount)
     }
 
     @Test("Jede Kombination aus Support-Team und Priorität kommt genau einmal vor")
     func localCatalogCoversEveryTeamPriorityCombinationExactlyOnce() {
-        let tickets = LocalTicketCatalog.allTickets
+        let tickets = Array(LocalTicketCatalog.allTickets.prefix(12))
         let combinations = tickets.map { "\($0.referenceTeam.rawValue)-\($0.referencePriority.rawValue)" }
         let uniqueCombinations = Set(combinations)
         let expectedCombinationCount = SupportTeam.allCases.count * TicketPriority.allCases.count
@@ -633,7 +633,7 @@ struct TicketTamerTests {
         let secondRead = LocalTicketCatalog.allTickets
 
         #expect(firstRead == secondRead)
-        #expect(firstRead.count == 12)
+        #expect(firstRead.count == 16)
         #expect(firstRead.allSatisfy { !$0.ticketNumber.hasPrefix("http") })
     }
 
@@ -644,6 +644,72 @@ struct TicketTamerTests {
 
         #expect(TicketPriority.allCases.map(\.displayName) == ["Normal", "Wichtig", "Kritisch"])
         #expect(SupportTeam.allCases.map(\.displayName) == ["Netzwerk", "Konto", "Software", "Hardware"])
+    }
+}
+
+// MARK: - Modul 027 — v1.3-Ticketdaten
+
+struct Version13TicketCatalogTests {
+    private let expectedTitles = [
+        "Das WLAN hat einen Lieblingsplatz", "Die Videokonferenz teleportiert uns",
+        "Das Internet ist spontan in den Urlaub gefahren", "Mein Passwort kennt mich nicht mehr",
+        "Die Buchhaltung steht vor der digitalen Zugbrücke", "Der digitale Türsteher lässt niemanden mehr rein",
+        "Meine Tabelle spricht plötzlich Hieroglyphen", "Die Präsentation frisst ihre eigenen Folien",
+        "Das Bestellsystem ist in der Zeit eingefroren", "Der Drucker übt für seine Traktorprüfung",
+        "Der Konferenzbildschirm hat Schneetag", "Der Dateiserver veranstaltet eine Lichtshow",
+        "Das Homeoffice steckt im VPN-Labyrinth", "Die Zwei-Faktor-Anmeldung lebt in einer Zeitschleife",
+        "Das Ticketsystem züchtet Klone", "Die Lager-Scanner haben kollektiv Feierabend"
+    ]
+
+    @Test("IDs entsprechen exakt TT-001 bis TT-016")
+    func exactTicketNumbers() {
+        let expected = (1...16).map { String(format: "TT-%03d", $0) }
+        #expect(LocalTicketCatalog.allTickets.map(\.ticketNumber) == expected)
+        #expect(Set(LocalTicketCatalog.allTickets.map(\.id)).count == 16)
+    }
+
+    @Test("Titel entsprechen der verbindlichen Markdown-Quelle")
+    func titlesMatchSource() {
+        #expect(LocalTicketCatalog.allTickets.map(\.title) == expectedTitles)
+    }
+
+    @Test("Jedes Ticket verweist exakt auf TT-xxx.mp4")
+    func exactVideoMapping() {
+        for ticket in LocalTicketCatalog.allTickets {
+            #expect(ticket.videoAssetName == "\(ticket.ticketNumber).mp4")
+        }
+    }
+
+    @Test("TT-001 bis TT-012 bilden die verbindliche 4-mal-3-Matrix")
+    func baseReferenceMatrix() {
+        let expectedTeams: [SupportTeam] = Array(repeating: .netzwerk, count: 3)
+            + Array(repeating: .konto, count: 3) + Array(repeating: .software, count: 3)
+            + Array(repeating: .hardware, count: 3)
+        let expectedPriorities: [TicketPriority] = Array(repeating: [.normal, .wichtig, .kritisch], count: 4).flatMap { $0 }
+        #expect(Array(LocalTicketCatalog.allTickets.prefix(12)).map(\.referenceTeam) == expectedTeams)
+        #expect(Array(LocalTicketCatalog.allTickets.prefix(12)).map(\.referencePriority) == expectedPriorities)
+    }
+
+    @Test("TT-013 bis TT-016 besitzen die verbindlichen Referenzen")
+    func extensionReferences() {
+        let tickets = LocalTicketCatalog.allTickets
+        #expect(tickets[12].referenceTeam == .netzwerk && tickets[12].referencePriority == .wichtig)
+        #expect(tickets[13].referenceTeam == .konto && tickets[13].referencePriority == .normal)
+        #expect(tickets[14].referenceTeam == .software && tickets[14].referencePriority == .wichtig)
+        #expect(tickets[15].referenceTeam == .hardware && tickets[15].referencePriority == .kritisch)
+    }
+
+    @Test("Team- und Prioritätsverteilung ist 4-4-4-4 und 5-6-5")
+    func referenceDistribution() {
+        let tickets = LocalTicketCatalog.allTickets
+        #expect(SupportTeam.allCases.map { team in tickets.count { $0.referenceTeam == team } } == [4, 4, 4, 4])
+        #expect(TicketPriority.allCases.map { priority in tickets.count { $0.referencePriority == priority } } == [5, 6, 5])
+    }
+
+    @Test("Neue Quellinhalte ersetzen historische Produkttexte")
+    func historicalTitlesAreGone() {
+        let historical = ["Langsamer Zugriff auf interne Dienste", "VPN-Verbindung bricht regelmäßig ab", "Standort ohne Netzwerkzugang"]
+        #expect(Set(LocalTicketCatalog.allTickets.map(\.title)).isDisjoint(with: historical))
     }
 }
 
@@ -885,13 +951,13 @@ struct SessionModelTests {
         #expect(model.selectedTicketCount == 6)
     }
 
-    @Test("Gültige Grenzwerte 1 und 12 werden akzeptiert")
+    @Test("Gültige Grenzwerte 1 und 16 werden akzeptiert")
     func validBoundaryValuesAreAccepted() {
         let model = SessionModel()
         model.setTicketCount(GameplayConstants.minimumTicketCount)
         #expect(model.selectedTicketCount == 1)
         model.setTicketCount(GameplayConstants.maximumTicketCount)
-        #expect(model.selectedTicketCount == 12)
+        #expect(model.selectedTicketCount == 16)
     }
 
     @Test("Technisch ungültige Werte werden defensiv auf den Gültigkeitsbereich begrenzt")
@@ -901,7 +967,7 @@ struct SessionModelTests {
         #expect(model.selectedTicketCount == GameplayConstants.minimumTicketCount)
         model.setTicketCount(-99)
         #expect(model.selectedTicketCount == GameplayConstants.minimumTicketCount)
-        model.setTicketCount(13)
+        model.setTicketCount(17)
         #expect(model.selectedTicketCount == GameplayConstants.maximumTicketCount)
         model.setTicketCount(1000)
         #expect(model.selectedTicketCount == GameplayConstants.maximumTicketCount)
@@ -925,18 +991,19 @@ struct SessionModelTests {
         #expect(model.sessionTickets.count == 6)
     }
 
-    @Test("Sitzung mit 12 Tickets enthält genau 12 Tickets")
-    func sessionWithTwelveTicketsContainsExactlyTwelveTickets() {
+    @Test("Sitzung mit 16 Tickets enthält genau 16 Tickets")
+    func sessionWithSixteenTicketsContainsExactlySixteenTickets() {
         let model = SessionModel()
-        model.setTicketCount(12)
+        model.setTicketCount(16)
         model.startSession(using: { $0 })
-        #expect(model.sessionTickets.count == 12)
+        #expect(model.sessionTickets.count == 16)
+        #expect(model.selectedMonsterVariantByTicketID.count == 16)
     }
 
     @Test("Keine doppelte Ticket-ID innerhalb einer Sitzung")
     func sessionTicketIdsAreUnique() {
         let model = SessionModel()
-        model.setTicketCount(12)
+        model.setTicketCount(16)
         model.startSession(using: { $0 })
         let ids = model.sessionTickets.map(\.id)
         #expect(Set(ids).count == ids.count)
@@ -1175,12 +1242,12 @@ struct StartPageUsabilityTests {
         #expect(model.selectedTicketCount == 1)
     }
 
-    @Test("Maximum 12 kann nicht überschritten werden")
+    @Test("Maximum 16 kann nicht überschritten werden")
     func maximumCannotBeExceeded() {
         let model = SessionModel()
-        model.setTicketCount(12)
+        model.setTicketCount(16)
         model.setTicketCount(model.selectedTicketCount + 1)
-        #expect(model.selectedTicketCount == 12)
+        #expect(model.selectedTicketCount == 16)
     }
 
     @Test("Minus ist bei 1 als deaktiviert ableitbar")
@@ -1189,10 +1256,10 @@ struct StartPageUsabilityTests {
         #expect(StartTicketCountControls.canIncrease(1))
     }
 
-    @Test("Plus ist bei 12 als deaktiviert ableitbar")
+    @Test("Plus ist bei 16 als deaktiviert ableitbar")
     func plusIsDisabledAtMaximum() {
-        #expect(!StartTicketCountControls.canIncrease(12))
-        #expect(StartTicketCountControls.canDecrease(12))
+        #expect(!StartTicketCountControls.canIncrease(16))
+        #expect(StartTicketCountControls.canDecrease(16))
     }
 
     @Test("Bei 6 sind Minus und Plus aktiviert")
@@ -1281,7 +1348,7 @@ struct MonsterAssetPipelineTests {
 
     // MARK: - Ticketkatalog und Zuordnung
 
-    @Test("Alle zwölf Tickets besitzen eine nicht-leere monsterAssetId")
+    @Test("Alle sechzehn Tickets besitzen eine nicht-leere monsterAssetId")
     func allTicketsHaveNonEmptyMonsterAssetId() {
         for ticket in LocalTicketCatalog.allTickets {
             #expect(!ticket.monsterAssetId.isEmpty, "Ticket \(ticket.id) hat leere monsterAssetId")

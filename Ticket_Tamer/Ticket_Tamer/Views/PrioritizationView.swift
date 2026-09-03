@@ -57,6 +57,7 @@ enum PriorityTargetMapping {
     static let panelLayout = TargetPanelLayout(
         columns: 3,
         rows: 1,
+        maximumWidth: LayoutConstants.priorityTargetGridMaximumWidth,
         slots: [
             .init(id: ID.normal,   column: 0),
             .init(id: ID.wichtig,  column: 1),

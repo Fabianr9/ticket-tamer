@@ -57,10 +57,10 @@ enum LayoutConstants {
     /// Normalisierte Y-Position des HUD innerhalb der Scene (0 = oben, 1 = unten).
     /// Ein echter Scene-Anker bleibt im Volume sichtbar; ein nachtraeglicher View-Offset
     /// kann ein Ornament dagegen aus dessen Darstellungsbereich verschieben.
-    static let sessionHUDSceneAnchorY: CGFloat = 0.10
+    static let sessionHUDSceneAnchorY: CGFloat = 0.14
 
     /// Normalisierte Y-Position des unteren Hinweises innerhalb der Scene.
-    static let interactionHintSceneAnchorY: CGFloat = 0.88
+    static let interactionHintSceneAnchorY: CGFloat = 0.84
 
     /// Maximale Textbreite der kurzen Spielbeschreibung auf der Startseite.
     static let startDescriptionMaximumWidth = 560.0
@@ -306,11 +306,11 @@ enum LayoutConstants {
     /// Zwischenräume gleichmäßig auf die Spalten verteilt.
     static let targetPanelGap: Float = 0.02
 
-    /// Maximale Gesamtbreite des Zielrasters in einem grossen Volume.
-    ///
-    /// Kleine Volumes bleiben voll adaptiv. In grossen Volumes verhindert die Kappe,
-    /// dass Panels und Ziehwege ueber die ergonomische zentrale Spielflaeche driften.
-    static let targetGridMaximumWidth: Float = 0.45
+    /// Maximale Gesamtbreite des länglichen Prioritätsrasters.
+    static let priorityTargetGridMaximumWidth: Float = 0.70
+
+    /// Maximale Gesamtbreite des kompakten 2x2-Teamrasters.
+    static let teamTargetGridMaximumWidth: Float = 0.45
 
     /// Hoechster Abstand der oberen Panelreihe von der Volume-Mitte.
     static let targetGridTopOffsetFromCenter: Float = 0.16
@@ -590,7 +590,7 @@ enum TeamAssignmentConstants {
     /// Dadurch ueberdeckt das Monster beim Phasenstart keine Box. Die Position bleibt
     /// nahe genug am Raster fuer einen kurzen, ergonomischen Drag und liegt weiterhin
     /// ausserhalb jeder Drop-Zone.
-    static let monsterStartPosition = SIMD3<Float>(0, -0.18, 0)
+    static let monsterStartPosition = SIMD3<Float>(0, -0.16, 0)
 
     // MARK: - Ablage-Schwelle
 

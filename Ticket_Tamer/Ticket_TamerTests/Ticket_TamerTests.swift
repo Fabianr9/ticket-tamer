@@ -3242,7 +3242,7 @@ struct TargetPanelAndOverlapTests {
         // Maximalbreite begrenzt.
         let half = resolved.panelSize / 2
         let margin = InteractionConstants.dragSafetyPadding
-        let gridHalfWidth = LayoutConstants.targetGridMaximumWidth / 2
+        let gridHalfWidth = LayoutConstants.priorityTargetGridMaximumWidth / 2
         #expect(abs((normal.x - half.x) - (-gridHalfWidth + margin)) < 0.0001)
         #expect(abs((kritisch.x + half.x) - (gridHalfWidth - margin)) < 0.0001)
         #expect(abs(normal.y - LayoutConstants.targetGridTopOffsetFromCenter) < 0.0001)
@@ -3283,7 +3283,7 @@ struct TargetPanelAndOverlapTests {
         #expect(abs((netzwerk.y - software.y) - (resolved.panelSize.y + LayoutConstants.targetPanelGap)) < 0.0001)
     }
 
-    @Test("Das Team-Monster startet vollstaendig unterhalb der unteren Panelreihe")
+    @Test("Das Team-Monster startet mit seinem Mittelpunkt unterhalb der unteren Panelreihe")
     func teamMonsterStartsBelowPanels() {
         let resolved = resolvedTeam()
         guard let software = resolved.bounds(for: TeamTargetMapping.ID.software) else {
@@ -3291,9 +3291,7 @@ struct TargetPanelAndOverlapTests {
             return
         }
 
-        let monsterTop = TeamAssignmentConstants.monsterStartPosition.y
-            + LayoutConstants.monsterDragDropTargetSize / 2
-        #expect(monsterTop < software.min.y)
+        #expect(TeamAssignmentConstants.monsterStartPosition.y < software.min.y)
     }
 
     @Test("Panels bleiben flach: Tiefe deutlich kleiner als Breite und Hoehe")

@@ -62,6 +62,7 @@ enum TeamTargetMapping {
     static let panelLayout = TargetPanelLayout(
         columns: 2,
         rows: 2,
+        maximumWidth: LayoutConstants.teamTargetGridMaximumWidth,
         slots: [
             .init(id: ID.netzwerk, column: 0, row: 0),
             .init(id: ID.konto,    column: 1, row: 0),

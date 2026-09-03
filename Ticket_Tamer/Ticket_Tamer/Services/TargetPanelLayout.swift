@@ -55,6 +55,9 @@ struct TargetPanelLayout {
     /// Anzahl der Reihen.
     let rows: Int
 
+    /// Maximale Gesamtbreite dieses phasenspezifischen Rasters.
+    let maximumWidth: Float
+
     /// Die Ziele mit ihrem Rasterplatz.
     let slots: [Slot]
 
@@ -116,7 +119,7 @@ struct TargetPanelLayout {
         // Das Volume bleibt vollstaendig vermessen und nutzbar. Nur das Zielraster
         // erhaelt in grossen Volumes eine ergonomische Obergrenze, damit weder Panels
         // noch Drag-Strecken mit der Fenstergroesse ins Unpraktische wachsen.
-        let gridWidth = Swift.min(volumeWidth, LayoutConstants.targetGridMaximumWidth)
+        let gridWidth = Swift.min(volumeWidth, maximumWidth)
         let gridMinX = volume.center.x - gridWidth / 2
 
         // Breite: verfügbare Breite abzüglich Rand und Zwischenräumen, gleichmäßig verteilt.

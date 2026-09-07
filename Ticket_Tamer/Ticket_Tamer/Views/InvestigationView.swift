@@ -76,8 +76,17 @@ struct InvestigationView: View {
                 .onChange(of: model.currentPhase) { _, phase in
                     videoPresentation.closeIfInvestigationEnded(phase)
                 }
+                .onChange(of: videoPresentation.isPresented) { _, isPresented in
+                    // RealityKit-Inhalte werden in visionOS in einer eigenen
+                    // Compositor-Ebene dargestellt. Ein SwiftUI-zIndex allein kann
+                    // deshalb nicht verhindern, dass das Monster vor dem Video liegt.
+                    // Die bereits geladene Entity nur deaktivieren; beim Schliessen
+                    // wird exakt dieselbe Instanz ohne erneuten Ladevorgang aktiviert.
+                    monsterEntity?.isEnabled = !isPresented
+                }
                 .onDisappear {
                     videoPresentation.close()
+                    monsterEntity?.isEnabled = true
                 }
         } else {
             noTicketView
@@ -344,6 +353,9 @@ struct InvestigationView: View {
         Task {
             do {
                 let entity = try await MonsterAssetProvider.loadMonster(variant: variant)
+                // Falls das Video waehrend des asynchronen Ladens geoeffnet wurde,
+                // darf die spaet eintreffende Entity das Overlay nicht ueberdecken.
+                entity.isEnabled = !videoPresentation.isPresented
                 monsterEntity = entity
                 monsterLoadRecovery.finishSuccessfully()
                 DebugManager.log(.spawning, "Monster-Retry/Laden erfolgreich: \(variant.assetFileName)")

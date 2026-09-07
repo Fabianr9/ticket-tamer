@@ -1,199 +1,33 @@
 import Foundation
 
-// MARK: - Local Ticket Catalog
-
-/// Vollständiger statischer Ticketpool für Modul 002 (erweitert in Modul 005 um monsterAssetId).
+/// Statischer v1.3-Katalog aus `Tickets/Ticket-Tamer_Tickets.md`.
 enum LocalTicketCatalog {
-    /// Genau zwölf lokal definierte Tickets ohne Netzwerk-, Datei- oder API-Zugriff.
-    ///
-    /// Modul 005 (F-14 / AK-14): Jedes Ticket trägt einen neutralen Monster-Bezeichner.
-    /// Die Verteilung ist bewusst so gewählt, dass kein Monster eindeutig einem Team
-    /// oder einer Priorität zugeordnet werden kann.
-    ///
-    /// Modul 006: Alle ae/oe/ue-Substitutionen wurden durch korrekte deutsche Umlaute ersetzt.
-    /// Fachliche Werte (referencePriority, referenceTeam, monsterAssetId) sind unverändert.
-    ///
-    /// Verteilungsübersicht:
-    /// - monster01: netzwerk/normal, konto/wichtig, software/kritisch
-    /// - monster02: netzwerk/wichtig, konto/kritisch, hardware/normal
-    /// - monster03: netzwerk/kritisch, software/normal, hardware/wichtig
-    /// - monster04: konto/normal, software/wichtig, hardware/kritisch
     static let allTickets: [Ticket] = [
-        Ticket(
-            id: "ticket-001",
-            ticketNumber: "TT-001",
-            title: "Langsamer Zugriff auf interne Dienste",
-            shortDescription: "Mehrere interne Webseiten laden deutlich verzögert.",
-            userImpact: "Mitarbeitende können Kundenanfragen nur mit Wartezeiten bearbeiten.",
-            symptoms: [
-                "Intranet-Seiten öffnen erst nach mehreren Sekunden.",
-                "Videokonferenzen bleiben stabil.",
-                "Das Problem tritt nur im Büro-Netz auf."
-            ],
-            referencePriority: .normal,
-            referenceTeam: .netzwerk,
-            monsterAssetId: AssetKeys.Monster.monster01
-        ),
-        Ticket(
-            id: "ticket-002",
-            ticketNumber: "TT-002",
-            title: "VPN-Verbindung bricht regelmäßig ab",
-            shortDescription: "Remote arbeitende Personen verlieren mehrmals pro Stunde die VPN-Verbindung.",
-            userImpact: "Laufende Arbeiten in Fachsystemen müssen wiederholt neu gestartet werden.",
-            symptoms: [
-                "VPN-Client meldet Zeitüberschreitung.",
-                "Lokale Internetverbindung bleibt verfügbar."
-            ],
-            referencePriority: .wichtig,
-            referenceTeam: .netzwerk,
-            monsterAssetId: AssetKeys.Monster.monster02
-        ),
-        Ticket(
-            id: "ticket-003",
-            ticketNumber: "TT-003",
-            title: "Standort ohne Netzwerkzugang",
-            shortDescription: "Ein kompletter Standort erreicht weder interne noch externe Dienste.",
-            userImpact: "Der betroffene Standort kann keine Tickets, Bestellungen oder Kundendaten bearbeiten.",
-            symptoms: [
-                "Alle Arbeitsplätze zeigen keine Netzwerkverbindung.",
-                "Telefonie über das Datennetz ist ebenfalls ausgefallen.",
-                "Andere Standorte melden keine Störung."
-            ],
-            referencePriority: .kritisch,
-            referenceTeam: .netzwerk,
-            monsterAssetId: AssetKeys.Monster.monster03
-        ),
-        Ticket(
-            id: "ticket-004",
-            ticketNumber: "TT-004",
-            title: "Profilbild lässt sich nicht ändern",
-            shortDescription: "Eine Person kann das Profilbild im Unternehmensportal nicht aktualisieren.",
-            userImpact: "Die Arbeit ist möglich, aber das Personenprofil bleibt unvollständig.",
-            symptoms: [
-                "Upload endet ohne sichtbare Fehlermeldung.",
-                "Andere Profileinstellungen werden gespeichert."
-            ],
-            referencePriority: .normal,
-            referenceTeam: .konto,
-            monsterAssetId: AssetKeys.Monster.monster04
-        ),
-        Ticket(
-            id: "ticket-005",
-            ticketNumber: "TT-005",
-            title: "Mehrfaktorcode kommt nicht an",
-            shortDescription: "Eine Person erhält beim Anmelden keinen Mehrfaktorcode mehr.",
-            userImpact: "Wichtige Fachanwendungen sind für diese Person nicht erreichbar.",
-            symptoms: [
-                "Passwort wird akzeptiert.",
-                "Der zweite Faktor wird nicht zugestellt.",
-                "Ein Ersatzgerät ist bereits registriert."
-            ],
-            referencePriority: .wichtig,
-            referenceTeam: .konto,
-            monsterAssetId: AssetKeys.Monster.monster01
-        ),
-        Ticket(
-            id: "ticket-006",
-            ticketNumber: "TT-006",
-            title: "Administratorkonto gesperrt",
-            shortDescription: "Ein privilegiertes Betriebskonto ist nach mehreren Fehlversuchen gesperrt.",
-            userImpact: "Kritische Wartungsarbeiten an Produktivsystemen können nicht ausgeführt werden.",
-            symptoms: [
-                "Anmeldung wird trotz bekanntem Kennwort abgelehnt.",
-                "Sperrhinweis erscheint in der Kontoverwaltung.",
-                "Mehrere geplante Deployments warten auf Freigabe."
-            ],
-            referencePriority: .kritisch,
-            referenceTeam: .konto,
-            monsterAssetId: AssetKeys.Monster.monster02
-        ),
-        Ticket(
-            id: "ticket-007",
-            ticketNumber: "TT-007",
-            title: "Export erzeugt falsches Datumsformat",
-            shortDescription: "Ein Bericht exportiert Datumswerte im falschen Format.",
-            userImpact: "Die Auswertung muss vor dem Versand manuell korrigiert werden.",
-            symptoms: [
-                "CSV-Datei nutzt Monat vor Tag.",
-                "Die Anzeige in der Anwendung ist korrekt."
-            ],
-            referencePriority: .normal,
-            referenceTeam: .software,
-            monsterAssetId: AssetKeys.Monster.monster03
-        ),
-        Ticket(
-            id: "ticket-008",
-            ticketNumber: "TT-008",
-            title: "Fachanwendung speichert Aufträge nicht",
-            shortDescription: "Neue Aufträge bleiben nach dem Speichern nicht erhalten.",
-            userImpact: "Auftragsdaten müssen doppelt erfasst und nachkontrolliert werden.",
-            symptoms: [
-                "Speichern meldet Erfolg.",
-                "Nach dem Neuladen fehlt der Auftrag.",
-                "Bestandsdaten lassen sich anzeigen."
-            ],
-            referencePriority: .wichtig,
-            referenceTeam: .software,
-            monsterAssetId: AssetKeys.Monster.monster04
-        ),
-        Ticket(
-            id: "ticket-009",
-            ticketNumber: "TT-009",
-            title: "Kassensoftware startet nicht",
-            shortDescription: "Die Kassensoftware stürzt direkt beim Start auf allen Kassen ab.",
-            userImpact: "Verkäufe können am betroffenen Standort nicht abgeschlossen werden.",
-            symptoms: [
-                "Startbildschirm erscheint kurz und schließt sich.",
-                "Neustart der Kassen ändert das Verhalten nicht.",
-                "Der Fehler begann nach dem letzten Update."
-            ],
-            referencePriority: .kritisch,
-            referenceTeam: .software,
-            monsterAssetId: AssetKeys.Monster.monster01
-        ),
-        Ticket(
-            id: "ticket-010",
-            ticketNumber: "TT-010",
-            title: "Externer Monitor bleibt dunkel",
-            shortDescription: "Ein Arbeitsplatz erkennt den angeschlossenen Monitor nicht zuverlässig.",
-            userImpact: "Die betroffene Person arbeitet vorübergehend nur mit dem Notebook-Display.",
-            symptoms: [
-                "Monitor zeigt kein Signal.",
-                "Anderes Kabel wurde bereits getestet."
-            ],
-            referencePriority: .normal,
-            referenceTeam: .hardware,
-            monsterAssetId: AssetKeys.Monster.monster02
-        ),
-        Ticket(
-            id: "ticket-011",
-            ticketNumber: "TT-011",
-            title: "Etikettendrucker druckt unleserlich",
-            shortDescription: "Ein Lagerdrucker erzeugt verschobene und kaum lesbare Etiketten.",
-            userImpact: "Warenausgänge verzögern sich, weil Etiketten neu erstellt werden müssen.",
-            symptoms: [
-                "Druckbild ist horizontal versetzt.",
-                "Reinigung wurde bereits durchgeführt.",
-                "Andere Drucker im Lager funktionieren."
-            ],
-            referencePriority: .wichtig,
-            referenceTeam: .hardware,
-            monsterAssetId: AssetKeys.Monster.monster03
-        ),
-        Ticket(
-            id: "ticket-012",
-            ticketNumber: "TT-012",
-            title: "Arbeitsplätze starten nach Stromausfall nicht",
-            shortDescription: "Mehrere Rechner in der Leitstelle lassen sich nicht mehr einschalten.",
-            userImpact: "Die Leitstelle kann nur eingeschränkt auf operative Systeme zugreifen.",
-            symptoms: [
-                "Netzteile zeigen keine Statusleuchte.",
-                "Steckdosenleiste wurde geprüft.",
-                "Ersatzarbeitsplätze sind nicht ausreichend vorhanden."
-            ],
-            referencePriority: .kritisch,
-            referenceTeam: .hardware,
-            monsterAssetId: AssetKeys.Monster.monster04
-        )
+        make(1, "Das WLAN hat einen Lieblingsplatz", "Mein WLAN scheint heute sehr wählerisch zu sein. Am Schreibtisch funktioniert alles, aber sobald ich mit dem Laptop in die kleine Sitzecke gehe, verschwindet die Verbindung. Wenn ich zwei Schritte zurück zum Tisch mache, ist sie plötzlich wieder da. Vielleicht ist das WLAN einfach schüchtern.", "Eine Person kann in einem kleinen Bereich nicht drahtlos arbeiten. Am eigenen Arbeitsplatz funktioniert die Verbindung weiterhin.", ["WLAN bricht nur in einem bestimmten Bereich ab.", "Am normalen Arbeitsplatz besteht eine stabile Verbindung.", "Andere Arbeitsmöglichkeiten sind vorhanden."], .normal, .netzwerk, AssetKeys.Monster.monster01),
+        make(2, "Die Videokonferenz teleportiert uns", "Unsere Besprechungen haben ein neues Feature: Alle paar Minuten friert das Bild ein und danach fehlen plötzlich zehn Sekunden Gespräch. Das passiert in mehreren Konferenzräumen auf unserer Etage. An den verkabelten Arbeitsplätzen läuft das Netz dagegen problemlos.", "Mehrere Teams können Videokonferenzen nur eingeschränkt durchführen. Normale Arbeit an verkabelten Arbeitsplätzen ist weiterhin möglich.", ["Mehrere Konferenzräume derselben Etage sind betroffen.", "Drahtlose Verbindungen brechen wiederholt ein.", "Kabelgebundene Arbeitsplätze funktionieren."], .wichtig, .netzwerk, AssetKeys.Monster.monster02),
+        make(3, "Das Internet ist spontan in den Urlaub gefahren", "Seit wenigen Minuten ist unser gesamtes Büro digital von der Außenwelt abgeschnitten. Webseiten laden nicht, interne Dienste sind nicht erreichbar und selbst die Kaffeemaschine mit Netzwerkanschluss blinkt beleidigt. Niemand im Gebäude kommt aktuell ins Firmennetz.", "Das gesamte Büro kann zentrale Netzwerkdienste und Internetzugänge nicht verwenden. Der reguläre Arbeitsbetrieb steht weitgehend still.", ["Alle Arbeitsplätze sind betroffen.", "Internet und interne Netzwerkdienste sind gleichzeitig nicht erreichbar.", "Es gibt aktuell keinen funktionierenden Netzwerkzugang."], .kritisch, .netzwerk, AssetKeys.Monster.monster03),
+        make(4, "Mein Passwort kennt mich nicht mehr", "Ich habe heute Morgen mein Passwort geändert und seitdem behauptet mein Benutzerkonto, wir hätten uns noch nie gesehen. Nach drei Versuchen wurde ich ausgesperrt. Lokal kann ich an meinem Rechner noch weiterarbeiten, aber anmelden kann ich mich am betroffenen Dienst nicht mehr.", "Eine einzelne Person kann sich an einem Dienst nicht anmelden. Andere Personen und lokale Arbeit sind nicht betroffen.", ["Problem begann unmittelbar nach einer Passwortänderung.", "Nur ein Benutzerkonto ist betroffen.", "Das Konto wurde nach mehreren Versuchen gesperrt."], .normal, .konto, AssetKeys.Monster.monster04),
+        make(5, "Die Buchhaltung steht vor der digitalen Zugbrücke", "Acht Personen aus der Buchhaltung stehen gerade vor unserem Abrechnungssystem wie vor einer Burg ohne Zugbrücke. Die Anmeldung wird für alle acht Konten abgelehnt. Andere Programme funktionieren und Kollegen außerhalb der Buchhaltung können sich normal anmelden.", "Ein komplettes Fachteam kann eine wichtige Anwendung nicht nutzen. Andere Unternehmensbereiche können weiterarbeiten.", ["Mehrere Konten derselben Abteilung sind betroffen.", "Die Anmeldung an einem geschäftskritischen Dienst schlägt fehl.", "Andere Benutzergruppen können sich weiterhin anmelden."], .wichtig, .konto, AssetKeys.Monster.monster01),
+        make(6, "Der digitale Türsteher lässt niemanden mehr rein", "Unser zentrales Anmeldesystem hat offenbar beschlossen, heute besonders streng zu sein: Es weist jedes Benutzerkonto ab. Egal ob Support, Verwaltung oder Geschäftsführung – niemand kommt in die zentralen Anwendungen. Lokale Rechner starten zwar, danach endet die Reise aber an der Anmeldung.", "Nahezu alle Mitarbeitenden können zentrale Unternehmensanwendungen nicht mehr verwenden.", ["Alle getesteten Benutzerkonten sind betroffen.", "Mehrere zentrale Anwendungen können nicht geöffnet werden.", "Die gemeinsame Anmeldung schlägt unternehmensweit fehl."], .kritisch, .konto, AssetKeys.Monster.monster02),
+        make(7, "Meine Tabelle spricht plötzlich Hieroglyphen", "Meine Tabellenanwendung hat heute Morgen beschlossen, moderne Kunst zu machen. Einige Symbole werden falsch dargestellt und ein Menü sieht aus, als hätte jemand die Beschriftungen durcheinandergewürfelt. Die Datei selbst ist noch da und über die Web-Version kann ich weiterarbeiten.", "Eine Person hat Darstellungsprobleme in einer Anwendung. Es existiert ein funktionierender Workaround.", ["Nur eine lokale Anwendung ist betroffen.", "Dateien und Daten sind weiterhin vorhanden.", "Die Web-Version funktioniert."], .normal, .software, AssetKeys.Monster.monster03),
+        make(8, "Die Präsentation frisst ihre eigenen Folien", "Unsere Präsentationssoftware beendet sich jedes Mal, sobald wir die aktuelle Kampagnenpräsentation öffnen. Inzwischen sitzen sechs Personen vor ihren Rechnern und beobachten denselben Absturz. Ältere Präsentationen lassen sich noch öffnen, aber an der aktuellen Kampagne können wir nicht arbeiten.", "Ein Team kann an einem wichtigen gemeinsamen Arbeitsstand nicht weiterarbeiten. Andere Dateien und Anwendungen funktionieren weiterhin.", ["Mehrere Personen erleben denselben Anwendungsabsturz.", "Der Fehler tritt bei der aktuellen Arbeitsdatei reproduzierbar auf.", "Andere Präsentationen lassen sich öffnen."], .wichtig, .software, AssetKeys.Monster.monster04),
+        make(9, "Das Bestellsystem ist in der Zeit eingefroren", "Unser Bestellsystem zeigt zwar noch alle Knöpfe, aber keiner davon scheint sich für Arbeit zu interessieren. Neue Bestellungen lassen sich unternehmensweit weder speichern noch abschließen. Mehrere Teams haben es getestet – überall dasselbe Ergebnis. Aktuell verlässt keine neue Bestellung das System.", "Ein zentraler Geschäftsprozess ist für alle betroffenen Abteilungen vollständig gestoppt.", ["Alle Nutzer der Anwendung sind betroffen.", "Neue Bestellungen können nicht gespeichert oder abgeschlossen werden.", "Es gibt keinen bekannten Workaround."], .kritisch, .software, AssetKeys.Monster.monster01),
+        make(10, "Der Drucker übt für seine Traktorprüfung", "Seit heute Morgen führt mein Drucker ein Eigenleben. Erst hat er drei leere Seiten ausgespuckt, dann eine Seite mit halbem Text und jetzt macht er nur noch Geräusche, als würde er einen Traktor imitieren. Drucken kann ich allerdings nichts mehr. Bitte schicken Sie jemanden, bevor er endgültig kündigt.", "Ein Arbeitsplatz kann diesen Drucker nicht verwenden. Ein anderer Drucker im Nachbarraum steht als Ausweichmöglichkeit zur Verfügung.", ["Ausdrucke sind leer oder nur teilweise bedruckt.", "Das Gerät erzeugt ungewöhnlich laute mechanische Geräusche.", "Ein alternativer Drucker ist verfügbar."], .normal, .hardware, AssetKeys.Monster.monster02),
+        make(11, "Der Konferenzbildschirm hat Schneetag", "Der große Bildschirm im Hauptkonferenzraum zeigt nur noch schwarzes Bild und gelegentlich digitales Schneegestöber. Heute stehen mehrere Kundentermine an. Ein kleiner Ersatzraum funktioniert zwar, dort passen aber nur wenige Personen hinein.", "Mehrere geplante Kundentermine sind beeinträchtigt. Ein eingeschränkter Ausweichraum ist vorhanden.", ["Der zentrale Konferenzbildschirm liefert kein nutzbares Bild.", "Mehrere Termine am selben Tag sind betroffen.", "Es existiert nur ein begrenzter Workaround."], .wichtig, .hardware, AssetKeys.Monster.monster03),
+        make(12, "Der Dateiserver veranstaltet eine Lichtshow", "Im Serverraum blinkt unser zentrales Speichergerät plötzlich wie eine Diskokugel und gibt einen Daueralarm von sich. Gleichzeitig sind die gemeinsamen Laufwerke im ganzen Unternehmen verschwunden. Niemand kommt an die dort gespeicherten Arbeitsdateien.", "Unternehmensweit können zentrale Dateien nicht geöffnet oder gespeichert werden. Zahlreiche Arbeitsprozesse sind blockiert.", ["Das zentrale Speichergerät meldet einen physischen Fehlerzustand.", "Gemeinsame Laufwerke sind für alle Nutzer ausgefallen.", "Es steht aktuell kein Ersatzspeicher zur Verfügung."], .kritisch, .hardware, AssetKeys.Monster.monster04),
+        make(13, "Das Homeoffice steckt im VPN-Labyrinth", "Seit heute Nachmittag kommen unsere Mitarbeitenden im Homeoffice zwar bis zum VPN-Login, danach dreht sich die Verbindung aber im Kreis und bricht ab. Im Büro funktioniert das Firmennetz normal. Mehrere Remote-Kollegen melden denselben Effekt.", "Viele Mitarbeitende im Homeoffice können interne Dienste nicht erreichen. Mitarbeitende vor Ort sind nicht betroffen.", ["Mehrere externe Verbindungen sind betroffen.", "Das interne Netz im Büro funktioniert.", "Der Fehler tritt beim Aufbau der VPN-Verbindung auf."], .wichtig, .netzwerk, AssetKeys.Monster.monster01),
+        make(14, "Die Zwei-Faktor-Anmeldung lebt in einer Zeitschleife", "Bei meiner Anmeldung erscheint immer wieder dieselbe Bestätigungsabfrage. Ich bestätige sie am Handy, der Rechner denkt kurz nach und zeigt mir anschließend exakt dieselbe Abfrage noch einmal. Alle anderen Kollegen können sich normal anmelden.", "Eine Person kann sich an einem geschützten Dienst nicht anmelden. Andere Nutzer sind nicht betroffen.", ["Nur ein Benutzerkonto ist betroffen.", "Die Mehrfaktor-Bestätigung wird akzeptiert, aber nicht abgeschlossen.", "Andere Benutzer können sich normal anmelden."], .normal, .konto, AssetKeys.Monster.monster02),
+        make(15, "Das Ticketsystem züchtet Klone", "Unser Supportsystem hat eine neue Superkraft entdeckt: Aus einem neuen Ticket werden manchmal gleich drei. Seit heute Morgen müssen mehrere Support-Mitarbeitende ständig Ticket-Klone aussortieren. Arbeiten können wir noch, aber die Warteschlange wird zunehmend chaotisch.", "Das Supportteam kann weiterarbeiten, benötigt aber erheblichen manuellen Mehraufwand und riskiert Doppelbearbeitungen.", ["Neu angelegte Tickets erscheinen mehrfach.", "Mehrere Support-Mitarbeitende sind betroffen.", "Eine manuelle Bereinigung ist als Workaround möglich."], .wichtig, .software, AssetKeys.Monster.monster03),
+        make(16, "Die Lager-Scanner haben kollektiv Feierabend", "Alle Handscanner im Versandlager bleiben seit wenigen Minuten dunkel. Ersatzakkus bringen nichts und auch die Ladestationen zeigen keine Reaktion. Ohne die Geräte können keine Pakete verbucht oder freigegeben werden – inzwischen wächst der Paketberg sichtbar.", "Der komplette Versandprozess ist gestoppt. Keine ausgehenden Pakete können regulär verarbeitet werden.", ["Alle Scanner im Versandbereich sind gleichzeitig nicht nutzbar.", "Akkutausch behebt das Problem nicht.", "Ohne die Geräte ist keine Versandfreigabe möglich."], .kritisch, .hardware, AssetKeys.Monster.monster04)
     ]
+
+    private static func make(_ number: Int, _ title: String, _ description: String,
+                             _ impact: String, _ symptoms: [String], _ priority: TicketPriority,
+                             _ team: SupportTeam, _ monster: String) -> Ticket {
+        let numberString = String(format: "TT-%03d", number)
+        return Ticket(id: "ticket-\(String(format: "%03d", number))", ticketNumber: numberString,
+                      title: title, shortDescription: description, userImpact: impact,
+                      symptoms: symptoms, referencePriority: priority, referenceTeam: team,
+                      monsterAssetId: monster, videoAssetName: "\(numberString).mp4")
+    }
 }

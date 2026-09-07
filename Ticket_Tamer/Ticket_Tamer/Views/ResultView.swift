@@ -7,6 +7,19 @@
 
 import SwiftUI
 
+/// Rein darstellungsbezogene Formatierung der Gesamtpunktzahl.
+///
+/// Der vollständige Formatstring liegt im String Catalog; die Punktzahl wird nicht
+/// neu berechnet, sondern unverändert eingesetzt.
+enum ResultPresentation {
+    static func scoreText(for score: Int) -> String {
+        String.localizedStringWithFormat(
+            String(localized: "%lld Punkte"),
+            Int64(score)
+        )
+    }
+}
+
 /// Ergebnisansicht am Ende einer Spielsitzung.
 ///
 /// Sichtbare Elemente ausschließlich laut SPEC F-15:
@@ -42,10 +55,9 @@ struct ResultView: View {
     /// Accessibility-Label ohne sichtbare Zusatzstatistik.
     @ViewBuilder
     private var scoreLabel: some View {
-        Text("\(model.score)")
+        Text(ResultPresentation.scoreText(for: model.score))
             .font(.system(size: 80, weight: .bold, design: .rounded))
             .monospacedDigit()
-            .accessibilityLabel("Punkte: \(model.score)")
     }
 
     /// Schaltfläche „Erneut spielen" — ruft ausschließlich `model.reset()` auf.

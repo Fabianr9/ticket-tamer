@@ -82,4 +82,25 @@ struct Ticket: Identifiable, Equatable {
     /// oder eine Priorität, sodass das Modell keinen Rückschluss auf die Lösung erlaubt.
     /// Entspricht dem in der SPEC-Architekturskizze vorgesehenen Feld `monsterAssetId`.
     let monsterAssetId: String
+
+    /// Dateiname des genau diesem Ticket zugeordneten lokalen Videos.
+    /// Modul 027 stellt nur die Datenreferenz bereit; Wiedergabe folgt in Modul 030.
+    let videoAssetName: String
+
+    init(
+        id: String, ticketNumber: String, title: String, shortDescription: String,
+        userImpact: String, symptoms: [String], referencePriority: TicketPriority,
+        referenceTeam: SupportTeam, monsterAssetId: String, videoAssetName: String = ""
+    ) {
+        self.id = id
+        self.ticketNumber = ticketNumber
+        self.title = title
+        self.shortDescription = shortDescription
+        self.userImpact = userImpact
+        self.symptoms = symptoms
+        self.referencePriority = referencePriority
+        self.referenceTeam = referenceTeam
+        self.monsterAssetId = monsterAssetId
+        self.videoAssetName = videoAssetName
+    }
 }

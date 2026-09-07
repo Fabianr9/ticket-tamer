@@ -1,219 +1,223 @@
 # Projekt-Stand — Ticket Tamer
 
-**Stand:** nach Restpunkte-Bearbeitung AK-06 — Fix implementiert, Build und Tests gruen, Simulatornachweis ausstehend
-**Eingearbeitet am:** 2026-08-28
-**Aktiver Branch:** `side`
-**HEAD (`side`):** `b56179b` — Restpunkte: AK-06 Clippingfix (Nachtest ausstehend)
-**`origin/main` / `main`:** `e8b289a` — feat: Modul 14
-**Lokaler `main`:** auf `origin/main` angeglichen (Fast-Forward, keine History-Umschreibung)
-**`origin/side`:** `745d45e` — 8 Commits hinter `side`
-**Modul-014-Commit:** erledigt (`235262b`, `21456e7`, `e8b289a`)
-**Build:** **PASS** (nach dem AK-06-Fix)
-**Tests:** **217/217 PASS**, 11 Suites, 0 Failed, 0 Skipped, 0.418 s
-**Abschlussstatus:** **B — nicht vollstaendig abgabebereit**
+> Finaler technischer Projektstand nach Abschluss und Abnahme von Ticket Tamer v1.3.
 
-## Korrektur des dokumentierten Git-Stands
+**Projektstatus:** abgeschlossen  
+**Finale Version:** v1.3  
+**Stand:** nach Modul 033  
+**Branch:** `v1.3`  
+**HEAD vor Abschlussmodul:** `bf385496f6008efe91bfa2a62976eae1c055836a`  
+**Modul-032-Commit:** `09a094b0327cd6f4ee53d6fdb3309f935ae12637`  
+**Modul-033-Commit:** nach Erstellung des Abschlusscommits real ergänzen  
+**Tests:** **576 Deklarationen**  
+**Abnahme:** **PASS gemäß N1**
 
-Der bis Modul 014 dokumentierte Git-Stand war falsch. Real ermittelt:
+## Architektur
 
-| Angabe | Dokumentiert | Tatsaechlich |
-|---|---|---|
-| HEAD | `cc5a4a2` — Modul 13 | `e8b289a` — Modul 14 |
-| Modul-014-Commit | offen | bereits committed |
-| Working Tree | Aenderungen offen | sauber |
-| lokaler `main` | hinter `origin/main` | jetzt angeglichen |
+Ticket Tamer ist eine lokale visionOS-Anwendung für Apple Vision Pro mit genau einem zentralen Volume.
 
-## Technischer Funktionsstand
-
-Bestaetigt funktionsfaehig:
-
-- genau ein zentrales visionOS-Volume
-- Startansicht
-- 12 lokale Tickets
-- Sitzungsauswahl
-- Untersuchungsphase fachlich vollstaendig
-- Priorisierung
-- Teamzuordnung
-- gemessene Drag-Grenzen
-- 3D-Zielpanels
-- 50-%-Drop-Regel
-- Snapback
-- Exactly-once
-- Scoring
-- beide Sounds
-- 1,5-s-Transitions
-- vier echte Monster
-- Ergebnisansicht
-- Reset
-- 1/2/6/12-Ticket-Stabilitaet
-
-Offen:
-
-- AK-06: Fix implementiert, Build und Tests gruen, **visueller Simulatornachweis ausstehend**
-- Apple Vision Pro Geraetetest (hardwareabhaengiges Restrisiko)
-
-## Teststand
-
-| Kennzahl | Wert |
-|---|---:|
-| Tests | **217** |
-| Suites | **11** |
-| Passed | **217** |
-| Failed | 0 |
-| Skipped | 0 |
-| Plattform | arm64-apple-xros1.0-simulator |
-| Laufzeit | 0.418 s |
-
-Vorher 208 / 10 Suites. Neu: Suite „Restpunkt AK-06 — Einpassung im gemessenen
-Monster-Panel" mit 9 Tests. Zwei davon belegen die Ursache numerisch (0.24 m passt in
-keinen realen Panelquader; die angenommene Paneltiefe uebersteigt die gemessene
-Volume-Tiefe). Keine Regression in den vorbestehenden 208 Tests.
-
-## Finale AK-Matrix
-
-| AK | Status |
-|---|---|
-| AK-01 | PASS |
-| AK-02 | PASS |
-| AK-03 | PASS |
-| AK-04 | PASS |
-| AK-05 | PASS |
-| AK-06 | **OPEN — Fix implementiert, Build/Tests gruen, Sichtpruefung ausstehend** |
-| AK-07 | PASS |
-| AK-08 | PASS |
-| AK-09 | PASS |
-| AK-10 | PASS |
-| AK-11 | PASS |
-| AK-12 | PASS |
-| AK-13 | PASS |
-| AK-14 | PASS |
-| AK-15 | PASS |
-| AK-16 | PASS |
-
-**Pflichtstatus: 15/16 PASS.**
-
-## AK-06
-
-Inhalt und Navigation sind korrekt.
-
-Fehler: `monster04` / `Monster_4_red.usdc` wird in der Untersuchungsansicht zusammen mit dem
-Ticketinhalt teilweise abgeschnitten.
-
-### Ursache (isoliert, messbar)
-
-`InvestigationView` berechnete seinen verfuegbaren Quader aus zwei Annahmen, waehrend die
-Drag-Phasen ihn seit Modul 013 messen:
-
-- `layoutPointsPerMeter = 417` — gegen eine Volume-Hoehe von 0.8 m kalibriert, heute 1.0 m
-- `monsterPanelDepth = 0.34 m` — das angeforderte, nicht das gewaehrte Tiefenmass
-
-Das im Simulator gemessene Volume betraegt **0.284 x 0.236 x 0.235 m** statt der deklarierten
-1.0 x 1.0 x 0.4 m (belegt durch die Regressionstests aus Modul 013). Daraus folgt:
-
-- die angenommene Panel-Tiefe ist groesser als die gemessene Volume-Tiefe ueberhaupt
-- das Zielmass fiel damit stets auf den Deckel `monsterTargetSize = 0.24 m`
-- 0.24 m liegt ueber jeder Kante des gemessenen Volumes — Beschneiden war unvermeidbar
-
-Da `fit(_:toMaxExtent:)` die **groesste** Modellausdehnung auf die Grenze abbildet und diese
-Achse je Export verschieden ist, schlug zuerst nur ein Asset sichtbar an. Kein Assetfehler.
-
-Zweite Fehlerquelle: die Position war hart `(0, 0, forward)` — das trifft die Panelmitte nur,
-wenn der Szenenursprung im Panelzentrum liegt. Das Panel ist die linke Spalte eines `HStack`.
-
-### Fix
-
-`Services/InvestigationFraming.swift` (neu) misst den realen Panelquader und passt das
-Monster modellbewusst ein; `InvestigationView` nutzt `GeometryReader3D` +
-`content.convert(_:from: .local, to: .scene)`. Die bisherige Schaetzung bleibt als
-Rueckfallebene fuer den ersten Layoutdurchlauf.
-
-Nicht betroffen und unveraendert:
-
-- Priorisierung
-- Teamzuordnung
-- DragBounds
-- 3D-Zielpanels
-- DropEvaluator
-- Scoring
-- Audio
-- Reset
-
-## Interaktionsarchitektur
-
-Produktiv:
+Kernflow:
 
 ```text
-VolumeMetrics
-  ↓
-MonsterDragGeometry
-  ├─ DragBounds
-  ├─ TargetPanelLayout
-  └─ DropEvaluator
+Start
+→ Untersuchung
+→ Priorisierung
+→ Teamzuordnung
+→ nächstes Ticket
+→ Ergebnis
+→ Erneut spielen
 ```
 
-Getrennt davon, ohne geteilte Konstante:
+Kein zweites Produktvolume. Kein Immersive Space. Keine Cloud, Datenbank oder Benutzerkonten.
+
+## Fachlicher Zustand
+
+Zentrale Source of Truth:
+
+`SessionModel`
+
+Relevante Felder:
 
 ```text
-InvestigationFraming   (nur Untersuchungsansicht)
+selectedTicketCount
+sessionTickets
+currentTicketIndex
+currentPhase
+score
+streak
+selectedPriority
+selectedTeam
+currentPriorityWasCorrect
+isInputLocked
+selectedMonsterVariantByTicketID
+lastTeamAwardedPoints
+lastCompletedTicketWasFullyCorrect
+lastCompletedTicketStreak
 ```
 
-Drop gueltig bei:
+## Ticketdaten
 
-- mindestens 50 % Monsterflaechenueberlappung
-- Z-Abstand <= 0.05 m
+Genau 16 lokale Tickets: TT-001...TT-016.
 
-`defaultSize` ist keine reale Geometriegrundlage. `layoutPointsPerMeter` und
-`monsterPanelDepth` ebenfalls nicht — sie dienen nur noch als Rueckfallebene.
+Bereich: `1...16`  
+Standard/Reset: `6`
 
-## Monster
+## Scoring
 
-Build-Assets:
+Priorität correct: `+100`
 
-- Monster_1_blue.usdc
-- Monster_2_green.usdc
-- Monster_3_yellow.usdc
-- Monster_4_red.usdc
+Vollständig korrekt:
 
-Alle vier im Simulator belegt.
+```text
+ticketTotal = 200 × streak
+```
+
+Kein künstlicher Cap. Keine negativen Punkte.
+
+## Feedback
+
+Priorität:
+- correct → +100 Punkte
+- incorrect → 0 Punkte
+
+Team:
+- dynamisch über `lastTeamAwardedPoints`
+
+Streak:
+- x2/x3 normal
+- x4+ emphasized + Scale-Pulse
+- nur temporär
+- nicht im HUD
 
 ## Audio
 
-- correct.wav PASS
-- incorrect.wav PASS
-- genau einmal PASS
+Produktive Ressourcen:
 
-## Ergebnis
+```text
+Resources/Audio/
+├── MonsterSounds/
+│   ├── Correct/    # 4 WAVs
+│   └── Incorrect/  # 4 WAVs
+└── StreakSounds/   # 2 WAVs
+```
 
-`ResultView` zeigt ausschliesslich:
+Zentrale Katalog-/Servicearchitektur.
 
-- Scorezahl
-- `Erneut spielen`
+## Videos
 
-## Cleanup
+```text
+Resources/Videos/
+├── TT-001.mp4
+...
+└── TT-016.mp4
+```
 
-Entfernt:
+Zentrale Auflösung über `TicketVideoResourceProvider`.
 
-- `_abgeloest/`
-- stale Git-Lock-Dateien (erneut eine verwaiste `.git/index.lock` in dieser Sitzung)
-- `.DS_Store`
+## Logos
 
-`.gitignore` enthaelt `.DS_Store` und `rot-debug.txt`.
+```text
+Resources/TeamLogos/
+```
+
+Vier JPEGs, zentral gemappt über `TeamLogoCatalog`.
+
+## Monster
+
+16 Farbvarianten: 4 Monstertypen × 4 Varianten.
+
+Sitzungsstabile Ticket→Variante-Zuordnung. Retry lädt dieselbe Variante.
+
+## Räumliche Interaktion
+
+Final:
+- Blickfokus
+- Pinch
+- Drag
+- 50-%-Overlap
+- Z-Toleranz 0.05 m
+- Snapback
+- Exactly-once
+
+Referenz-Team-Panel:
+- 0.195 m × 0.117 m × 0.020 m
+
+## Replay
+
+Final abgenommen:
+- Cold Start
+- fünf Replayzyklen
+- Volume-Resize
+- keine kumulative Layoutdrift
+- kein fachliches Carryover
+
+## Reset
+
+`Erneut spielen` führt zu:
+- Ticketanzahl 6
+- Score 0
+- Streak 0
+- Index 0
+- Entscheidungen nil
+- `currentPriorityWasCorrect` nil
+- Sessiontickets leer
+- Variantenmapping leer
+- Abschlussmetadaten neutral
+- Video geschlossen
+- Streakoverlay entfernt
+- kein Audio-Carryover
+
+## Finale Ressourcenstruktur
+
+```text
+Resources/
+├── Audio/
+│   ├── MonsterSounds/
+│   │   ├── Correct/
+│   │   └── Incorrect/
+│   └── StreakSounds/
+├── TeamLogos/
+├── Videos/
+└── Localizable.xcstrings
+```
+
+## Nicht produktiv referenzierte Altressourcen
+
+- `Resources/correct.wav`
+- `Resources/incorrect.wav`
+- `Tickets/TT-002A.mp4`
+- zwei alternative Streak-WAVs unter `Audio/StreakSounds/alt`
+
+## Finale Tests
+
+Statisch:
+- 576 `@Test`-Deklarationen
+- 12 explizite `@Suite`-Deklarationen
+
+Vollständiger Testlauf: PASS gemäß N1.
+
+Einzelmetriken des bestätigten Laufs wurden nicht übermittelt.
+
+## Finale Abnahme
+
+Laut `033-Report.md`:
+- AK-01 bis AK-39: PASS
+- Build: PASS gemäß N1
+- Tests: PASS gemäß N1
+- Simulator: PASS gemäß N1
+- Gerät: PASS gemäß N1
+- Accessibility: PASS
+- Regression: PASS
+- Ressourcen: PASS
 
 ## Git
 
-- Abgabebranch: `main` = `origin/main` = `e8b289a`
-- Arbeitsbranch `side`: `b56179b` — traegt den AK-06-Fix, aufgesetzt auf `e8b289a`
-- lokaler `main` per Fast-Forward angeglichen
-- offen: `origin/side` nachziehen, falls `side` erhalten bleiben soll
-- offen: Fix nach erfolgreichem Nachtest nach `main` uebernehmen und pushen
+Vorgesehener finaler Commit:
 
-## Naechster Schritt
+`033: Integration und Abnahme v1.3`
 
-1. ~~Xcode-Build und vollstaendige Testsuite~~ — **erledigt: PASS, 217/217**
-2. Untersuchungsansicht mit allen vier Assets im Simulator pruefen, `spawning`-Log mitschneiden
-3. Regression Start → Untersuchung → Priorisierung → Team → Ergebnis → Reset
-4. Bei PASS: AK-Matrix auf 16/16, Abschlussstatus A, Fix nach `main`
-5. `origin/side` nachziehen
-6. Optional: Apple-Vision-Pro-Geraetetest
+Der echte Hash muss nach tatsächlichem Commit dokumentiert werden.
 
-Details: `Dokumentation/04_Modul-Reports/Restpunkte-Report.md`
+## Status
+
+**Ticket Tamer v1.3 ist final abgeschlossen und abgenommen.**

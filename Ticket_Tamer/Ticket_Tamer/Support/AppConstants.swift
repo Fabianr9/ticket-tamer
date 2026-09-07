@@ -21,19 +21,27 @@ enum LayoutConstants {
 
     /// Breite des zentralen Volumes in Metern.
     ///
-    /// Von 0.8 auf 1.0 erhoeht: die Ticketkarte erhaelt dadurch 221 statt 157 Punkte
-    /// Spaltenbreite und rendert mit Faktor 0.48 statt 0.34.
-    static let centralVolumeWidth = 1.0
+    /// Kompakte Arbeitsbreite: genug Platz fuer Untersuchung und Ticketinfo, ohne
+    /// HUD, Ziele und Monster raeumlich zu weit auseinanderzuziehen.
+    static let centralVolumeWidth = 0.8
 
     /// Hoehe des zentralen Volumes in Metern.
     ///
-    /// Verlauf: 0.6 → 0.8 → 1.0. Bei 0.6 m lag die Obergrenze bei y = 0.30 m; ein 0.13 m
-    /// hohes Monster wurde beim Ziehen zu den Prioritaetsfeldern ab y = 0.235 m
-    /// angeschnitten. Der aktuelle Wert gibt zusaetzlich der Ticketkarte vertikal Luft.
-    static let centralVolumeHeight = 1.0
+    /// Ergonomische Arbeitshoehe. HUD und Interaktionshinweis bleiben dadurch nahe
+    /// an der zentralen Spielflaeche; die Ticketinfo wird weiterhin proportional
+    /// ueber `ScaledToFitView` eingepasst.
+    static let centralVolumeHeight = 0.75
 
     /// Tiefe des zentralen Volumes in Metern.
-    static let centralVolumeDepth = 0.4
+    static let centralVolumeDepth = 0.38
+
+    // MARK: - Compact Ticket Info (Modul 016)
+
+    /// Feste Designflaeche der kompakten Ticketinfo. Sie wird als Ganzes proportional
+    /// eingepasst, damit auch das laengste Katalogticket ohne Clipping sichtbar bleibt.
+    static let compactTicketInfoDesignWidth = 520.0
+    static let compactTicketInfoDesignHeight = 560.0
+    static let compactTicketInfoOuterPadding = 40.0
 
     // MARK: - Root View
 
@@ -45,6 +53,35 @@ enum LayoutConstants {
 
     /// Abstand innerhalb des Textblocks.
     static let textSpacing = 8.0
+
+    /// Normalisierte Y-Position des Untersuchungs-HUD.
+    /// Es sitzt hoeher als in den Zuordnungsphasen, damit es die grosse Ticketkarte
+    /// nicht ueberdeckt.
+    static let investigationHUDSceneAnchorY: CGFloat = 0.06
+
+    /// Normalisierte Y-Position des Zuordnungs-HUD innerhalb der Scene (0 = oben, 1 = unten).
+    /// Ein echter Scene-Anker bleibt im Volume sichtbar; ein nachtraeglicher View-Offset
+    /// kann ein Ornament dagegen aus dessen Darstellungsbereich verschieben.
+    static let sessionHUDSceneAnchorY: CGFloat = 0.14
+
+    /// Normalisierte Y-Position des unteren Hinweises innerhalb der Scene.
+    static let interactionHintSceneAnchorY: CGFloat = 0.84
+
+    /// Maximale Textbreite der kurzen Spielbeschreibung auf der Startseite.
+    static let startDescriptionMaximumWidth = 560.0
+
+    /// Stabile Designbreite des Ticketanzahl-Sliders.
+    ///
+    /// Anders als eine reine Maximalbreite ist dieser Wert kein Angebot, das SwiftUI
+    /// beim Phasenwechsel beliebig komprimieren darf. Die volumenfuellende Root-Huelle
+    /// stellt den dafuer benoetigten Layoutraum phasenuebergreifend bereit.
+    static let startSliderDesignWidth = 320.0
+
+    /// Abstand zwischen Minus, Slider und Plus.
+    static let startTicketControlSpacing = 16.0
+
+    /// Mindestgroesse der direkt bedienbaren Minus-/Plus-Schaltflächen.
+    static let startTicketButtonSize = 44.0
 
     /// Abstand unter dem vorhandenen RealityKit-Default-Modell.
     static let modelBottomPadding = 24.0
@@ -149,7 +186,7 @@ enum LayoutConstants {
     ///
     /// Ohne explizite Tiefe hat die `RealityView` in einem 2D-Layout praktisch keine
     /// Z-Ausdehnung; Modellteile vor und hinter der Ebene werden dann beschnitten.
-    /// Bleibt deutlich unter `centralVolumeDepth` (0.4 m), damit das Panel nicht
+    /// Bleibt unter `centralVolumeDepth` (0.38 m), damit das Panel nicht
     /// an die Volume-Grenzen stoesst.
     static let monsterPanelDepth = 0.34
 
@@ -185,7 +222,7 @@ enum LayoutConstants {
     ///
     /// Bewusst kleiner als `InteractionConstants.monsterCollisionRadius × 2`, damit die
     /// Greifsphaere das Modell sicher umschliesst.
-    static let monsterDragDropTargetSize: Float = 0.13
+    static let monsterDragDropTargetSize: Float = 0.17
 
     /// Sichtbarer Sicherheitsabstand zwischen Modellhuelle und Volume-Grenze (Meter).
     ///
@@ -274,6 +311,15 @@ enum LayoutConstants {
     /// Zwischenräume gleichmäßig auf die Spalten verteilt.
     static let targetPanelGap: Float = 0.02
 
+    /// Maximale Gesamtbreite des länglichen Prioritätsrasters.
+    static let priorityTargetGridMaximumWidth: Float = 0.70
+
+    /// Maximale Gesamtbreite des kompakten 2x2-Teamrasters.
+    static let teamTargetGridMaximumWidth: Float = 0.45
+
+    /// Hoechster Abstand der oberen Panelreihe von der Volume-Mitte.
+    static let targetGridTopOffsetFromCenter: Float = 0.16
+
     /// Panelhöhe als Vielfaches der **gemessenen** Monsterhöhe.
     ///
     /// Muss deutlich über `minimumDropOverlapRatio` liegen, sonst ist die Schwelle nur
@@ -345,7 +391,7 @@ enum GameplayConstants {
     static let minimumTicketCount = 1
 
     /// Groesste laut SPEC waehlbare Ticketanzahl.
-    static let maximumTicketCount = 12
+    static let maximumTicketCount = 16
 
     /// Standardwert fuer spaetere Startansicht und Reset.
     static let defaultTicketCount = 6
@@ -451,8 +497,7 @@ enum PrioritizationConstants {
     ///
     /// Y bewusst nahe 0 statt im unteren Drittel: tiefer wirkte das Modell im Passthrough,
     /// als versinke es in Tisch oder Boden. Bei einer Modellgröße von
-    /// `monsterDragDropTargetSize` (0.13 m) bleibt oben wie unten reichlich Luft
-    /// (Modell reicht von y ≈ -0.085 bis 0.045 bei Volume-Grenzen ±0.3).
+    /// `monsterDragDropTargetSize` (0.17 m) bleibt oben wie unten ausreichend Luft.
     ///
     /// Leicht nach vorne versetzt (+Z), damit das Modell klar vor der Zielebene steht.
     /// Abstand zu allen drei Zielen > `InteractionConstants.dropTargetRadius`, das Monster
@@ -545,11 +590,12 @@ enum TeamAssignmentConstants {
 
     // MARK: - Monster-Startposition
 
-    /// Startposition des Monsters — Mittelpunkt zwischen allen vier Teamstationen.
+    /// Startposition des Monsters unterhalb des kompakten 2x2-Zielrasters.
     ///
-    /// Abstand zu jeder Station ≈ 0.29 m > `InteractionConstants.dropTargetRadius` (0.15 m),
-    /// damit das Monster nicht von Beginn an in einem Zielbereich liegt.
-    static let monsterStartPosition = SIMD3<Float>(0, 0, 0)
+    /// Dadurch ueberdeckt das Monster beim Phasenstart keine Box. Die Position bleibt
+    /// nahe genug am Raster fuer einen kurzen, ergonomischen Drag und liegt weiterhin
+    /// ausserhalb jeder Drop-Zone.
+    static let monsterStartPosition = SIMD3<Float>(0, -0.16, 0)
 
     // MARK: - Ablage-Schwelle
 
@@ -590,16 +636,15 @@ enum FeedbackConstants {
     /// Zentrale Konstante — keine Magic Numbers in Views oder Services.
     static let feedbackTransitionDelay: Double = 1.5
 
-    // MARK: - Sound-Ressourcen-IDs
+    /// Abstand zwischen Monster- und Streak-Sound; wird vom Gesamtfenster abgezogen.
+    static let streakSoundDelay: Double = 0.2
 
-    /// Dateiname (ohne Endung) des Richtig-Sounds im App-Bundle.
-    static let correctSoundName = "correct"
+    /// Dauer einer Halbwelle des einmaligen x4+-Pulses.
+    static let streakPulseDuration: Double = 0.16
 
-    /// Dateiname (ohne Endung) des Falsch-Sounds im App-Bundle.
-    static let incorrectSoundName = "incorrect"
-
-    /// Bundle-Ressourcenformat der Feedback-Sounds.
-    static let soundExtension = "wav"
+    static var remainingDelayAfterStreakSound: Double {
+        max(0, feedbackTransitionDelay - streakSoundDelay)
+    }
 
     // MARK: - Punkte
 

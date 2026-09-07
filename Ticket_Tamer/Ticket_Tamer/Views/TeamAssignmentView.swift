@@ -13,6 +13,16 @@ import simd
 /// sichtbar sind ausschließlich die deutschen `SupportTeam.displayName`-Werte.
 enum TeamTargetMapping {
 
+    /// Reine Darstellungskonfiguration einer Teamstation.
+    ///
+    /// Sie enthaelt absichtlich keine Position oder Treffergeometrie. Logos koennen
+    /// dadurch die sichtbare Beschriftung ergaenzen, ohne Panel- oder Drop-Masse zu
+    /// beeinflussen (Modul 023 — F-28 / AK-28).
+    struct Presentation {
+        let title: String
+        let logoResource: TeamLogoResource
+    }
+
     // MARK: - Technische Ziel-IDs
 
     /// Die vier Ziel-IDs als Konstanten — identisch verwendet in `DropTargetComponent`,
@@ -62,6 +72,7 @@ enum TeamTargetMapping {
     static let panelLayout = TargetPanelLayout(
         columns: 2,
         rows: 2,
+        maximumWidth: LayoutConstants.teamTargetGridMaximumWidth,
         slots: [
             .init(id: ID.netzwerk, column: 0, row: 0),
             .init(id: ID.konto,    column: 1, row: 0),
@@ -80,6 +91,11 @@ enum TeamTargetMapping {
     /// Gibt die technische Ziel-ID für ein `SupportTeam` zurück.
     static func targetID(for team: SupportTeam) -> String? {
         allTargets.first { $0.team == team }?.id
+    }
+
+    /// Deutsche Beschriftung und zentral zugeordnetes lokales JPEG-Logo eines Teams.
+    static func presentation(for team: SupportTeam) -> Presentation {
+        Presentation(title: team.displayName, logoResource: TeamLogoCatalog.resource(for: team))
     }
 }
 
@@ -111,11 +127,14 @@ struct TeamAssignmentView: View {
     /// Position des Monsters zu Beginn der laufenden Zieh-Geste.
     @State private var dragStartPosition: SIMD3<Float>? = nil
     @State private var loadError: String? = nil
+    @State private var monsterLoadRecovery = MonsterLoadRecovery()
 
     // MARK: - Modul 010: Feedback-Zustand
 
     /// Verhindert mehrfachen Task-Start bei View-Refresh nach gespeichertem Team.
     @State private var feedbackTaskStarted: Bool = false
+    /// Rein lokaler Sichtzustand fuer das bestehende Feedbackfenster (Modul 018).
+    @State private var teamFeedback: TeamFeedbackPresentation? = nil
     /// Lokale Audio-Kapselung — kein globaler Service-Locator.
     @State private var audioService = AudioService()
 
@@ -132,6 +151,10 @@ struct TeamAssignmentView: View {
 
     /// Verhindert, dass die Grenz-Debugausgabe während einer Geste in jedem Frame erscheint.
     @State private var clampLogged: Bool = false
+
+    // MARK: - Modul 016: lokale Ticketinfo
+
+    @State private var isTicketInfoPresented = TicketInfoInteraction.initialPresentation
 
     // MARK: - Body
 
@@ -161,16 +184,16 @@ struct TeamAssignmentView: View {
                 // Beschriftung der Panels als RealityView-Attachment — siehe
                 // `PrioritizationView` zur Begründung.
                 Attachment(id: TeamTargetMapping.ID.netzwerk) {
-                    panelLabel(SupportTeam.netzwerk.displayName)
+                    panelLabel(TeamTargetMapping.presentation(for: .netzwerk))
                 }
                 Attachment(id: TeamTargetMapping.ID.konto) {
-                    panelLabel(SupportTeam.konto.displayName)
+                    panelLabel(TeamTargetMapping.presentation(for: .konto))
                 }
                 Attachment(id: TeamTargetMapping.ID.software) {
-                    panelLabel(SupportTeam.software.displayName)
+                    panelLabel(TeamTargetMapping.presentation(for: .software))
                 }
                 Attachment(id: TeamTargetMapping.ID.hardware) {
-                    panelLabel(SupportTeam.hardware.displayName)
+                    panelLabel(TeamTargetMapping.presentation(for: .hardware))
                 }
             }
             .gesture(
@@ -179,9 +202,51 @@ struct TeamAssignmentView: View {
                     .onChanged { value in handleDragChanged(value: value) }
                     .onEnded { value in handleDragEnded(value: value) }
             )
+            .allowsHitTesting(
+                TicketInfoInteraction.isDragEnabled(
+                    isPresented: isTicketInfoPresented,
+                    isInputLocked: model.isInputLocked
+                )
+            )
+
+            if isTicketInfoPresented, let ticket = model.currentTicket {
+                ScaledToFitView(
+                    designSize: CGSize(
+                        width: LayoutConstants.compactTicketInfoDesignWidth,
+                        height: LayoutConstants.compactTicketInfoDesignHeight
+                    ),
+                    maxScale: 1
+                ) {
+                    CompactTicketInfoView(ticket: ticket) {
+                        isTicketInfoPresented = false
+                    }
+                }
+                .padding(LayoutConstants.compactTicketInfoOuterPadding)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(.black.opacity(0.22))
+                .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                .zIndex(1)
+            }
+
+            if model.currentTicket != nil {
+                HStack {
+                    Spacer()
+                    Button {
+                        isTicketInfoPresented = TicketInfoInteraction.toggled(isTicketInfoPresented)
+                    } label: {
+                        Image(systemName: "info.circle.fill")
+                            .font(.title2)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .buttonBorderShape(.circle)
+                    .accessibilityLabel(Text("ticketInfo.button.accessibility"))
+                }
+                .padding(20)
+                .zIndex(2)
+            }
 
             // Ladeindikator — liest monsterEntity im Body (SwiftUI-Dependency-Tracking).
-            if monsterEntity == nil && loadError == nil {
+            if monsterLoadRecovery.isLoading {
                 ProgressView()
                     .controlSize(.large)
                     .padding(.top, 100)
@@ -189,18 +254,71 @@ struct TeamAssignmentView: View {
 
             // Fehlermeldung bei Ladefehlern (kein Crash, kein Auto-Wechsel).
             if let error = loadError {
-                Text(error)
-                    .font(.caption)
-                    .foregroundStyle(.red)
-                    .padding(10)
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
-                    .padding(.top, 80)
+                VStack(spacing: 8) {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                    if monsterLoadRecovery.canRetry {
+                        Button("Erneut laden") {
+                            Task { await loadCurrentMonster() }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
+                        .disabled(monsterLoadRecovery.isLoading)
+                    }
+                }
+                .padding(10)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
+                .padding(.top, 80)
+                .zIndex(10)
             }
+
+            if let teamFeedback {
+                VStack(spacing: 18) {
+                    if teamFeedback.streak.isVisible {
+                        StreakFeedbackView(presentation: teamFeedback.streak)
+                    }
+                    DecisionFeedbackView(presentation: teamFeedback.decision)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .transition(.opacity.combined(with: .scale(scale: 0.92)))
+                .zIndex(3)
+            }
+        }
+        .ornament(
+            attachmentAnchor: .scene(
+                UnitPoint3D(
+                    x: 0.5,
+                    y: LayoutConstants.sessionHUDSceneAnchorY,
+                    z: 0.5
+                )
+            ),
+            contentAlignment: .bottom
+        ) {
+            SessionHUDView(
+                currentTicketIndex: model.currentTicketIndex,
+                totalTicketCount: model.sessionTickets.count,
+                phase: model.currentPhase
+            )
+        }
+        .ornament(
+            attachmentAnchor: .scene(
+                UnitPoint3D(
+                    x: 0.5,
+                    y: LayoutConstants.interactionHintSceneAnchorY,
+                    z: 0.5
+                )
+            ),
+            contentAlignment: .top
+        ) {
+            InteractionHintView(text: InteractionHintContent.teamAssignment)
         }
         .task {
             await setupScene()
         }
         .onAppear {
+            isTicketInfoPresented = false
+            teamFeedback = nil
             // Eingabe nur freigeben, wenn noch keine Teamentscheidung getroffen wurde.
             // beginTeamAssignmentPhase() übernimmt das initiale Unlock; dieser Guard
             // schützt vor erneutem Entsperren bei View-Refresh nach saveTeam(_:).
@@ -210,6 +328,10 @@ struct TeamAssignmentView: View {
                 feedbackTaskStarted = false
                 DebugManager.log(.state, "TeamAssignmentView erschienen, Phase: \(model.currentPhase)")
             }
+        }
+        .onChange(of: model.currentPhase) { _, _ in
+            isTicketInfoPresented = false
+            teamFeedback = nil
         }
         // MARK: Modul 010 — Teamfeedback und automatischer Übergang (F-11 / F-12 / F-13)
         .onChange(of: model.selectedTeam) { _, newTeam in
@@ -221,11 +343,25 @@ struct TeamAssignmentView: View {
                     DebugManager.log(.state, "Teambewertung war No-Op — Task beendet")
                     return
                 }
-                // 2. Genau einen Sound abspielen.
-                audioService.play(isCorrect ? .correct : .incorrect)
-                // 3. Eingabe bleibt gesperrt; Szene steht (kein visuelles Feedback-Label).
-                // 4. Warten.
-                try? await Task.sleep(for: .seconds(FeedbackConstants.feedbackTransitionDelay))
+                // 2. Das Bool-Ergebnis ist die einzige Quelle fuer das Sichtfeedback.
+                guard let snapshot = TeamFeedbackPresentation(
+                    evaluation: isCorrect,
+                    awardedPoints: model.lastTeamAwardedPoints,
+                    fullyCorrect: model.lastCompletedTicketWasFullyCorrect,
+                    resultingStreak: model.lastCompletedTicketStreak
+                ) else { return }
+                teamFeedback = snapshot
+                // 3. Genau einen Sound parallel zum Sichtfeedback abspielen.
+                audioService.playMonsterFeedback(evaluation: isCorrect)
+                // 4. Streak-Sound leicht versetzt, aber innerhalb desselben 1,5-s-Tasks.
+                if snapshot.streak.shouldPlaySound {
+                    try? await Task.sleep(for: .seconds(FeedbackConstants.streakSoundDelay))
+                    audioService.playStreak(for: snapshot.resultingStreak)
+                    try? await Task.sleep(for: .seconds(FeedbackConstants.remainingDelayAfterStreakSound))
+                } else {
+                    try? await Task.sleep(for: .seconds(FeedbackConstants.feedbackTransitionDelay))
+                }
+                teamFeedback = nil
                 // 5. Guard: Phase darf sich nicht unerwartet geändert haben.
                 guard model.currentPhase == .teamZuordnen else {
                     DebugManager.log(.state, "Team-Task: Phase hat sich geaendert, kein Uebergang")
@@ -241,19 +377,34 @@ struct TeamAssignmentView: View {
 
     // MARK: - Panel-Beschriftung
 
-    /// Beschriftung eines Zielpanels — identisch zur Priorisierungsphase.
+    /// Teamname und lokales JPEG-Logo als reine Attachment-Darstellung.
+    /// Das Attachment liegt vor dem Panel und ist von dessen Mesh- und Drop-Massen
+    /// vollstaendig entkoppelt.
     @ViewBuilder
-    private func panelLabel(_ text: String) -> some View {
-        Text(text)
-            .font(.title2)
-            .fontWeight(.semibold)
-            .foregroundStyle(.white)
-            .lineLimit(1)
-            .minimumScaleFactor(LayoutConstants.targetLabelMinimumScaleFactor)
-            .allowsTightening(true)
-            .shadow(radius: 3)
-            .padding(.horizontal, LayoutConstants.targetLabelHorizontalPadding)
-            .allowsHitTesting(false)
+    private func panelLabel(_ presentation: TeamTargetMapping.Presentation) -> some View {
+        HStack(spacing: 6) {
+            if let url = presentation.logoResource.url(),
+               let image = UIImage(contentsOfFile: url.path) {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: 34, maxHeight: 34)
+                    .clipShape(RoundedRectangle(cornerRadius: 5))
+                    .accessibilityHidden(true)
+            }
+            Text(presentation.title)
+                .lineLimit(1)
+                .minimumScaleFactor(LayoutConstants.targetLabelMinimumScaleFactor)
+                .allowsTightening(true)
+        }
+        .font(.title3)
+        .fontWeight(.semibold)
+        .foregroundStyle(.white)
+        .shadow(radius: 3)
+        .padding(.horizontal, LayoutConstants.targetLabelHorizontalPadding)
+        .allowsHitTesting(false)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(presentation.title))
     }
 
     /// Farbe eines Zielpanels — neutral, keine Ampelfarben.
@@ -274,41 +425,64 @@ struct TeamAssignmentView: View {
 
     /// Erzeugt die vier Zielpanels und lädt das Monster asynchron.
     private func setupScene() async {
-        for targetDef in TeamTargetMapping.allTargets {
-            let entity = TargetPanelFactory.makeTarget(
-                id: targetDef.id,
-                debugName: targetDef.team.displayName
-            )
-            // Rückfallposition, bis Volume und Monster vermessen sind.
-            entity.position = targetDef.position
-            targetEntities.append(entity)
-            DebugManager.log(.spawning, "Teamstation bereit: \(targetDef.id)")
+        if targetEntities.isEmpty {
+            for targetDef in TeamTargetMapping.allTargets {
+                let logo = TeamLogoCatalog.resource(for: targetDef.team)
+                if let url = logo.url(), UIImage(contentsOfFile: url.path) != nil {
+                    DebugManager.log(.spawning, "Teamlogo gefunden: \(targetDef.team.rawValue) → \(logo.fileName)")
+                } else {
+                    DebugManager.log(.spawning, "Teamlogo fehlt/ungueltig, Text-Fallback: \(targetDef.team.rawValue) → \(logo.fileName)")
+                }
+
+                let entity = TargetPanelFactory.makeTarget(
+                    id: targetDef.id,
+                    debugName: targetDef.team.displayName
+                )
+                // Rückfallposition, bis Volume und Monster vermessen sind.
+                entity.position = targetDef.position
+                targetEntities.append(entity)
+                DebugManager.log(.spawning, "Teamstation bereit: \(targetDef.id)")
+            }
         }
 
-        // Monster laden.
+        await loadCurrentMonster()
+    }
+
+    /// Laedt nur das Monster. Bestehende Zielpanels bleiben unveraendert erhalten.
+    private func loadCurrentMonster() async {
         guard let ticket = model.currentTicket else {
             DebugManager.log(.spawning, "Kein aktives Ticket — Monster-Load abgebrochen")
             loadError = "Kein aktives Ticket."
             return
         }
+        guard let variant = model.selectedMonsterVariant(for: ticket) else {
+            loadError = "Keine Monster-Variante fuer dieses Ticket."
+            return
+        }
+        guard monsterLoadRecovery.begin(assetID: variant.assetFileName) else { return }
+        loadError = nil
+        monsterEntity = nil
+        DebugManager.log(.spawning, "Monster-Retry/Laden gestartet: \(variant.assetFileName)")
 
         do {
-            let entity = try await MonsterAssetProvider.loadMonster(assetID: ticket.monsterAssetId)
+            let entity = try await MonsterAssetProvider.loadMonster(variant: variant)
             // Größe aus den tatsächlichen Modellmaßen ableiten statt aus einem festen Faktor.
             MonsterAssetProvider.fit(entity, toMaxExtent: LayoutConstants.monsterDragDropTargetSize)
             entity.position = TeamAssignmentConstants.monsterStartPosition
             originTransform = entity.transform
             MonsterInteractionConfigurator.configure(entity, mode: .dragDrop)
             monsterEntity = entity
+            monsterLoadRecovery.finishSuccessfully()
 
             // Tatsächliche sichtbare Hülle messen — Grundlage für den sicheren
             // Zieh-Bereich, für die Panelhöhe und für die 50-%-Prüfung.
-            geometry.measureMonster(entity, assetID: ticket.monsterAssetId)
+            geometry.measureMonster(entity, assetID: variant.assetFileName)
             syncPanels()
 
-            DebugManager.log(.spawning, "Monster bereit: \(ticket.monsterAssetId), Modus: dragDrop")
+            DebugManager.log(.spawning, "Monster-Retry/Laden erfolgreich: \(variant.assetFileName), Modus: dragDrop")
         } catch {
-            DebugManager.log(.spawning, "Monster-Load fehlgeschlagen: \(error.localizedDescription)")
+            monsterLoadRecovery.finishWithFailure()
+            DebugManager.log(.spawning, "Monster-Retry/Laden fehlgeschlagen: \(error.localizedDescription)")
             loadError = "Monster konnte nicht geladen werden."
         }
     }
@@ -402,6 +576,7 @@ struct TeamAssignmentView: View {
     // MARK: - Gesture-Handler
 
     private func handleDragChanged(value: EntityTargetValue<DragGesture.Value>) {
+        guard !isTicketInfoPresented else { return }
         guard !model.isInputLocked else {
             DebugManager.log(.input, "Drag ignoriert: Input gesperrt (AK-10)")
             return
@@ -459,6 +634,11 @@ struct TeamAssignmentView: View {
         // Immer zuerst: die Geste ist beendet, der gemerkte Startpunkt gilt nicht mehr.
         dragStartPosition = nil
         clampLogged = false
+
+        guard !isTicketInfoPresented else {
+            clearHighlight()
+            return
+        }
 
         guard !model.isInputLocked else {
             DebugManager.log(.input, "Release ignoriert: Input bereits gesperrt (AK-10)")

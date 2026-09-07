@@ -22,11 +22,8 @@ struct InvestigationView: View {
     /// Geladene Monster-Entity. Nil während Ladevorgang oder bei Fehler.
     @State private var monsterEntity: Entity? = nil
 
-    /// Zeigt an, dass ein Ladevorgang läuft.
-    @State private var isLoadingMonster: Bool = false
-
-    /// Enthält den Ladefehler, falls der Monster-Load fehlgeschlagen ist.
-    @State private var monsterLoadError: MonsterAssetProvider.LoadError? = nil
+    /// Rein lokaler Lade-/Retry-Zustand; enthaelt keinen fachlichen Sitzungszustand.
+    @State private var monsterLoadRecovery = MonsterLoadRecovery()
 
     /// Gemessener Quader des Monster-Panels (Restpunkt AK-06).
     ///
@@ -34,20 +31,62 @@ struct InvestigationView: View {
     /// auf die bisherige Schaetzung zurueck.
     @State private var framing: InvestigationFraming? = nil
 
+    /// Lokaler Medienzustand; bewusst nicht Teil des fachlichen SessionModel.
+    @State private var videoPresentation = TicketVideoPresentationState()
+
     // MARK: - Body
 
     var body: some View {
         if let ticket = model.currentTicket {
-            mainContent(ticket: ticket)
+            ZStack {
+                mainContent(ticket: ticket)
+                    .allowsHitTesting(!videoPresentation.isPresented)
+
+                if let videoAssetName = videoPresentation.presentedAssetName {
+                    TicketVideoView(videoAssetName: videoAssetName) {
+                        videoPresentation.close()
+                    }
+                    .id(videoAssetName)
+                    .zIndex(100)
+                }
+            }
+                .ornament(
+                    attachmentAnchor: .scene(
+                        UnitPoint3D(
+                            x: 0.5,
+                            y: LayoutConstants.investigationHUDSceneAnchorY,
+                            z: 0.5
+                        )
+                    ),
+                    contentAlignment: .bottom
+                ) {
+                    sessionHUD
+                }
                 .onAppear {
                     DebugManager.log(.lifecycle, "Untersuchungsansicht erscheint: \(ticket.ticketNumber)")
                     loadMonster(for: ticket)
                 }
                 .onChange(of: model.currentTicketIndex) { _, _ in
+                    videoPresentation.closeIfTicketChanged(to: model.currentTicket?.videoAssetName)
                     resetMonster()
                     if let updated = model.currentTicket {
                         loadMonster(for: updated)
                     }
+                }
+                .onChange(of: model.currentPhase) { _, phase in
+                    videoPresentation.closeIfInvestigationEnded(phase)
+                }
+                .onChange(of: videoPresentation.isPresented) { _, isPresented in
+                    // RealityKit-Inhalte werden in visionOS in einer eigenen
+                    // Compositor-Ebene dargestellt. Ein SwiftUI-zIndex allein kann
+                    // deshalb nicht verhindern, dass das Monster vor dem Video liegt.
+                    // Die bereits geladene Entity nur deaktivieren; beim Schliessen
+                    // wird exakt dieselbe Instanz ohne erneuten Ladevorgang aktiviert.
+                    monsterEntity?.isEnabled = !isPresented
+                }
+                .onDisappear {
+                    videoPresentation.close()
+                    monsterEntity?.isEnabled = true
                 }
         } else {
             noTicketView
@@ -58,6 +97,14 @@ struct InvestigationView: View {
     }
 
     // MARK: - Hauptinhalt
+
+    private var sessionHUD: some View {
+        SessionHUDView(
+            currentTicketIndex: model.currentTicketIndex,
+            totalTicketCount: model.sessionTickets.count,
+            phase: model.currentPhase
+        )
+    }
 
     /// Teilt den verfuegbaren Bereich explizit zwischen Monster-Panel und Ticketkarte auf.
     ///
@@ -82,10 +129,17 @@ struct InvestigationView: View {
                         height: LayoutConstants.ticketCardDesignHeight
                     )
                 ) {
-                    TicketCardView(ticket: ticket) {
-                        DebugManager.log(.input, "Weiter zur Priorisierung ausgeloest: \(ticket.ticketNumber)")
-                        model.beginPrioritizationPhase()
-                    }
+                    TicketCardView(
+                        ticket: ticket,
+                        onWatchVideo: {
+                            DebugManager.log(.input, "Ticketvideo geoeffnet: \(ticket.ticketNumber)")
+                            videoPresentation.present(videoAssetName: ticket.videoAssetName)
+                        },
+                        onContinue: {
+                            DebugManager.log(.input, "Weiter zur Priorisierung ausgeloest: \(ticket.ticketNumber)")
+                            model.beginPrioritizationPhase()
+                        }
+                    )
                 }
                 .frame(width: cardWidth, height: proxy.size.height)
             }
@@ -104,7 +158,7 @@ struct InvestigationView: View {
     /// - Parameter availableSize: Vom Layout zugewiesene Panelflaeche in Punkten.
     @ViewBuilder
     private func monsterPanel(availableSize: CGSize) -> some View {
-        if isLoadingMonster {
+        if monsterLoadRecovery.isLoading {
             VStack(spacing: LayoutConstants.investigationCardSpacing) {
                 ProgressView()
                     .controlSize(.large)
@@ -132,7 +186,7 @@ struct InvestigationView: View {
             // und wuerde Modellteile vor/hinter der Ebene beschneiden. Wieviel Tiefe
             // real gewaehrt wird, misst `measurePanel(proxy:content:)`.
             .frame(depth: LayoutConstants.monsterPanelDepth)
-        } else if monsterLoadError != nil {
+        } else if monsterLoadRecovery.hasError {
             VStack(spacing: LayoutConstants.investigationCardSpacing) {
                 Image(systemName: "exclamationmark.triangle")
                     .font(.title)
@@ -140,8 +194,15 @@ struct InvestigationView: View {
                 Text("investigation.error.monsterLoad")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                Button("Erneut laden") {
+                    loadMonster(for: model.currentTicket)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .disabled(monsterLoadRecovery.isLoading)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .zIndex(10)
         } else {
             // Initialer Zustand vor erstem Laden (kurze Lücke zwischen Erscheinen und Task-Start)
             Color.clear
@@ -277,30 +338,37 @@ struct InvestigationView: View {
 
     // MARK: - Monster laden
 
-    private func loadMonster(for ticket: Ticket) {
-        guard !isLoadingMonster else { return }
-        isLoadingMonster = true
-        monsterLoadError = nil
+    private func loadMonster(for ticket: Ticket?) {
+        guard let ticket else { return }
+        guard let variant = model.selectedMonsterVariant(for: ticket) else {
+            _ = monsterLoadRecovery.begin(assetID: ticket.monsterAssetId)
+            monsterLoadRecovery.finishWithFailure()
+            DebugManager.log(.spawning, "Keine gespeicherte Monster-Variante fuer \(ticket.id)")
+            return
+        }
+        guard monsterLoadRecovery.begin(assetID: variant.assetFileName) else { return }
+        DebugManager.log(.spawning, "Monster-Retry/Laden gestartet: \(variant.assetFileName)")
         monsterEntity = nil
 
         Task {
             do {
-                let entity = try await MonsterAssetProvider.loadMonster(assetID: ticket.monsterAssetId)
+                let entity = try await MonsterAssetProvider.loadMonster(variant: variant)
+                // Falls das Video waehrend des asynchronen Ladens geoeffnet wurde,
+                // darf die spaet eintreffende Entity das Overlay nicht ueberdecken.
+                entity.isEnabled = !videoPresentation.isPresented
                 monsterEntity = entity
-                DebugManager.log(.spawning, "Monster bereit fuer Anzeige: \(ticket.monsterAssetId)")
-            } catch let error as MonsterAssetProvider.LoadError {
-                monsterLoadError = error
+                monsterLoadRecovery.finishSuccessfully()
+                DebugManager.log(.spawning, "Monster-Retry/Laden erfolgreich: \(variant.assetFileName)")
             } catch {
-                monsterLoadError = .entityLoadFailed(ticket.monsterAssetId)
+                monsterLoadRecovery.finishWithFailure()
+                DebugManager.log(.spawning, "Monster-Retry/Laden fehlgeschlagen: \(variant.assetFileName) – \(error.localizedDescription)")
             }
-            isLoadingMonster = false
         }
     }
 
     private func resetMonster() {
         monsterEntity = nil
-        isLoadingMonster = false
-        monsterLoadError = nil
+        monsterLoadRecovery.reset()
     }
 }
 

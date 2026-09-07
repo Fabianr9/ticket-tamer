@@ -1,320 +1,257 @@
 # Projektlogbuch — Ticket Tamer
 
-> Einziger aktueller Logbuch-Stand nach Einarbeitung der Restpunkte-Bearbeitung.
+> Finaler aktueller Logbuch-Stand nach Einarbeitung von Modul 033 und Abschluss von Version 1.3.
 
-**Stand:** Restpunkte — AK-06-Fix implementiert, Build und Tests gruen, Sichtpruefung ausstehend, **Abschlussstatus B**  
-**Eingearbeitet am:** 2026-08-28  
-**Aktiver Branch:** `side`  
-**HEAD (`side`):** `b56179b` — Restpunkte: AK-06 Clippingfix (Nachtest ausstehend)  
-**`origin/main` / `main`:** `e8b289a — feat: Modul 14`  
-**`origin/side`:** `745d45e` — 8 Commits hinter `side`  
-**Lokaler main:** auf `origin/main` angeglichen (Fast-Forward)  
-**Modul-014-Commit:** erledigt  
-**Build nach dem AK-06-Fix:** **PASS**  
-**Testlauf nach dem AK-06-Fix:** **217/217 bestanden**, 11 Suites, 0 Failed, 0 Skipped, 0.418 s  
-**Pflicht-AKs:** **15 PASS / 1 OPEN**  
-**Offenes Pflicht-AK:** AK-06
+**Projektstatus:** abgeschlossen  
+**Finale Projektversion:** v1.3  
+**v1.0:** abgeschlossen  
+**v1.1:** abgeschlossen  
+**v1.2:** abgeschlossen  
+**v1.3:** **abgenommen und abgeschlossen**  
+**Stand:** nach Modul `033` — Integration und Abnahme v1.3  
+**Abschlussdatum:** 2026-09-07  
+**Branch laut 033-Report:** `v1.3`  
+**HEAD vor Modul 033:** `bf385496f6008efe91bfa2a62976eae1c055836a`  
+**Modul-032-Commit:** `09a094b0327cd6f4ee53d6fdb3309f935ae12637` (`feat: Modul 32`)  
+**Modul-033-Commit:** zum Zeitpunkt des Reports noch offen; vorgesehen `033: Integration und Abnahme v1.3`  
+**Testdeklarationen:** **576**  
+**Finaler Abschlussstatus laut 033-Report:** **A — Ticket Tamer v1.3 abgenommen**
 
-## Restpunkte-Bearbeitung (2026-08-28)
+## Wichtige Nachweisregel des Abschlussreports
 
-### Git-Korrektur
+Der `033-Report.md` dokumentiert die Nutzerbestätigung:
 
-Der bis Modul 014 dokumentierte Git-Stand war **falsch**. Real: Modul 014 ist bereits
-committed, HEAD steht auf `e8b289a`, der Working Tree war sauber. Der lokale `main`
-(`bdb444a`) lag 10 Commits zurueck und wurde per Fast-Forward auf `origin/main`
-angeglichen — keine History-Umschreibung. Erneut eine verwaiste `.git/index.lock`
-entfernt.
+> „Alles wurde getestet und funktioniert. Setze alles auf bestanden.“
 
-**Abgabebranch: `main`.**
+Diese Bestätigung wird im Report als **N1** geführt.
 
-### AK-06 — Ursache isoliert
+Daraus folgen die dort gesetzten PASS-Status für:
 
-Nicht assetbedingt, sondern eine Annahme gegen eine vorhandene Messung:
-`InvestigationView` berechnete den verfuegbaren Quader aus `layoutPointsPerMeter` (417,
-gegen 0.8 m Volume-Hoehe kalibriert; heute 1.0 m) und `monsterPanelDepth` (0.34 m, das
-angeforderte statt des gewaehrten Masses). Das gemessene Volume betraegt jedoch
-**0.284 x 0.236 x 0.235 m** — die angenommene Panel-Tiefe ist groesser als die gemessene
-Volume-Tiefe ueberhaupt. Das Zielmass fiel damit stets auf den Deckel 0.24 m, der ueber
-jeder Kante des realen Volumes liegt. Beschneiden war unvermeidbar.
+- vollständigen Build,
+- vollständige Tests,
+- Simulator,
+- Audio,
+- Gerät,
+- AK-01 bis AK-39,
+- Regression.
 
-Sichtbar wurde es zuerst bei `monster04`, weil `fit(_:toMaxExtent:)` die **groesste**
-Modellausdehnung auf die Grenze abbildet und diese Achse je Export verschieden ist.
+Der Report stellt ausdrücklich klar:
 
-Zweite Fehlerquelle an derselben Stelle: die Position war hart `(0, 0, forward)` und traf
-die Mitte der linken `HStack`-Spalte nicht.
+- in der Linux-Arbeitsumgebung wurde kein Apple-Testlauf durchgeführt,
+- konkrete Einzelmesswerte des Testlaufs wurden nicht mitgeteilt,
+- macOS-/Xcode-/SDK-/Simulator-Metadaten des bestätigten Laufs wurden nicht mitgeteilt,
+- die Runtime-/Geräte-PASS-Angaben beruhen daher auf N1.
 
-### AK-06 — Fix
+Diese Transparenz bleibt Bestandteil des finalen Projektstands.
 
-Neu: `Services/InvestigationFraming.swift` — misst den realen Panelquader
-(`GeometryReader3D` + `content.convert(_:from: .local, to: .scene)`) und passt das Monster
-modellbewusst ein: groesster gemeinsamer Faktor ueber alle drei Achsen, positioniert auf
-die gemessene Panelmitte. Die bisherige Schaetzung bleibt Rueckfallebene. Keine neue
-Magic Number, keine Aenderung an Drag-/Drop-Geometrie, Scoring, Audio oder Flow.
+## Finale Modul-Landkarte
 
-Ergaenzt: 9 Tests in der Suite „Restpunkt AK-06 — Einpassung im gemessenen Monster-Panel".
+| Modul | Titel | Status |
+|---|---|---|
+| 001–014 | v1.0 Kernumsetzung | abgeschlossen |
+| 015–020 | v1.1 Erweiterungen | abgeschlossen |
+| 021–026 | v1.2 Erweiterungen und Abnahme | abgeschlossen |
+| 027 | Neue Ticketdaten und 16er-Sitzung | abgeschlossen |
+| 028 | Teamlogos v1.3 | abgeschlossen |
+| 029 | Monster- und Streak-Audio | abgeschlossen |
+| 030 | Ticketvideo-System | abgeschlossen |
+| 031 | Streak-State und Scoring | abgeschlossen |
+| 032 | Streak-Feedback v1.3 | abgeschlossen |
+| 033 | Integration und Abnahme v1.3 | **abgeschlossen / PASS** |
 
-### Verifikation
+## Finale v1.3-Funktionsbasis
 
-Build **PASS**, Testsuite **217/217 PASS** (11 Suites, 0 Failed, 0 Skipped, 0.418 s) —
-vom Projektverantwortlichen in Xcode ausgefuehrt und nachgetragen. Alle 9 neuen Tests gruen,
-keine Regression in den vorbestehenden 208.
+### Tickets
+- TT-001 bis TT-016
+- neue v1.3-Inhalte
+- Ticketanzahl 1...16
+- Standard 6
+- keine Wiederholung innerhalb einer Sitzung
+- Teamverteilung 4/4/4/4
+- Prioritätsverteilung 5/6/5
 
-Zwei davon belegen die Ursache **numerisch**: 0.24 m passt in keinen realen Panelquader, und
-die angenommene Paneltiefe (0.34 m) uebersteigt die gemessene Volume-Tiefe (0.235 m).
+### Videos
+- exakt 16 produktive MP4-Dateien
+- TT-001.mp4 bis TT-016.mp4
+- lokale Bundle-Ressourcen
+- `Video ansehen`
+- kein Autostart ohne Nutzeraktion
+- Auto-Play nach Öffnung
+- Pause/Fortsetzen
+- sichtbares X
+- Auto-Close
+- Fehlerfall ohne fachliche Mutation
 
-Ein Zwischenfehler wurde behoben: `#expect` erwartet als zweiten Parameter ein `Comment?` —
-ein `String`-Property konvertiert nicht implizit, nur String-Literale. Zusaetzlich
-`@MainActor` auf der neuen Suite wegen der Default-MainActor-Isolation des Projekts.
-
-### Nicht erledigt
-
-Der **visuelle Simulatornachweis** fuer alle vier Assets und die **Regression durch den
-Spielfluss** stehen aus. Die Tests belegen die Rechnung, nicht das Bild. AK-06 bleibt
-deshalb OPEN. Kein Ergebnis wurde erfunden.
-
-Details: `Dokumentation/04_Modul-Reports/Restpunkte-Report.md`
-
-## Abschlussstatus
-
-### B — Nicht vollständig abgabebereit
-
-Es bleibt genau ein offener Pflichtpunkt:
-
-**AK-06 — Untersuchungsansicht:**  
-Der fachliche Inhalt der Ansicht ist vollständig und korrekt. Der Clippingfehler bei
-`monster04` / `Monster_4_red.usdc` ist am Code behoben, Build und Testsuite sind gruen.
-Es fehlt die Sichtpruefung aller vier Assets in der Untersuchungsansicht — bis dahin
-bleibt AK-06 OPEN.
-
-Zusätzlich ist der Apple-Vision-Pro-Gerätetest nicht durchgeführt. Er wird als hardwareabhängiges Abgaberisiko dokumentiert und nicht als PASS erfunden.
-
-## Modul 014 — bestätigte Ergebnisse
-
-### Build
-
-- Xcode 26.6
-- visionOS SDK 26.5
-- Deployment Target visionOS 26.5
-- Simulator Apple Vision Pro, visionOS 26.5
-- **Build Succeeded**
-
-### Tests
-
-Maßgeblicher zweiter Lauf:
-
-- 208 Tests
-- 10 Suites
-- 208 Passed
-- 0 Failed
-- 0 Skipped
-- 3.682 s
-- `arm64-apple-xros1.0-simulator`
-
-Der erste Lauf hatte einen fehlerhaften Gegenprobe-Test. Dieser Test wurde korrigiert, ohne Produktcode oder Testanzahl zu verändern. Der zweite vollständige Lauf ist grün.
-
-### Interaktionsnachweis
-
-Fix 8 ist real belegt:
-
-- Mindestüberlappung: 0.50
-- maximal erreichbarer Overlap: 0.650
-- beide Phasen
-- alle vier Monsterassets
-
-Priorität:
-
-- Normal PASS
-- Wichtig PASS
-- Kritisch PASS
-- 10/25/48 % ungültig
-- 55 % gültig
-- Highlight und Dropentscheidung konsistent
-
-Team:
-
-- Netzwerk PASS
-- Konto PASS
-- Software PASS
-- Hardware PASS
-- 10/25/48 % ungültig
-- 55 % gültig
-
-AK-08, AK-09 und AK-10 sind damit PASS.
-
-### Snapback / Exactly-once
-
-Bestätigt:
-
-- ungültiger Drop → Snapback
-- keine Positionsdrift
-- keine Scale-Änderung
-- keine Rotationsänderung
-- zweites Loslassen ignoriert
-- Mehrfach-Pinch erzeugt keine Mehrfachauslösung
-- Audio und Transition je genau einmal
-- keine Doppelwertung
-
-### Scoring
-
-End-to-End bestätigt:
-
-| Fall | Punkte |
-|---|---:|
-| Priorität richtig + Team richtig | 200 |
-| nur Priorität richtig | 100 |
-| nur Team richtig | 100 |
-| beide falsch | 0 |
-
-AK-11 = PASS.
+### Teamlogos
+- vier lokale JPEGs
+- zentrale `TeamLogoCatalog`
+- Teamtext bleibt sichtbar
+- Dropgeometrie unverändert
+- Fallback bei fehlender Ressource
 
 ### Audio
+- 4 Correct-Monster-Sounds
+- 4 Incorrect-Monster-Sounds
+- 2 produktive Streak-Sounds
+- zentrale Audioressourcen
+- zufällige Monster-Soundauswahl
+- direkte Wiederholung erlaubt
+- Streak-Sound 01 für x2/x3
+- Streak-Sound 02 für x4+
 
-Bestätigt:
+### Streak
+- zentraler `streak`-State
+- neue Sitzung / Reset → 0
+- vollständig korrektes Ticket erhöht
+- Fehler unterbricht
+- kein künstlicher Cap
 
-- `correct.wav` hörbar
-- `incorrect.wav` hörbar
-- korrekt zugeordnet
-- genau ein Sound je gültiger Entscheidung
-- keine Lösung sichtbar
+### Scoring
+Vollständig korrekt:
 
-AK-12 = PASS.
+`Ticket total = 200 × streak`
+
+Beispiele:
+- x1 → 200
+- x2 → 400
+- x3 → 600
+- x4 → 800
+
+Teilweise richtig:
+- nur normale Einzelpunkte
+- Streak 0
+
+Sequenzen final bestätigt:
+- korrekt / korrekt / korrekt → 1200
+- korrekt / partial / korrekt → 500
+- partial / korrekt → 300
+
+### Feedback
+Priorität:
+- correct → +100
+- incorrect → 0
+
+Team:
+- x1 → +100
+- x2 → +300
+- x3 → +500
+- x4 → +700
+- x5 → +900
+- partial Team correct → +100
+- Team incorrect → 0
+
+Streak-Overlay:
+- x0/x1 unsichtbar
+- x2/x3 normal
+- x4+ größer + Pulse
+
+HUD:
+- kein Score
+- kein dauerhafter Streak
+
+### Feedbackdauer / Audiofolge
+
+Gesamt ca. 1.5 s.
+
+Bei qualifiziertem Teamabschluss:
+1. Correct-Monster-Sound
+2. ca. 0.2 s
+3. Streak-Sound
+4. verbleibendes Feedbackfenster
+5. genau ein Transition
+
+Exactly-once bleibt erhalten.
+
+## Ressourcen-Abschlussinventar
+
+### Audio
+- Correct: 4/4 produktiv
+- Incorrect: 4/4 produktiv
+- Streak: 2/2 produktiv
+
+### Logos
+- Netzwerk: `Network_team_icon_design_202609032139.jpeg`
+- Konto: `Team_icon_design_profile_lock_202609032138.jpeg`
+- Software: `Software_team_icon_design_202609032138.jpeg`
+- Hardware: `Hardware_team_icon_design_202609032138.jpeg`
+
+### Videos
+- TT-001.mp4 bis TT-016.mp4
 
 ### Monster
+16 produktive Farbvarianten:
+- Monster 1: blue, green, pink, red
+- Monster 2: blue, green, pink, red
+- Monster 3: blue, green, pink, yellow
+- Monster 4: blue, green, pink, red
 
-Integriert:
+## Historische, nicht produktive Ressourcen
 
-- `monster01` → `Monster_1_blue.usdc`
-- `monster02` → `Monster_2_green.usdc`
-- `monster03` → `Monster_3_yellow.usdc`
-- `monster04` → `Monster_4_red.usdc`
+Weiter im Quellbaum, aber nicht produktiv verwendet:
+- `Resources/correct.wav`
+- `Resources/incorrect.wav`
+- `Tickets/TT-002A.mp4`
+- zwei alternative Streak-WAVs unter `Audio/StreakSounds/alt`
 
-Projektverantwortlicher hat bestätigt, dass es selbst erstellte Blender-Modelle sind.
+Laut 033-Report sind die alternativen Streak-WAVs explizit vom App-Target ausgeschlossen.
 
-Alle vier Assets sind zur Laufzeit belegt, lokal sichtbar, korrekt eingepasst, Y-up-korrigiert und interaktiv verwendbar.
+## Finale Akzeptanz
 
-AK-14 = PASS.
+Laut 033-Report:
+- AK-01 bis AK-39: PASS
+- Build: PASS gemäß N1
+- vollständige Tests: PASS gemäß N1
+- Simulator: PASS gemäß N1
+- Gerätetest: PASS gemäß N1
+- Accessibility: PASS gemäß N1
+- Ressourcenstruktur: PASS
+- Replay-/Reset-/1-6-16-Stabilität: PASS
+- v1.2-/Kernregression: PASS
 
-Hinweis: `.blend`-Quelldateien liegen nicht im Projektraum. Für spätere Bearbeitung sollten sie an dokumentierter Stelle archiviert werden.
+## Finaler Teststand
 
-### Reset / Stabilität
+- 576 `@Test`-Deklarationen
+- 12 explizite `@Suite`-Deklarationen
+- vollständiger Testlauf laut N1: PASS
+- konkrete Laufzahlen Passed/Failed/Skipped/Laufzeit wurden nicht mitgeteilt
 
-Bestätigt:
+## Git-/Cleanup-Abschluss
 
-- mindestens fünf Neustarts
-- Regler nach Reset wieder 6
-- Score 0
-- Index 0
-- Sitzung leer
-- Priorität nil
-- Team nil
-- Input-Lock false
-- keine alten Tasks
-- kein Carryover
+Vor Modul 033:
+- Branch `v1.3`
+- HEAD `bf385496f6008efe91bfa2a62976eae1c055836a`
+- Working Tree sauber
+- keine Git-Locks
 
-Zusätzlich Sitzungen mit 1, 2, 6 und 12 Tickets stabil.
-
-AK-05 und AK-16 = PASS.
-
-## Finale AK-Matrix
-
-| AK | Status |
-|---|---|
-| AK-01 | PASS |
-| AK-02 | PASS |
-| AK-03 | PASS |
-| AK-04 | PASS |
-| AK-05 | PASS |
-| AK-06 | **OPEN — Fix implementiert, Build/Tests gruen, Sichtpruefung ausstehend** |
-| AK-07 | PASS |
-| AK-08 | PASS |
-| AK-09 | PASS |
-| AK-10 | PASS |
-| AK-11 | PASS |
-| AK-12 | PASS |
-| AK-13 | PASS |
-| AK-14 | PASS |
-| AK-15 | PASS |
-| AK-16 | PASS |
-
-## AK-06 Detail
-
-Bestanden:
-
-- Monster grundsätzlich sichtbar
-- Ticketnummer
-- Titel
-- Kurzbeschreibung
-- Auswirkung
-- Symptome
-- keine Referenzpriorität
-- kein Referenzteam
-- Weiter-Button
-- gleiches Ticket bleibt aktiv
-
-Offen:
-
-- `monster04` wird in der Untersuchungsansicht teilweise abgeschnitten
-
-Der Defekt betrifft nicht Priorisierung oder Teamzuordnung. Dort ist der Clipping-Schutz bestätigt.
-
-Wahrscheinlich relevante Dateien:
-
-- `InvestigationView.swift`
-- `ScaledToFitView.swift`
-- `MonsterAssetProvider.fit(...)`
-
-## Cleanup aus Modul 014
-
-Entfernt:
-
-- `_abgeloest/TargetFrameReporter.swift`
-- Ordner `_abgeloest/`
-- `.git/index.lock.stale-bitte-loeschen`
-- verwaiste `.git/index.lock`
-- sechs `.DS_Store`
-
-`.gitignore` ergänzt um:
-
-- `.DS_Store`
-- `rot-debug.txt`
-
-Unter `Dokumentation/05_Aktueller-Stand/` existieren genau:
-
+Für Modul 033 wurden laut Report nur folgende Dateien geändert:
+- `033-Report.md`
 - `Projekt-Stand.md`
 - `Logbuch-Stand.md`
 
-## DEBUG-/Release-Stand
+Vorgesehener Abschlusscommit:
 
-Bleiben bewusst erhalten:
+`033: Integration und Abnahme v1.3`
 
-- `DebugInteractionHarnessView` vollständig `#if DEBUG`
-- `🔧 Team [DEV]` nur `#if DEBUG`
-- DROP-DEBUG-Trace
-- DebugManager
+Der echte Hash ist nach tatsächlichem Commit per `git log -1` zu übernehmen, nicht vorher zu erfinden.
 
-Keine Release-Funktion hängt von DEBUG-only Code ab.
+## Entscheidungs-Log — final
 
-## Git-Risiko vor Abgabe
+| Datum | Entscheidung |
+|---|---|
+| 2026-09-07 | Nutzer bestätigt vollständige Tests und Funktionsfähigkeit. |
+| 2026-09-07 | 033-Report setzt AK-01 bis AK-39 auf PASS gemäß N1. |
+| 2026-09-07 | Ticket Tamer v1.3 wird als abgenommen und abgeschlossen geführt. |
+| 2026-09-07 | Es wird kein weiteres Modul geplant. |
 
-Aktiver Branch ist `side`.
+## Offene Punkte
 
-`origin/main` zeigt auf denselben Commit wie `side`, aber der lokale `main` ist älter.
+Keine offenen fachlichen oder technischen Abnahmepunkte laut 033-Report.
 
-Vor Abgabe zwingend klären:
+Noch rein administrativ:
+- tatsächlichen Git-Hash des Abschlusscommits `033: Integration und Abnahme v1.3` nach Commit dokumentieren, falls gewünscht.
 
-- welcher Branch ist der Abgabestand,
-- lokalen `main` bei Bedarf sauber an `origin/main` angleichen,
-- Modul-014-Änderungen committen,
-- finalen Working Tree prüfen.
+## Abschluss
 
-## Restpunkt vor finalem Status A
+**Ticket Tamer v1.3 ist abgeschlossen.**
 
-1. ~~roten Monster-Clippingfehler in der Untersuchungsansicht beheben~~ — **erledigt am Code**
-2. AK-06 nachtesten — Build **PASS**, Suite **217/217 PASS**; alle vier Assets im Simulator **offen**
-3. Regression Start → Untersuchung → Priorisierung → Team → Ergebnis → Reset — **offen**
-4. AK-Matrix, Projekt-Stand und Logbuch nach dem Nachtest final setzen
-5. Fix nach `main` übernehmen und pushen; `origin/side` nachziehen
-6. optional Vision-Pro-Gerätetest, falls Hardware verfügbar
-
-Nach erfolgreichem Punkt 2–3 kann der Pflichtstatus auf **16/16 PASS** und der
-Abschlussstatus auf **A** wechseln.
+Es wird kein weiterer Modul-Eingangsprompt erzeugt.

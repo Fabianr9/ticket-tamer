@@ -92,6 +92,33 @@ enum MonsterAssetProvider {
         }
     }
 
+    /// Laedt eine bereits beim Sitzungsstart ausgewaehlte konkrete Farbvariante.
+    static func loadMonster(variant: MonsterAssetVariant) async throws -> Entity {
+        guard MonsterVariantCatalog.contains(variant) else {
+            DebugManager.log(.spawning, "Unbekannte Monster-Variante abgewiesen: \(variant.assetFileName)")
+            throw LoadError.unknownAssetID(variant.assetFileName)
+        }
+
+        guard let url = realityKitContentBundle.url(
+            forResource: variant.assetFileName,
+            withExtension: "usdc",
+            subdirectory: "MonsterAssets"
+        ) else {
+            throw LoadError.entityLoadFailed(variant.assetFileName)
+        }
+
+        do {
+            let loaded = try Entity.load(contentsOf: url)
+            applyBlenderCorrection(to: loaded)
+            let wrapper = wrapAndCenter(loaded)
+            DebugManager.log(.spawning, "Variante geladen: \(variant.assetFileName).usdc")
+            return wrapper
+        } catch {
+            DebugManager.log(.spawning, "Varianten-Ladefehler fuer '\(variant.assetFileName)': \(error.localizedDescription)")
+            throw LoadError.entityLoadFailed(variant.assetFileName)
+        }
+    }
+
     // MARK: - Blender-Korrektur (Layout-Fix Modul 013)
 
     /// Korrigiert die Orientierung eines Blender-USDC-Exports von Z-up auf Y-up.

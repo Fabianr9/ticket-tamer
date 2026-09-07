@@ -24,6 +24,24 @@ struct RootVolumeView: View {
     // MARK: - Body
 
     var body: some View {
+        // Der GeometryReader bleibt ueber alle Phasen hinweg derselbe Root-Container.
+        // Dadurch bestimmt nicht mehr die intrinsische Groesse des jeweils sichtbaren
+        // switch-Astes (insbesondere der kleinen Ergebnisansicht) das naechste
+        // Layout-Proposal. Wir verwenden immer die aktuell vom System gewaehrte Groesse;
+        // ein Nutzer-Resize bleibt deshalb auch nach `reset()` erhalten und
+        // `.defaultSize` wird nicht als Replay-Reset missbraucht.
+        GeometryReader3D { proxy in
+            phaseContent
+                .frame(width: proxy.size.width, height: proxy.size.height)
+                .frame(depth: proxy.size.depth)
+        }
+    }
+
+    // MARK: - Phaseninhalt
+
+    /// Der ausgetauschte Inhalt innerhalb der stabilen, volumenfuellenden Root-Huelle.
+    @ViewBuilder
+    private var phaseContent: some View {
         switch model.currentPhase {
         case .start:
             StartView()

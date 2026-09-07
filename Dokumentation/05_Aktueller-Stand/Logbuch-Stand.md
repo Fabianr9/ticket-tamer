@@ -1,267 +1,257 @@
 # Projektlogbuch — Ticket Tamer
 
-> Einziger aktueller Logbuch-Stand nach Einarbeitung von Modul 032 für Version 1.3.
+> Finaler aktueller Logbuch-Stand nach Einarbeitung von Modul 033 und Abschluss von Version 1.3.
 
-**Projektversion:** v1.3 in Arbeit  
+**Projektstatus:** abgeschlossen  
+**Finale Projektversion:** v1.3  
 **v1.0:** abgeschlossen  
 **v1.1:** abgeschlossen  
 **v1.2:** abgeschlossen  
-**Stand:** nach Modul `032` — Streak-Feedback v1.3  
-**Eingearbeitet am:** 2026-09-04  
-**Branch laut 032-Report:** `v1.3`  
-**HEAD vor Modul 032:** `df4b6f5e41f134459399b6a4de5354b67c2adabe` (`feat: Modul 31`)  
-**Modul-031-Commit:** `df4b6f5`  
-**Modul-032-Commit:** offen  
-**Testdeklarationen vor 032:** 522  
-**Neue Tests:** 54  
-**Testdeklarationen nach 032:** **576**  
-**Build/Test/Simulator/Audio:** offen
+**v1.3:** **abgenommen und abgeschlossen**  
+**Stand:** nach Modul `033` — Integration und Abnahme v1.3  
+**Abschlussdatum:** 2026-09-07  
+**Branch laut 033-Report:** `v1.3`  
+**HEAD vor Modul 033:** `bf385496f6008efe91bfa2a62976eae1c055836a`  
+**Modul-032-Commit:** `09a094b0327cd6f4ee53d6fdb3309f935ae12637` (`feat: Modul 32`)  
+**Modul-033-Commit:** zum Zeitpunkt des Reports noch offen; vorgesehen `033: Integration und Abnahme v1.3`  
+**Testdeklarationen:** **576**  
+**Finaler Abschlussstatus laut 033-Report:** **A — Ticket Tamer v1.3 abgenommen**
 
-## v1.3-Modulstatus
+## Wichtige Nachweisregel des Abschlussreports
+
+Der `033-Report.md` dokumentiert die Nutzerbestätigung:
+
+> „Alles wurde getestet und funktioniert. Setze alles auf bestanden.“
+
+Diese Bestätigung wird im Report als **N1** geführt.
+
+Daraus folgen die dort gesetzten PASS-Status für:
+
+- vollständigen Build,
+- vollständige Tests,
+- Simulator,
+- Audio,
+- Gerät,
+- AK-01 bis AK-39,
+- Regression.
+
+Der Report stellt ausdrücklich klar:
+
+- in der Linux-Arbeitsumgebung wurde kein Apple-Testlauf durchgeführt,
+- konkrete Einzelmesswerte des Testlaufs wurden nicht mitgeteilt,
+- macOS-/Xcode-/SDK-/Simulator-Metadaten des bestätigten Laufs wurden nicht mitgeteilt,
+- die Runtime-/Geräte-PASS-Angaben beruhen daher auf N1.
+
+Diese Transparenz bleibt Bestandteil des finalen Projektstands.
+
+## Finale Modul-Landkarte
 
 | Modul | Titel | Status |
 |---|---|---|
-| 027 | Neue Ticketdaten und 16er-Sitzung | committed |
-| 028 | Teamlogos v1.3 | committed; Laufzeitanteile OPEN |
-| 029 | Monster- und Streak-Audio | committed; Hör-/Bundlelauf OPEN |
-| 030 | Ticketvideo-System | committed; Playback-/Bundlelauf OPEN |
-| 031 | Streak-State und Scoring | committed `df4b6f5`; Toolchainlauf OPEN |
-| 032 | Streak-Feedback v1.3 | implementiert; Code/Test PASS; Simulator/Audio OPEN; Commit offen |
-| 033 | Integration und Abnahme v1.3 | als Nächstes |
+| 001–014 | v1.0 Kernumsetzung | abgeschlossen |
+| 015–020 | v1.1 Erweiterungen | abgeschlossen |
+| 021–026 | v1.2 Erweiterungen und Abnahme | abgeschlossen |
+| 027 | Neue Ticketdaten und 16er-Sitzung | abgeschlossen |
+| 028 | Teamlogos v1.3 | abgeschlossen |
+| 029 | Monster- und Streak-Audio | abgeschlossen |
+| 030 | Ticketvideo-System | abgeschlossen |
+| 031 | Streak-State und Scoring | abgeschlossen |
+| 032 | Streak-Feedback v1.3 | abgeschlossen |
+| 033 | Integration und Abnahme v1.3 | **abgeschlossen / PASS** |
 
-## Modul 032 — dynamisches Entscheidungsfeedback
+## Finale v1.3-Funktionsbasis
 
-Neue finale Schnittstelle:
+### Tickets
+- TT-001 bis TT-016
+- neue v1.3-Inhalte
+- Ticketanzahl 1...16
+- Standard 6
+- keine Wiederholung innerhalb einer Sitzung
+- Teamverteilung 4/4/4/4
+- Prioritätsverteilung 5/6/5
 
-`DecisionFeedbackView(presentation:)`
+### Videos
+- exakt 16 produktive MP4-Dateien
+- TT-001.mp4 bis TT-016.mp4
+- lokale Bundle-Ressourcen
+- `Video ansehen`
+- kein Autostart ohne Nutzeraktion
+- Auto-Play nach Öffnung
+- Pause/Fortsetzen
+- sichtbares X
+- Auto-Close
+- Fehlerfall ohne fachliche Mutation
 
-mit:
+### Teamlogos
+- vier lokale JPEGs
+- zentrale `TeamLogoCatalog`
+- Teamtext bleibt sichtbar
+- Dropgeometrie unverändert
+- Fallback bei fehlender Ressource
 
-`DecisionFeedbackPresentation(result, awardedPoints)`
+### Audio
+- 4 Correct-Monster-Sounds
+- 4 Incorrect-Monster-Sounds
+- 2 produktive Streak-Sounds
+- zentrale Audioressourcen
+- zufällige Monster-Soundauswahl
+- direkte Wiederholung erlaubt
+- Streak-Sound 01 für x2/x3
+- Streak-Sound 02 für x4+
 
-Die UI zeigt keine selbst berechneten Punkte.
+### Streak
+- zentraler `streak`-State
+- neue Sitzung / Reset → 0
+- vollständig korrektes Ticket erhöht
+- Fehler unterbricht
+- kein künstlicher Cap
 
-### Priorität
+### Scoring
+Vollständig korrekt:
 
-- korrekt → grüner Haken + `+100 Punkte`
-- falsch → rotes Kreuz + `0 Punkte`
-
-### Team
-
-Die Teamphase liest ausschließlich:
-
-`SessionModel.lastTeamAwardedPoints`
+`Ticket total = 200 × streak`
 
 Beispiele:
+- x1 → 200
+- x2 → 400
+- x3 → 600
+- x4 → 800
 
-- Streak 1 → `+100 Punkte`
-- Streak 2 → `+300 Punkte`
-- Streak 3 → `+500 Punkte`
-- Streak 4 → `+700 Punkte`
-- Streak 5 → `+900 Punkte`
-- Team korrekt nach falscher Priorität → `+100 Punkte`
-- Team falsch → `0 Punkte`
+Teilweise richtig:
+- nur normale Einzelpunkte
+- Streak 0
 
-Keine UI-Scoremutation.
+Sequenzen final bestätigt:
+- korrekt / korrekt / korrekt → 1200
+- korrekt / partial / korrekt → 500
+- partial / korrekt → 300
 
-## Streak-Presentation
-
-Neu:
-
-`StreakFeedbackView`
-
-und eine reine Team-/Streak-Präsentationsableitung.
-
-Sichtbarkeit nur wenn:
-
-```text
-lastCompletedTicketWasFullyCorrect == true
-&& lastCompletedTicketStreak >= 2
-```
-
-Darstellung:
-
-| Streak | Anzeige | Stil |
-|---:|---|---|
-| 0 | keine | – |
-| 1 | keine | – |
-| 2 | x2 | normal |
-| 3 | x3 | normal |
-| 4+ | xN | größer + einmaliger Scale-Pulse |
-
-Kein künstlicher Cap.
-
-x5, x6 ... x16 verwenden dieselbe stärkere Logik wie x4.
-
-## HUD
-
-Unverändert.
-
-Das Session-HUD zeigt weiterhin nur:
-
-- Ticket X von Y
-- Phasentitel
-- Fortschritt
-
-Nicht dauerhaft:
-
-- Score
-- Streak
-- Multiplikator
-
-## Teamabschluss-Snapshot
-
-Direkt nach genau einer `evaluateTeam()`-Auswertung snapshottet die View lokal:
-
-- Evaluation Bool
-- `lastTeamAwardedPoints`
-- `lastCompletedTicketWasFullyCorrect`
-- `lastCompletedTicketStreak`
-
-Dieser Snapshot ist nur Darstellung und schreibt nichts ins `SessionModel`.
-
-## Audioorchestrierung
-
-Qualifizierter vollständig korrekter Teamabschluss:
-
-1. positiver Monster-Sound
-2. `0.2 s` Delay
-3. Streak-Sound
-4. verbleibende `1.3 s`
-5. Phasenwechsel
-
-Gesamtfeedbackdauer:
-
-`1.5 s`
-
-Unverändert.
-
-Mapping:
-
-- Streak 0/1 → kein Streak-Sound
-- x2/x3 → `streak_01.wav`
-- x4+ → `streak_02.wav`
-
+### Feedback
 Priorität:
+- correct → +100
+- incorrect → 0
 
-niemals Streak-Sound.
+Team:
+- x1 → +100
+- x2 → +300
+- x3 → +500
+- x4 → +700
+- x5 → +900
+- partial Team correct → +100
+- Team incorrect → 0
 
-Pro qualifiziertem Teamabschluss:
+Streak-Overlay:
+- x0/x1 unsichtbar
+- x2/x3 normal
+- x4+ größer + Pulse
 
-höchstens ein Streak-Sound.
+HUD:
+- kein Score
+- kein dauerhafter Streak
 
-## Exactly-once
+### Feedbackdauer / Audiofolge
 
-Der bestehende einzige Feedbacktask bleibt erhalten.
+Gesamt ca. 1.5 s.
 
-Weiterhin geschützt durch:
+Bei qualifiziertem Teamabschluss:
+1. Correct-Monster-Sound
+2. ca. 0.2 s
+3. Streak-Sound
+4. verbleibendes Feedbackfenster
+5. genau ein Transition
 
-- `feedbackTaskStarted`
-- Input-Lock
-- zentrale Exactly-once-Auswertung
+Exactly-once bleibt erhalten.
 
-Keine zweite:
+## Ressourcen-Abschlussinventar
 
-- Bewertung
-- Scoremutation
-- Streakerhöhung
-- Overlayauslösung
-- Monster-Soundauslösung
-- Streak-Soundauslösung
-- Transition
+### Audio
+- Correct: 4/4 produktiv
+- Incorrect: 4/4 produktiv
+- Streak: 2/2 produktiv
 
-## Dateien Modul 032
+### Logos
+- Netzwerk: `Network_team_icon_design_202609032139.jpeg`
+- Konto: `Team_icon_design_profile_lock_202609032138.jpeg`
+- Software: `Software_team_icon_design_202609032138.jpeg`
+- Hardware: `Hardware_team_icon_design_202609032138.jpeg`
 
-Neu:
+### Videos
+- TT-001.mp4 bis TT-016.mp4
 
-- `Views/Components/StreakFeedbackView.swift`
-- `Ticket_TamerTests/StreakFeedbackTests.swift`
+### Monster
+16 produktive Farbvarianten:
+- Monster 1: blue, green, pink, red
+- Monster 2: blue, green, pink, red
+- Monster 3: blue, green, pink, yellow
+- Monster 4: blue, green, pink, red
 
-Geändert:
+## Historische, nicht produktive Ressourcen
 
-- `Views/Components/DecisionFeedbackView.swift`
-- `Views/PrioritizationView.swift`
-- `Views/TeamAssignmentView.swift`
-- `Support/AppConstants.swift`
-- `Resources/Localizable.xcstrings`
+Weiter im Quellbaum, aber nicht produktiv verwendet:
+- `Resources/correct.wav`
+- `Resources/incorrect.wav`
+- `Tickets/TT-002A.mp4`
+- zwei alternative Streak-WAVs unter `Audio/StreakSounds/alt`
 
-Unverändert:
+Laut 033-Report sind die alternativen Streak-WAVs explizit vom App-Target ausgeschlossen.
 
-- `SessionModel`
-- Audio-Katalog/Random-Selector
-- Session-HUD
-- Video
-- Teamlogos
-- Dropgeometrie
-- Ticketdaten
-- ResultView
+## Finale Akzeptanz
 
-## Test-/Prüfstand
+Laut 033-Report:
+- AK-01 bis AK-39: PASS
+- Build: PASS gemäß N1
+- vollständige Tests: PASS gemäß N1
+- Simulator: PASS gemäß N1
+- Gerätetest: PASS gemäß N1
+- Accessibility: PASS gemäß N1
+- Ressourcenstruktur: PASS
+- Replay-/Reset-/1-6-16-Stabilität: PASS
+- v1.2-/Kernregression: PASS
 
-| Prüfung | Status |
+## Finaler Teststand
+
+- 576 `@Test`-Deklarationen
+- 12 explizite `@Suite`-Deklarationen
+- vollständiger Testlauf laut N1: PASS
+- konkrete Laufzahlen Passed/Failed/Skipped/Laufzeit wurden nicht mitgeteilt
+
+## Git-/Cleanup-Abschluss
+
+Vor Modul 033:
+- Branch `v1.3`
+- HEAD `bf385496f6008efe91bfa2a62976eae1c055836a`
+- Working Tree sauber
+- keine Git-Locks
+
+Für Modul 033 wurden laut Report nur folgende Dateien geändert:
+- `033-Report.md`
+- `Projekt-Stand.md`
+- `Logbuch-Stand.md`
+
+Vorgesehener Abschlusscommit:
+
+`033: Integration und Abnahme v1.3`
+
+Der echte Hash ist nach tatsächlichem Commit per `git log -1` zu übernehmen, nicht vorher zu erfinden.
+
+## Entscheidungs-Log — final
+
+| Datum | Entscheidung |
 |---|---|
-| Tests vor 032 | 522 |
-| neue Tests | 54 |
-| Tests nach 032 | **576** |
-| String Catalog JSON | PASS |
-| Modul-Scope `git diff --check` | PASS |
-| Punktetext-/Streak-Gates | PASS auf Testebene |
-| Sound-Mapping | PASS auf Testebene |
-| Gesamtzeit 1.5 s | PASS auf Testebene |
-| HUD unverändert | PASS auf Testebene |
-| 1200-Punkte-Regression | PASS auf Testebene |
-| vollständiger Testlauf | OPEN |
-| Build | OPEN |
-| Simulator | OPEN |
-| hörbare Audiofolge | OPEN |
+| 2026-09-07 | Nutzer bestätigt vollständige Tests und Funktionsfähigkeit. |
+| 2026-09-07 | 033-Report setzt AK-01 bis AK-39 auf PASS gemäß N1. |
+| 2026-09-07 | Ticket Tamer v1.3 wird als abgenommen und abgeschlossen geführt. |
+| 2026-09-07 | Es wird kein weiteres Modul geplant. |
 
-## Akzeptanzstatus Modul 032
+## Offene Punkte
 
-### AK-18
-Code: PASS  
-Simulator: OPEN
+Keine offenen fachlichen oder technischen Abnahmepunkte laut 033-Report.
 
-### AK-21
-Code: PASS  
-Runtime: OPEN
+Noch rein administrativ:
+- tatsächlichen Git-Hash des Abschlusscommits `033: Integration und Abnahme v1.3` nach Commit dokumentieren, falls gewünscht.
 
-### AK-35
-Code: PASS  
-Audio-/Runtime: OPEN
+## Abschluss
 
-### AK-38
-Code: PASS  
-Simulator: OPEN
+**Ticket Tamer v1.3 ist abgeschlossen.**
 
-## Offene v1.3-Abnahme vor Modul 033
-
-Die Featureimplementierung aus 027–032 ist abgeschlossen.
-
-Noch real abzunehmen:
-
-- AK-31 neue Ticketinhalte im Simulator
-- AK-32 Videozuordnung/Start
-- AK-33 Videowiedergabe/Schließen/Fehler
-- AK-34 4+4 Monster-Sounds hörbar/zufällig
-- AK-35 Streak-Sounds im echten Teamabschluss
-- AK-36 Streak-State/Reset
-- AK-37 Multiplikator-Scoring
-- AK-38 x2/x3/x4+-Darstellung
-- AK-39 vollständige Bundle-/Ressourcenauffindbarkeit
-
-Zusätzlich:
-
-- vollständiger Xcode-Build
-- vollständiger 576-Testlauf
-- v1.2-Regression
-- 1/6/16-Ticket-Sitzungen
-- mindestens fünf Replay-Zyklen
-- Layout-/Video-/Audio-/Drop-/Retry-Stabilität
-
-## Nächster Schritt
-
-`033-Eingangsprompt.md` ausführen.
-
-Modul 033 ist ausschließlich Integration, Abnahme und kleine notwendige Integrationsfixes.
-
-Keine neuen Features.
+Es wird kein weiterer Modul-Eingangsprompt erzeugt.

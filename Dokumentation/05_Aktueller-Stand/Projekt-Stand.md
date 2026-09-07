@@ -1,122 +1,173 @@
 # Projekt-Stand — Ticket Tamer
 
-> Aktuelle technische Landkarte nach Modul 032 der Version 1.3.
+> Finaler technischer Projektstand nach Abschluss und Abnahme von Ticket Tamer v1.3.
 
-**Projektversion:** v1.3 in Arbeit  
-**Stand:** nach Modul 032  
+**Projektstatus:** abgeschlossen  
+**Finale Version:** v1.3  
+**Stand:** nach Modul 033  
 **Branch:** `v1.3`  
-**Modul-031-Commit:** `df4b6f5`  
-**Modul-032-Commit:** offen  
-**Testdeklarationen:** **576**  
-**Build/Test/Simulator:** offen
+**HEAD vor Abschlussmodul:** `bf385496f6008efe91bfa2a62976eae1c055836a`  
+**Modul-032-Commit:** `09a094b0327cd6f4ee53d6fdb3309f935ae12637`  
+**Modul-033-Commit:** nach Erstellung des Abschlusscommits real ergänzen  
+**Tests:** **576 Deklarationen**  
+**Abnahme:** **PASS gemäß N1**
 
-## v1.3 Featurestand
+## Architektur
 
-### 027 — Tickets
-- TT-001 bis TT-016
-- Auswahl 1...16
-- Standard/Reset 6
+Ticket Tamer ist eine lokale visionOS-Anwendung für Apple Vision Pro mit genau einem zentralen Volume.
 
-### 028 — Teamlogos
-- vier lokale JPEGs
-- `TeamLogoCatalog`
-- Text bleibt sichtbar
-- Dropgeometrie unverändert
+Kernflow:
 
-### 029 — Audio
-- 4 Correct-Monster-Sounds
-- 4 Incorrect-Monster-Sounds
-- 2 Streak-Sounds
-- zentrale Kataloge
-- zufällige, deterministisch testbare Auswahl
+```text
+Start
+→ Untersuchung
+→ Priorisierung
+→ Teamzuordnung
+→ nächstes Ticket
+→ Ergebnis
+→ Erneut spielen
+```
 
-### 030 — Videos
-- 16 lokale MP4s
-- `TicketVideoResourceProvider`
-- `TicketVideoView`
-- Auto-Play nach Tap
-- Pause/Fortsetzen
-- X
-- Auto-Close
-- Fehlerzustand
+Kein zweites Produktvolume. Kein Immersive Space. Keine Cloud, Datenbank oder Benutzerkonten.
 
-### 031 — Streak & Scoring
-- `streak`
-- `currentPriorityWasCorrect`
-- `lastTeamAwardedPoints`
-- `lastCompletedTicketWasFullyCorrect`
-- `lastCompletedTicketStreak`
+## Fachlicher Zustand
+
+Zentrale Source of Truth:
+
+`SessionModel`
+
+Relevante Felder:
+
+```text
+selectedTicketCount
+sessionTickets
+currentTicketIndex
+currentPhase
+score
+streak
+selectedPriority
+selectedTeam
+currentPriorityWasCorrect
+isInputLocked
+selectedMonsterVariantByTicketID
+lastTeamAwardedPoints
+lastCompletedTicketWasFullyCorrect
+lastCompletedTicketStreak
+```
+
+## Ticketdaten
+
+Genau 16 lokale Tickets: TT-001...TT-016.
+
+Bereich: `1...16`  
+Standard/Reset: `6`
+
+## Scoring
+
+Priorität correct: `+100`
 
 Vollständig korrekt:
 
-`Ticket total = 200 × streak`
-
-### 032 — Streak-Feedback
-
-- dynamische Team-Punkte
-- x2/x3 normal
-- x4+ größer + Scale-Pulse
-- kein x1
-- kein dauerhafter Streak im HUD
-- Streak-Sound 0.2 s nach positivem Monster-Sound
-- Gesamtfeedback weiter 1.5 s
-
-## Audiofolge
-
 ```text
-Team evaluate
-→ Monster-Sound
-→ 0.2 s
-→ optional Streak-Sound
-→ verbleibende 1.3 s
-→ Transition
+ticketTotal = 200 × streak
 ```
 
-Nur wenn vollständig korrekt und Streak >= 2.
+Kein künstlicher Cap. Keine negativen Punkte.
 
-## Tests
+## Feedback
 
-Aktuell:
+Priorität:
+- correct → +100 Punkte
+- incorrect → 0 Punkte
 
-**576 Testdeklarationen**
+Team:
+- dynamisch über `lastTeamAwardedPoints`
 
-Vollständiger Apple-Toolchain-Lauf offen.
+Streak:
+- x2/x3 normal
+- x4+ emphasized + Scale-Pulse
+- nur temporär
+- nicht im HUD
 
-## v1.3-Modul-Landkarte
+## Audio
 
-| Modul | Status |
-|---|---|
-| 027 | implementiert |
-| 028 | implementiert |
-| 029 | implementiert |
-| 030 | implementiert |
-| 031 | implementiert |
-| 032 | implementiert |
-| 033 | als Nächstes: Integration & Abnahme |
+Produktive Ressourcen:
 
-## Modul 033 — Fokus
+```text
+Resources/Audio/
+├── MonsterSounds/
+│   ├── Correct/    # 4 WAVs
+│   └── Incorrect/  # 4 WAVs
+└── StreakSounds/   # 2 WAVs
+```
 
-SPEC:
+Zentrale Katalog-/Servicearchitektur.
 
-`F-01 bis F-39, Schwerpunkt F-31 bis F-39`
+## Videos
 
-Verbindlich abzunehmen:
+```text
+Resources/Videos/
+├── TT-001.mp4
+...
+└── TT-016.mp4
+```
 
-- 16 neue Tickets
-- 16 Videos
-- 4 Teamlogos
-- 8 Monster-Sounds
-- 2 Streak-Sounds
-- zentrale Ressourcenstruktur
-- Streak-State
-- Multiplikator-Scoring
-- dynamische Zusatzpunkte
-- x2/x3/x4+-Feedback
-- Reset
-- Replay
-- Regression gegen v1.2
+Zentrale Auflösung über `TicketVideoResourceProvider`.
 
-## v1.3 Ressourcenstruktur
+## Logos
+
+```text
+Resources/TeamLogos/
+```
+
+Vier JPEGs, zentral gemappt über `TeamLogoCatalog`.
+
+## Monster
+
+16 Farbvarianten: 4 Monstertypen × 4 Varianten.
+
+Sitzungsstabile Ticket→Variante-Zuordnung. Retry lädt dieselbe Variante.
+
+## Räumliche Interaktion
+
+Final:
+- Blickfokus
+- Pinch
+- Drag
+- 50-%-Overlap
+- Z-Toleranz 0.05 m
+- Snapback
+- Exactly-once
+
+Referenz-Team-Panel:
+- 0.195 m × 0.117 m × 0.020 m
+
+## Replay
+
+Final abgenommen:
+- Cold Start
+- fünf Replayzyklen
+- Volume-Resize
+- keine kumulative Layoutdrift
+- kein fachliches Carryover
+
+## Reset
+
+`Erneut spielen` führt zu:
+- Ticketanzahl 6
+- Score 0
+- Streak 0
+- Index 0
+- Entscheidungen nil
+- `currentPriorityWasCorrect` nil
+- Sessiontickets leer
+- Variantenmapping leer
+- Abschlussmetadaten neutral
+- Video geschlossen
+- Streakoverlay entfernt
+- kein Audio-Carryover
+
+## Finale Ressourcenstruktur
 
 ```text
 Resources/
@@ -126,19 +177,47 @@ Resources/
 │   │   └── Incorrect/
 │   └── StreakSounds/
 ├── TeamLogos/
-└── Videos/
+├── Videos/
+└── Localizable.xcstrings
 ```
 
-## Geschützte Kernregeln
+## Nicht produktiv referenzierte Altressourcen
 
-- genau ein zentrales Volume
-- keine neue Produktnavigation
-- `SessionModel` zentrale fachliche Source of Truth
-- 1...16 Tickets
-- 50-%-Drop
-- Z-Toleranz 0.05 m
-- Snapback
-- Retry gleiche Monstervariante
-- Exactly-once
-- Replay-Layoutstabilität
-- keine Lösungsausgabe
+- `Resources/correct.wav`
+- `Resources/incorrect.wav`
+- `Tickets/TT-002A.mp4`
+- zwei alternative Streak-WAVs unter `Audio/StreakSounds/alt`
+
+## Finale Tests
+
+Statisch:
+- 576 `@Test`-Deklarationen
+- 12 explizite `@Suite`-Deklarationen
+
+Vollständiger Testlauf: PASS gemäß N1.
+
+Einzelmetriken des bestätigten Laufs wurden nicht übermittelt.
+
+## Finale Abnahme
+
+Laut `033-Report.md`:
+- AK-01 bis AK-39: PASS
+- Build: PASS gemäß N1
+- Tests: PASS gemäß N1
+- Simulator: PASS gemäß N1
+- Gerät: PASS gemäß N1
+- Accessibility: PASS
+- Regression: PASS
+- Ressourcen: PASS
+
+## Git
+
+Vorgesehener finaler Commit:
+
+`033: Integration und Abnahme v1.3`
+
+Der echte Hash muss nach tatsächlichem Commit dokumentiert werden.
+
+## Status
+
+**Ticket Tamer v1.3 ist final abgeschlossen und abgenommen.**

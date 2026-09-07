@@ -31,6 +31,8 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
+				Resources/Audio/StreakSounds/alt/streak_01.wav,
+				Resources/Audio/StreakSounds/alt/streak_02.wav,
 			);
 			target = 1E158E5F3007C50E002D4ED1 /* Ticket_Tamer */;
 		};
